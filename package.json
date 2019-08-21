@@ -1,5 +1,13 @@
 {
+  "description": "Handy async iterables like pool, queue, merge, chunk, flatten, map, filter, etc.",
+  "version": "0.1.0-alpha01",
+  "main": "src/index.js",
+  "module": "src/chainable.js",
+  "scripts": {
+    "test": "tape -r esm test/*_test.js | tap-nirvana"
+  },
   "dependencies": {
+    "@toolbuilder/isnumber": "^0.1.0",
     "@toolbuilder/list": "^0.1.1",
     "esm": "^3.2.25",
     "iterablefu": "^0.3.1"

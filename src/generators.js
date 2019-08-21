@@ -1,100 +1,101 @@
-import { List } from '@toolbuilder/list/src/list.js'
-// So this executes asyncFunction one at a time
-// What about a pool of currently executing the same asyncFunction with the input values?
-// What about a promise queue (assumes each task has same handling downstream?)
-// What about a queue with values processed asynchronously - push in record, write to db, post process, etc
-// Subscribe to event - cancelable (if no one is there to call next(), generator stops - even async generators)
-// But unregistering an event handler would be a different issue - hmmm
-// Multiple subscribers - fan out to multiple downstream chains (cold stream/hot stream issues)
-// Insert PouchDB bulk write into middle of chain (to pick up return revisions)
-// add/remove iterables to front end of chain
-export const mapSyncToAsync = async function * (asyncFunction, syncIterable) {
-  for (const syncValue of syncIterable) {
-    yield await asyncFunction(syncValue)
+import { isSyncIterable } from './is.js'
+
+/**
+ * Periodically call asyncFunction, waiting no less than 'waitBetweenCalls' milliseconds
+ * after each call resolves before calling asyncFunction again.
+ *
+ * Backpressure is provided by the iterator, so asyncFunction can only be called as fast
+ * as the iterator processes data, regardless of the value of 'waitBetweenCalls'.
+ *
+ * Because of this, when the iterator stops, calls to asyncFunction will also stop.
+ *
+ * @param {AsyncFunction} asyncFunction - async function with no parameters
+ * @param {Number} waitBetweenCalls - milliseconds to wait after an asyncFunction call resolves,
+ * before calling asyncFunction again.
+ * @param {boolean} immediate - If true, make first asyncFunction call immediately, otherwise wait
+ * 'waitBetweenCalls' millisceonds before making first call. Defaults to true.
+ * @example
+ * // fast iterator example
+ * const poller = poll(async () => '42', 720)
+ * for await (const value of poller) {
+ *   console.log(value) // prints '42' once every 720ms
+ * }
+ * // Slow iterator example:
+ * const fastPoll = poll(async () => 'A', 100)
+ * // slowIterator only allows one value every 500ms
+ * const slowIterator = throttle(poller), 500)
+ * for await (const value of slowIterator) {
+ *   console.log(value) // prints 'A' once every 500ms, even though waitBetweenCalls is shorter
+ * }
+ * // Polling is stopped when iterator stops
+ * const limitedPolls = take(5, poll(async () => 'B', 420))
+ * for await (const value of limitedPolls) {
+ *   console.log(value) // prints 'B' 5 times, and only calls the async function 5 times
+ * }
+ */
+export const poll = async function * (asyncFunction, waitBetweenCalls, immediate = true) {
+  if (immediate !== true) {
+    await new Promise(resolve => setTimeout(() => resolve(), waitBetweenCalls))
+  }
+  while (true) {
+    yield await asyncFunction()
+    await new Promise(resolve => setTimeout(() => resolve(), waitBetweenCalls))
   }
 }
 
-class Cancelled extends Error {}
-
-// asyncIterable, which you can push promises (or anything?) onto at any time
-export class Queue {
-  constructor () {
-    this.keepGoing = true
-    this.inputResolve = null
-    this.inputReject = null
-    this.queue = new List()
-  }
-
-  stop () {
-    this.keepGoing = false
-    if (this.inputReject != null) {
-      this.inputReject(new Cancelled())
-      this.inputResolve = null
-      this.inputReject = null
+/**
+ * Merge the output of one or more async iterables into a single async iterable. Each
+ * async iterable is advanced as fast as possible, so that slow iterators do not hold
+ * up faster ones. Equal speed iterables are advanced at roughly the same pace.
+ *
+ * Backpressure is provided by the iterator. Iteration can be stopped by stopping iterator.
+ * @param  {...Iterable} iterables - any number of async iterables to be merged
+ */
+export const merge = async function * (...iterables) {
+  let states = iterables.map((iterable, index) => {
+    const id = index // can use initial index as unique id since states array will only shrink
+    const generator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+    return {
+      id,
+      generator,
+      promise: Promise.resolve(generator.next()).then(iterResult => ({ ...iterResult, id }))
     }
-  }
-
-  push (value) {
-    if (this.inputResolve) {
-      this.inputResolve(value)
-      this.inputResolve = null
-      this.inputReject = null
+  })
+  while (states.length > 0) {
+    const promises = states.map(state => state.promise)
+    const { value, done, id } = await Promise.race(promises)
+    if (done) {
+      states = states.filter(state => state.id !== id) // remove completed iterable
     } else {
-      this.queue.push(value)
-    }
-  }
-
-  async * [Symbol.asyncIterator] () {
-    while (this.keepGoing) {
-      if (this.queue.length > 0) {
-        yield this.queue.shift()
-      } else {
-        try {
-          yield await new Promise((resolve, reject) => { this.inputResolve = resolve; this.inputReject = reject })
-        } catch (error) {
-          if (!(error instanceof Cancelled)) throw error
-        } finally {
-          this.inputResolve = null
-          this.inputReject = null
-        }
+      yield value
+      const winnerIndex = states.findIndex(state => state.id === id)
+      const winner = states[winnerIndex]
+      // advance the iterable that won the race, leave the others untouched for next race
+      winner.promise = Promise.resolve(winner.generator.next()).then(iterResult => ({ ...iterResult, id }))
+      // Promise.race will pick first resolved in array. If a fast iterable is near the front,
+      // it could advance faster than a similar one at the back. So move winner to back.
+      const backIndex = states.length - 1
+      if (backIndex !== winnerIndex) {
+        states[winnerIndex] = states[backIndex]
+        states[backIndex] = winner
       }
     }
   }
 }
 
-export const race = async function * (...asyncIterables) {
-  // store state in a fixed size array so that index values don't change
-  const states = asyncIterables.map((iterable, index) => {
-    return {
-      iterable,
-      promise: iterable.next().then(iterResult => ({ ...iterResult, index })),
-      notDone: true
-    }
-  })
-  // filter state down to promises for Promise.race
-  let promises = states.filter(state => state.notDone).map(state => state.promise)
-  while (promises.length > 0) {
-    const { value, done, index } = await Promise.race(promises)
-    const winner = states[index]
-    if (done) {
-      winner.notDone = false
-    } else {
-      yield value
-      // advance the iterable that won the race, leave the others untouched for next race
-      winner.promise = winner.iterable.next().then(iterResult => ({ ...iterResult, index }))
-    }
-    promises = states.filter(state => state.notDone).map(state => state.promise)
-  }
-}
+// Split can go no faster than the slowest iterator, just like streams.
 
-export const ticks = async function * (n, period) {
-  for (let i = 0; i < n; i++) {
-    yield new Promise(resolve => setTimeout(() => resolve(i), period))
-  }
-}
-
-export const toAsync = async function * (iterable) {
-  for (const value of iterable) {
+/**
+ * Convert a synchronous iterable to an async iterable.
+ * Backpressure is automatically supplied by iterator.
+ * Stop conversion by stopping iterator.
+ *
+ * @param {Iterable} syncIterable to be converted to async iterable
+ * @example
+ * const asyncIterator = toAsync([0, 1, 2, 3])
+ */
+export const toAsync = async function * (syncIterable) {
+  for (const value of syncIterable) {
     yield value
   }
 }
