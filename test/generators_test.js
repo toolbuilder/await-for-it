@@ -1,14 +1,11 @@
 import tape from 'tape'
-import { merge, poll, toAsync } from '../src/generators.js'
-import { take, throttle } from '../src/transforms.js'
-import { toArray } from '../src/reducers.js'
-import { chainable } from 'iterablefu/src/chainable.js'
+import { chainable } from '../src/chainable.js'
 
-const toLongAsync = (period, iterable) => throttle(period, true, toAsync(iterable))
+const toLongAsync = (period, iterable) => chainable(iterable).throttle(period, true)
 
 tape('poll: slow iterator, fast asyncFunction', async test => {
   let count = 0
-  const output = await toArray(take(5, throttle(100, true, poll(async () => count++, 50))))
+  const output = await chainable.poll(async () => count++, 50).throttle(100, true).take(5).toArray()
   test.deepEqual(output, [0, 1, 2, 3, 4], 'output of each function call returned in order')
   test.deepEqual(count, 5, 'slow iterator controlled pace of polling')
   test.end()
@@ -16,7 +13,7 @@ tape('poll: slow iterator, fast asyncFunction', async test => {
 
 tape('poll: fast iterator, fast asyncFunction', async test => {
   let count = 0
-  const output = await toArray(take(5, poll(async () => count++, 50)))
+  const output = await chainable.poll(async () => count++, 50).take(5).toArray()
   test.deepEqual(output, [0, 1, 2, 3, 4], 'output of each function call returned in order')
   test.deepEqual(count, 5, 'waitBetweenCalls controlled pace of polling')
   test.end()
@@ -27,7 +24,7 @@ tape('poll: waits between calls', async test => {
   const lowerBound = waitTime - 20
   const upperBound = waitTime + 20
   const startTime = Date.now()
-  const output = await toArray(take(5, poll(async () => Date.now(), waitTime)))
+  const output = await chainable.poll(async () => Date.now(), waitTime).take(5).toArray()
   const timeDiffs = []
   let previousTime = output[0]
   for (const time of output.slice(1)) {
@@ -45,46 +42,43 @@ tape('poll: can wait before first call', async test => {
   const lowerBound = waitTime - 20
   const upperBound = waitTime + 20
   const startTime = Date.now()
-  const output = await toArray(take(2, poll(async () => Date.now(), waitTime, false)))
+  const output = await chainable.poll(async () => Date.now(), waitTime, false).take(2).toArray()
   const timeToFirstCall = output[0] - startTime
   test.true(timeToFirstCall > lowerBound && timeToFirstCall < upperBound, 'polling waited to start')
   test.end()
 })
 
 const mergeTest = async (iterators, asyncIterables, test) => {
-  const interleaved = await toArray(merge(...asyncIterables))
+  const interleaved = await chainable.merge(...asyncIterables).toArray()
   // separate elements of interleaved back out into two arrays by letter case
   const actual = [interleaved.filter(s => s === s.toUpperCase()), interleaved.filter(s => s !== s.toUpperCase())]
   test.deepEqual(actual, iterators, 'both iterators were exhausted in order')
-  const iterator = iterators[0]
-  const matching = chainable(interleaved).take(iterator.length).filter(x => iterator.find(y => y === x) === x).toArray()
-  const isInterleaved = matching.length > 0 && matching.length < iterator.length
+  const interleavedSlice = interleaved.slice(0, iterators[0].length)
+  const separated = [interleavedSlice.filter(s => s === s.toUpperCase()), interleavedSlice.filter(s => s !== s.toUpperCase())]
+  // test that first part of interleaved is neither all upperCase or all lowerCase
+  const isInterleaved = separated[0].length < interleavedSlice.length && separated[1].length < interleavedSlice.length
   test.true(isInterleaved, 'elements are interleaved, so not simply concatenating sequences')
 }
 
 tape('merge: fast iterables', async test => {
   const iterators = [['A', 'B', 'C', 'D'], ['h', 'i', 'j', 'k', 'l']]
-  const asyncIterables = [toAsync(iterators[0]), toAsync(iterators[1])]
+  const asyncIterables = [chainable(iterators[0]), chainable(iterators[1])]
   await mergeTest(iterators, asyncIterables, test)
   test.end()
 })
 
 tape('merge: slow iterables', async test => {
   const iterators = [['A', 'B', 'C', 'D'], ['h', 'i', 'j', 'k', 'l']]
-  const asyncIterators = [toLongAsync(50, iterators[0]), toLongAsync(80, iterators[1])]
-  await mergeTest(iterators, asyncIterators, test)
+  const asyncIterables = [toLongAsync(50, iterators[0]), toLongAsync(80, iterators[1])]
+  await mergeTest(iterators, asyncIterables, test)
   test.end()
 })
 
 tape('merge: async and sync iterables', async test => {
   const iterators = [['A', 'B', 'C', 'D'], ['h', 'i', 'j', 'k', 'l']]
-  const asyncIterables = [iterators[0], toAsync(iterators[1])]
+  // if it was throttle(50, false), the first value, 'h', would be delayed
+  // and all of iterator[0] would come out first - mergeTest would then fail.
+  const asyncIterables = [iterators[0], chainable(iterators[1]).throttle(50, true)]
   await mergeTest(iterators, asyncIterables, test)
-  test.end()
-})
-
-tape('toAsync', async test => {
-  const output = await toArray(toAsync([0, 1, 2, 3, 4]))
-  test.deepEqual(output, [0, 1, 2, 3, 4], 'toAsync mapped sync iterable to async')
   test.end()
 })

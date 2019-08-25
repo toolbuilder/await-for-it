@@ -16,7 +16,7 @@ export const makeChainableClass = (generators, transforms, reducers) => {
       this.chainedAsyncIterable = asyncIterable
     }
 
-    * [Symbol.asyncIterator] () {
+    async * [Symbol.asyncIterator] () {
       yield * this.chainedAsyncIterable
     }
   }

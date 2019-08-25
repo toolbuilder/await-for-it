@@ -82,20 +82,3 @@ export const merge = async function * (...iterables) {
     }
   }
 }
-
-// Split can go no faster than the slowest iterator, just like streams.
-
-/**
- * Convert a synchronous iterable to an async iterable.
- * Backpressure is automatically supplied by iterator.
- * Stop conversion by stopping iterator.
- *
- * @param {Iterable} syncIterable to be converted to async iterable
- * @example
- * const asyncIterator = toAsync([0, 1, 2, 3])
- */
-export const toAsync = async function * (syncIterable) {
-  for (const value of syncIterable) {
-    yield value
-  }
-}

@@ -320,14 +320,14 @@ export const map = async function * (fn, iterable) {
  * @returns {AsyncGenerator} for the mapped sequence
  * @example
  * const fn = async function * (iterable) {
-  *   for await (let x of iterable) {
-  *     yield x * x
-  *   }
-  * }
-  * const a = mapWith(fn, [0, 1, 2, 3])
-  * console.log(await toArray(a)) // prints [0, 1, 4, 9]
-  */
-export const mapWith = async function * (generatorFunction, iterable) {
+ *   for await (let x of iterable) {
+ *     yield x * x
+ *   }
+ * }
+ * const a = mapWith(fn, [0, 1, 2, 3])
+ * console.log(await toArray(a)) // prints [0, 1, 4, 9]
+ */
+export const mapWith = function (generatorFunction, iterable) {
   return generatorFunction(iterable)
 }
 
