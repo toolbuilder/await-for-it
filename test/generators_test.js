@@ -3,6 +3,12 @@ import { chainable } from '../src/chainable.js'
 
 const toLongAsync = (period, iterable) => chainable(iterable).throttle(period, true)
 
+tape('from', async test => {
+  const output = await chainable.from([0, 1, 2, 3, 4]).toArray()
+  test.deepEqual(output, [0, 1, 2, 3, 4], 'output matches input iterable')
+  test.end()
+})
+
 tape('poll: slow iterator, fast asyncFunction', async test => {
   let count = 0
   const output = await chainable.poll(async () => count++, 50).throttle(100, true).take(5).toArray()

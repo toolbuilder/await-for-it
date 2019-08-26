@@ -198,6 +198,20 @@ tape('mapWith', async test => {
   test.end()
 })
 
+tape('nth', async test => {
+  let output = await chainable([0, 1, 2, 3, 4]).chunk(2, 100).nth(0).toArray()
+  test.deepEqual(output, [0, 2, 4], 'nth elements were picked')
+  output = await chainable([0, 1, 2, 3, 4, 5]).chunk(2, 100).nth(-1).toArray()
+  test.deepEqual(output, [1, 3, 5], 'negative indices work correctly')
+  test.end()
+})
+
+tape('pluck', async test => {
+  const output = await chainable([{ a: 1, b: 2 }, { a: 3, b: 4 }]).pluck('a').toArray()
+  test.deepEqual(output, [1, 3], 'correct values were plucked')
+  test.end()
+})
+
 tape('reject', async test => {
   const isEvenNumber = x => x % 2 === 0
 
@@ -252,5 +266,13 @@ tape('throttle: first value delayed', async test => {
   const output = await chainable([0, 1, 2, 3, 4]).throttle(waitTime, false).map(x => Date.now()).toArray()
   const delay = output[0] - startTime
   test.true(lowerBound < delay && delay < upperBound, 'first value was delayed by waitTime')
+  test.end()
+})
+
+tape('tap', async test => {
+  const output = []
+  const output2 = await chainable([0, 1, 2, 3, 4]).tap(x => output.push(2 * x)).toArray()
+  test.deepEqual(output, [0, 2, 4, 6, 8], 'tap function is called in order with iterable values')
+  test.deepEqual(output2, [0, 1, 2, 3, 4], 'output is unaffected by tap function')
   test.end()
 })

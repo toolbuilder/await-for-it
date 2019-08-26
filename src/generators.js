@@ -1,46 +1,13 @@
 import { isSyncIterable } from './is.js'
 
 /**
- * Periodically call asyncFunction, waiting no less than 'waitBetweenCalls' milliseconds
- * after each call resolves before calling asyncFunction again.
+ * This function exists solely so that the generated ChainableIterable class has a static constructor.
  *
- * Backpressure is provided by the iterator, so asyncFunction can only be called as fast
- * as the iterator processes data, regardless of the value of 'waitBetweenCalls'.
- *
- * Because of this, when the iterator stops, calls to asyncFunction will also stop.
- *
- * @param {AsyncFunction} asyncFunction - async function with no parameters
- * @param {Number} waitBetweenCalls - milliseconds to wait after an asyncFunction call resolves,
- * before calling asyncFunction again.
- * @param {boolean} immediate - If true, make first asyncFunction call immediately, otherwise wait
- * 'waitBetweenCalls' millisceonds before making first call. Defaults to true.
- * @example
- * // fast iterator example
- * const poller = poll(async () => '42', 720)
- * for await (const value of poller) {
- *   console.log(value) // prints '42' once every 720ms
- * }
- * // Slow iterator example:
- * const fastPoll = poll(async () => 'A', 100)
- * // slowIterator only allows one value every 500ms
- * const slowIterator = throttle(poller), 500)
- * for await (const value of slowIterator) {
- *   console.log(value) // prints 'A' once every 500ms, even though waitBetweenCalls is shorter
- * }
- * // Polling is stopped when iterator stops
- * const limitedPolls = take(5, poll(async () => 'B', 420))
- * for await (const value of limitedPolls) {
- *   console.log(value) // prints 'B' 5 times, and only calls the async function 5 times
- * }
+ * @param {AsyncIterable|Iterable} iterable - input iterable
+ * @returns {AsyncIterable|Iterable} - the input iterable
  */
-export const poll = async function * (asyncFunction, waitBetweenCalls, immediate = true) {
-  if (immediate !== true) {
-    await new Promise(resolve => setTimeout(() => resolve(), waitBetweenCalls))
-  }
-  while (true) {
-    yield await asyncFunction()
-    await new Promise(resolve => setTimeout(() => resolve(), waitBetweenCalls))
-  }
+export const from = (iterable) => {
+  return iterable
 }
 
 /**
@@ -80,5 +47,49 @@ export const merge = async function * (...iterables) {
         states[backIndex] = winner
       }
     }
+  }
+}
+
+/**
+ * Periodically call asyncFunction, waiting no less than 'waitBetweenCalls' milliseconds
+ * after each call resolves before calling asyncFunction again.
+ *
+ * Backpressure is provided by the iterating code, so asyncFunction can only be called as fast
+ * as the iterating code processes data, regardless of the value of 'waitBetweenCalls'.
+ *
+ * Because of this, when the iterating code stops, calls to asyncFunction will also stop.
+ *
+ * @param {AsyncFunction} asyncFunction - async function with no parameters
+ * @param {Number} waitBetweenCalls - milliseconds to wait after an asyncFunction call resolves,
+ * before calling asyncFunction again.
+ * @param {boolean} immediate - If true, make first asyncFunction call immediately, otherwise wait
+ * 'waitBetweenCalls' millisceonds before making first call. Defaults to true.
+ * @returns {AsyncGenerator} - provides the stream of poll results
+ * @example
+ * // faster than poll iterating code example
+ * const poller = poll(async () => '42', 720)
+ * for await (const value of poller) {
+ *   console.log(value) // prints '42' once every 720ms
+ * }
+ * // Slower than poll iterating code example:
+ * const fastPoll = poll(async () => 'A', 100)
+ * // slowIterator only allows one value every 500ms
+ * const slowIterator = throttle(poller), 500)
+ * for await (const value of slowIterator) {
+ *   console.log(value) // prints 'A' once every 500ms, even though waitBetweenCalls is shorter
+ * }
+ * // Polling is stopped when iterating code stops
+ * const limitedPolls = take(5, poll(async () => 'B', 420))
+ * for await (const value of limitedPolls) {
+ *   console.log(value) // prints 'B' 5 times, and only calls the async function 5 times
+ * }
+ */
+export const poll = async function * (asyncFunction, waitBetweenCalls, immediate = true) {
+  if (immediate !== true) {
+    await new Promise(resolve => setTimeout(() => resolve(), waitBetweenCalls))
+  }
+  while (true) {
+    yield await asyncFunction()
+    await new Promise(resolve => setTimeout(() => resolve(), waitBetweenCalls))
   }
 }

@@ -117,6 +117,141 @@ export const chunk = async function * (n, timeout, iterable) {
 }
 
 /**
+ * Keeps item from input sequence when fn(item) returns truthy. Remove items from input sequence when
+ * fn(item) returns !truthy.
+ *
+ * @param {Function} fn - synchronous fn(item) returns truthy when item should be removed
+ * @param {AsyncIterable|Iterable} iterable - the sequence to filter
+ * @return {AsyncGenerator} for the filtered sequence
+ * @example
+ * const isEvenNumber = x => x % 2 === 0
+ * const a = filter(isEvenNumber, [0, 1, 2, 3, 4, 5, 6])
+ * console.log(await toArray(a)) // prints even numbers [0, 2, 4, 6]
+ */
+export const filter = async function * (fn, iterable) {
+  for await (const value of iterable) {
+    if (fn(value) === true) {
+      yield value
+    }
+  }
+}
+
+// Common function for flatten and flattenRecursive to determine if a value should be flattened
+const shouldIterate = (value) => !isString(value) && (isSyncIterable(value) || isAsyncIterable(value))
+
+/**
+ * Flattens a sequence of items one level deep. It does not flatten strings, even
+ * though they are iterable. Can flatten async and sync iterables within the provided
+ * iterable.
+ *
+ * @param {AsyncIterable|Iterable} iterable - the iterable sequence to flatten
+ * @returns {AsyncGenerator} for the flattened sequence
+ * @example
+ * const a = flatten([[0, 1], [2, 3], toAsync([4, 5]), [6]])
+ * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4, 5, 6]
+ */
+export const flatten = async function * (iterable) {
+  for await (const value of iterable) {
+    if (shouldIterate(value)) {
+      yield * value
+    } else {
+      yield value
+    }
+  }
+}
+
+/**
+ * Flattens a sequence by recursively returning items from each iterable in the sequence.
+ * Does not flatten strings even though they are iterable. Can flatten combinations of
+ * async and sync iterables within the provided iterable.
+ *
+ * @param {AsyncIterable|Iterable} iterable - the sequence to flatten
+ * @returns {AsyncGenerator} for the flattened sequence
+ * @example
+ * const input = [0, [1, 2, 3], [[4, 5], [[toAsync([6, 7])], [8, 9], 10]], 11, 12]
+ * const a = flattenRecursive(input)
+ * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+ */
+export const flattenRecursive = async function * (iterable) {
+  for await (const value of iterable) {
+    if (shouldIterate(value)) {
+      yield * flattenRecursive(value)
+    } else {
+      yield value
+    }
+  }
+}
+
+/**
+ * Generates a sequence of items by calling fn(item) for each item of the input iterable.
+ *
+ * @param {AsyncFunction|Function} fn - fn(item) returns the output item
+ * @param {AsyncIterable|Iterable} iterable - the sequence to map
+ * @returns {AsyncGenerator} for the mapped sequence
+ * @example
+ * const a = map(x => 2 * x, [0, 1, 2, 3])
+ * console.log(await toArray(a)) // prints [0, 2, 4, 6]
+ */
+export const map = async function * (fn, iterable) {
+  for await (const value of iterable) {
+    yield fn(value)
+  }
+}
+
+/**
+ * Map the input sequence to the output sequence with an async generator that maps one iterator to another.
+ *
+ * This method exists solely so that ChainableIterable supports chaining for an arbitrary generator function.
+ *
+ * @param {AsyncGeneratorFunction} generatorFunction - a function that returns an async iterable object,
+ * and takes an async iterable as a parameter.
+ * @param {AsyncIterable|Iterable} iterable - the input sequence
+ * @returns {AsyncGenerator} for the mapped sequence
+ * @example
+ * const fn = async function * (iterable) {
+ *   for await (let x of iterable) {
+ *     yield x * x
+ *   }
+ * }
+ * const a = mapWith(fn, [0, 1, 2, 3])
+ * console.log(await toArray(a)) // prints [0, 1, 4, 9]
+ */
+export const mapWith = function (generatorFunction, iterable) {
+  return generatorFunction(iterable)
+}
+
+/**
+ * Given a sequence of Arrays, output the nth element of each array as a sequence.
+ *
+ * @param {Number} index - the index of the Array to output. Negative index values
+ * are ok. The index of the last element is -1.
+ * @param {AsyncIterable|Iterable} iterable - the iterable to process
+ * @returns {AsyncGenerator} for the nth elements
+ * @example
+ * const input = [[0, 1], [2, 3], [4, 5]]
+ * const a = nth(1, input)
+ * console.log(await toArray(a)) // prints [1, 3, 5]
+ */
+export const nth = (index, iterable) => {
+  return map(x => (index < 0) ? x[x.length + index] : x[index], iterable)
+}
+
+/**
+ * Given a sequence of Objects, output the specified property of each Object as a sequence.
+ *
+ * @param {string} propertyname - the property to extract from each Object
+ * @param {AsyncIterable|Iterable} iterable - the input sequence of Objects
+ * @returns {AsyncGenerator} for the plucked items
+ * @example
+ * const input = [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}, {'a': 5, 'b': 6}]
+ * const a = pluck('a', input)
+ * console.log(await toArray(a))) // prints [1, 3, 5]
+ */
+export const pluck = (propertyName, iterable) => {
+  return map(x => x[propertyName], iterable)
+}
+
+/**
  * Execute async functions provided by input iterable. Returns results as they resolve, with
  * no more than maxPoolSize promises pending at any time. Results may be out of order with
  * respect to the input order.
@@ -228,110 +363,6 @@ export const pool = async function * (maxPoolSize, iterable) {
 }
 
 /**
- * Keeps item from input sequence when fn(item) returns truthy. Remove items from input sequence when
- * fn(item) returns !truthy.
- *
- * @param {Function} fn - synchronous fn(item) returns truthy when item should be removed
- * @param {AsyncIterable|Iterable} iterable - the sequence to filter
- * @return {AsyncGenerator} for the filtered sequence
- * @example
- * const isEvenNumber = x => x % 2 === 0
- * const a = filter(isEvenNumber, [0, 1, 2, 3, 4, 5, 6])
- * console.log(await toArray(a)) // prints even numbers [0, 2, 4, 6]
- */
-export const filter = async function * (fn, iterable) {
-  for await (const value of iterable) {
-    if (fn(value) === true) {
-      yield value
-    }
-  }
-}
-
-// Common function for flatten and flattenRecursive to determine if a value should be flattened
-const shouldIterate = (value) => !isString(value) && (isSyncIterable(value) || isAsyncIterable(value))
-
-/**
- * Flattens a sequence of items one level deep. It does not flatten strings, even
- * though they are iterable. Can flatten async and sync iterables within the provided
- * iterable.
- *
- * @param {AsyncIterable|Iterable} iterable - the iterable sequence to flatten
- * @returns {AsyncGenerator} for the flattened sequence
- * @example
- * const a = flatten([[0, 1], [2, 3], toAsync([4, 5]), [6]])
- * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4, 5, 6]
- */
-export const flatten = async function * (iterable) {
-  for await (const value of iterable) {
-    if (shouldIterate(value)) {
-      yield * value
-    } else {
-      yield value
-    }
-  }
-}
-
-/**
- * Flattens a sequence by recursively returning items from each iterable in the sequence.
- * Does not flatten strings even though they are iterable. Can flatten combinations of
- * async and sync iterables within the provided iterable.
- *
- * @param {AsyncIterable|Iterable} iterable - the sequence to flatten
- * @returns {AsyncGenerator} for the flattened sequence
- * @example
- * const input = [0, [1, 2, 3], [[4, 5], [[toAsync([6, 7])], [8, 9], 10]], 11, 12]
- * const a = flattenRecursive(input)
- * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
- */
-export const flattenRecursive = async function * (iterable) {
-  for await (const value of iterable) {
-    if (shouldIterate(value)) {
-      yield * flattenRecursive(value)
-    } else {
-      yield value
-    }
-  }
-}
-
-/**
- * Generates a sequence of items by calling fn(item) for each item of the input iterable.
- *
- * @param {AsyncFunction|Function} fn - fn(item) returns the output item
- * @param {AsyncIterable|Iterable} iterable - the sequence to map
- * @returns {AsyncGenerator} for the mapped sequence
- * @example
- * const a = map(x => 2 * x, [0, 1, 2, 3])
- * console.log(await toArray(a)) // prints [0, 2, 4, 6]
- */
-export const map = async function * (fn, iterable) {
-  for await (const value of iterable) {
-    yield fn(value)
-  }
-}
-
-/**
- * Map the input sequence to the output sequence with a generator that maps one iterator to another.
- *
- * This method exists solely so that ChainableIterable supports chaining for an arbitrary generator function.
- *
- * @param {AsyncGeneratorFunction} generatorFunction - a function that returns an iterable object, and takes an iterable as a parameter.
- * Typically, this will be a generator function.
- * @param {AsyncIterable|Iterable} iterable - the input sequence
- * @returns {AsyncGenerator} for the mapped sequence
- * @example
- * const fn = async function * (iterable) {
- *   for await (let x of iterable) {
- *     yield x * x
- *   }
- * }
- * const a = mapWith(fn, [0, 1, 2, 3])
- * console.log(await toArray(a)) // prints [0, 1, 4, 9]
- */
-export const mapWith = function (generatorFunction, iterable) {
-  return generatorFunction(iterable)
-}
-
-/**
  * Reject items when fn(item) returns truthy.
  *
  * @param {Function} fn - synchronous fn(item) returns truthy when item should be removed from output sequence
@@ -364,8 +395,6 @@ export const take = async function * (n, iterable) {
   }
 }
 
-// TODO: Stoppable - as a convenience, even though iterator controls usually
-
 /**
  * Throttle an async iterator to a maximum iteration speed.
  *
@@ -386,4 +415,18 @@ export const throttle = async function * (waitBetweenValues, immediate, iterable
     yield value
     await new Promise(resolve => setTimeout(() => resolve(), waitBetweenValues))
   }
+}
+
+/**
+ * Pass the input sequence to the output sequence without change, but execute `fn(item)` for each
+ * item in the sequence.
+ *
+ * @param {Function} fn - synchronous function, `fn(item)` is called for each item in the sequence
+ * @param {AsyncIterable|Iterable} iterable - the input sequence
+ * @returns {AsyncGenerator} that is equivalent to the input iterable
+ * @example
+ * const a = tap(console.log, [1, 2, 3, 4, 5])
+ */
+export const tap = (fn, iterable) => {
+  return map(x => { fn(x); return x }, iterable)
 }
