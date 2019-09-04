@@ -13,7 +13,7 @@ const makeTestRunner = (transformName, test) => {
 
 tape('arrayToObject', async test => {
   const tests = [
-    // format: [testName, inputIterable, curried transform, expectedOutput]
+    // format: [testName, inputIterable, input parameter array, expectedOutput]
     [
       'converts sequence of arrays to sequence of objects',
       [['George', 22], ['Betty', 18], ['Grandpa', 89], ['Sally', 42]],
@@ -52,63 +52,49 @@ tape('arrayToObject', async test => {
   test.end()
 })
 
-const fastSlowFast = async function * () {
-  let i = 0
-  for (; i < 5; i++) {
-    yield i
-  }
-  for (; i < 6; i++) {
-    yield await new Promise(resolve => setTimeout(() => resolve(i), 250))
-  }
-  for (; i < 10; i++) {
-    yield i
-  }
-}
-
-tape('chunk', async test => {
-  let output = await chainable([0, 1, 2, 3, 4, 5, 6, 7, 8]).chunk(3, 100).toArray()
-  test.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6, 7, 8]], 'can generate all full length chunks')
-
-  output = await chainable([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).chunk(3, 100).toArray()
-  test.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10]], 'can generate partial chunks at end')
-
-  output = await chainable(fastSlowFast()).chunk(3, 100).toArray()
-  // notice that timeout only runs when there is something in the buffer. That's why even with a long wait
-  // between 4 and 5, we don't get an empty buffer where [5, 6, 7] is.
-  test.deepEqual(output, [[0, 1, 2], [3, 4], [5, 6, 7], [8, 9]], 'can yield partial chunk if it times out')
-
-  output = await chainable([0, 1, 2, 3, 4, 5, 6]).chunk(3, 100).toArray()
-  test.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6]], 'works with sync iterables too')
-
-  try {
-    await chainable([0, 1, 2]).chunk(3, []).toArray()
-  } catch (error) {
-    test.true(error instanceof RangeError, 'did throw range error with incorrect parameter')
-    test.end()
-  }
-})
-
-class TestError extends Error {}
-
-tape('chunk: passes iterable exceptions to iterator', async test => {
-  const throwingIterable = async function * () {
-    yield 1
-    yield new Promise(resolve => setTimeout(() => resolve(2), 100))
-    throw new TestError('oops!')
-  }
-  try {
-    await chainable(throwingIterable()).chunk(3, 100).toArray()
-  } catch (error) {
-    test.true(error instanceof TestError, 'chunk rethrows the error from throwingIterable')
-    test.end()
-  }
+tape('diff', async test => {
+  const tests = [
+    // format: [testName, inputIterable, input parameter array, expectedOutput]
+    [
+      'diff works with synchronous iterables',
+      [0, 1, 2, 3, 4],
+      [(p, n) => n - p],
+      [1, 1, 1, 1]
+    ],
+    [
+      'diff works with asynchronous iterables',
+      chainable([0, 1, 2, 3, 4]),
+      [(p, n) => n - p],
+      [1, 1, 1, 1]
+    ],
+    [
+      'diff works with async functions (previous two cases used sync functions)',
+      [0, 1, 2, 3, 4],
+      [async (p, n) => n - p],
+      [1, 1, 1, 1]
+    ],
+    [
+      'diff returns empty iterable if only one item in input iterable',
+      [0],
+      [(p, n) => { throw new Error('function should not be called') }],
+      []
+    ],
+    [
+      'diff returns empty iterable if input iterable is empty',
+      [],
+      [(p, n) => { throw new Error('function should not be called') }],
+      []
+    ]
+  ]
+  await chainable(tests).forEach(makeTestRunner('diff', test))
+  test.end()
 })
 
 tape('filter', async test => {
   const isEvenNumber = x => x % 2 === 0
 
   const tests = [
-    // format: [testName, inputIterable, curried transform, expectedOutput]
+    // format: [testName, inputIterable, input parameter array, expectedOutput]
     [
       'removes elements from sequence when function returns !truthy',
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -216,7 +202,7 @@ tape('reject', async test => {
   const isEvenNumber = x => x % 2 === 0
 
   const tests = [
-    // format: [testName, inputIterable, curried transform, expectedOutput]
+    // format: [testName, inputIterable, input parameter array, expectedOutput]
     [
       'removes elements when function returns truthy',
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],

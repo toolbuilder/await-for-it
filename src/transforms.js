@@ -1,8 +1,8 @@
 import { isString, isAsyncIterable, isSyncIterable } from './is.js'
 import { zipAll } from 'iterablefu/src/generators.js'
-import { map as syncMap } from 'iterablefu/src/transforms.js'
-import { List } from '@toolbuilder/list/src/list.js'
-import { isFiniteNumber } from '@toolbuilder/isnumber/src/isnumber.js'
+
+export { pool } from './pool.js'
+export { chunk } from './chunk.js'
 
 // Helper for arrayToObject. Matches property names to iterable values.
 const zipObject = (propertyNames, iterableValues) => {
@@ -36,84 +36,27 @@ export const arrayToObject = function (propertyNames, iterable) {
 }
 
 /**
- * Chunk every n items into an array, and output that array in the output sequence.
- * Chunks are yielded after `timeout` milliseconds even if not full, so that values
- * can be processed in a timely manner. Never yields empty chunks.
+ * Execute fn(previous, current) and yields the result for each pair.
+ * Would be useful for calculating time differences between timestamps.
  *
- * Backpressure is provided by the iterator when a chunk is yielded. Stopping the
- * iterator will stop chunking and the input iterable.
- *
- * @param {Number} n - size of arrays
- * @param {Number} timeout - number of milliseconds before yielding chunk if not full
- * @param {AsyncIterable|Iterable} iterable - the iterable to chunk
- * @returns {AsyncGenerator} - provides each chunk in order
+ * @param {AsyncFunction|Function} fn - fn(previous, current), yielding return value
+ * @param {AsyncIterable|Iterable} iterable - the input iterable
+ * @returns {AsyncGenerator} - if input has two or more items, output sequence
+ * is one shorter than input sequence. Otherwise, no items are output.
+ * @example
+ * const a = diff((n, m) => m - n, [0, 1, 2, 3, 4])
+ * console.log(await toArray(a)) // prints [1, 1, 1, 1]
  */
-export const chunk = async function * (n, timeout, iterable) {
-  // I've called this method incorrectly often enough to throw in some checks
-  if (!(isFiniteNumber(n) && n > -1)) throw new RangeError(`chunk parameter 'n' must be a positive number: ${n}`)
-  if (!(isFiniteNumber(timeout) && timeout > -1)) throw new RangeError(`chunk parameter 'timeout' must be a positive number: ${timeout}`)
-  if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) throw new RangeError(`chunk parameter 'iterable' must be iterable: ${iterable}`)
-
-  // state for chunking process
-  let buffer = [] // store values from input iterable while building chunk
-  let fillListException = null // store exception thrown in fillList for later throwing
-  let done = false // true if iteration of iterable is done
-  let timer = null // timeout timer reference so it can be cleared when a chunk is ready
-  let restartFillBuffer = null // Promise resolve function to restart fillBuffer
-  let restartMainLoop = null // Promise resolve function to restart output loop
-
-  // Runs promise resolve functions
-  const runFunction = (resolver) => {
-    if (resolver != null) {
-      resolver()
-      resolver = null
-    }
+export const diff = async function * (fn, iterable) {
+  const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+  let { value, done } = await iterator.next()
+  let previousValue = value;
+  ({ value, done } = await iterator.next())
+  while (!done) {
+    yield fn(previousValue, value)
+    previousValue = value;
+    ({ value, done } = await iterator.next())
   }
-
-  // state management functions
-  const onFirstPushOfChunk = () => { timer = setTimeout(() => onTimeout(), timeout) }
-  const onTimeout = () => { runFunction(restartMainLoop) }
-  const onChunkReady = () => { clearTimeout(timer); runFunction(restartMainLoop) }
-  const onDone = () => { done = true; clearTimeout(timer); runFunction(restartMainLoop) }
-  const onFillNextChunk = () => { if (!done) runFunction(restartFillBuffer) }
-
-  // asynchronously fill buffer, stop when full, restarted by main loop
-  const fillBuffer = async function () {
-    try {
-      for await (const value of iterable) {
-        buffer.push(value)
-        if (buffer.length === 1) onFirstPushOfChunk()
-        if (buffer.length === n) {
-          onChunkReady()
-          // Wait until iterator wanting chunks requests more data before filling buffer again.
-          // This allows iterator wanting chunks to provide back pressure to iterable
-          await new Promise((resolve, reject) => { restartFillBuffer = resolve })
-        }
-      }
-    } catch (error) {
-      fillListException = error // save error from iterable to rethrow in main loop
-    } finally {
-      onDone()
-    }
-  }
-
-  fillBuffer()
-  // main loop yields chunks from fillBuffer to iterator
-  while (!done || buffer.length > 0) { // eslint-disable-line
-    if (buffer.length === 0) {
-      // fillBuffer or timeout will resolve this promise to restart loop
-      await new Promise((resolve, reject) => { restartMainLoop = resolve })
-    }
-    if (buffer.length > 0) {
-      const chunk = buffer
-      buffer = []
-      yield chunk
-      onFillNextChunk()
-    }
-  }
-  // exception can be caught while awaiting, or yielding
-  // either way done === true now, so loop will end ensuring this check
-  if (fillListException != null) throw fillListException
 }
 
 /**
@@ -249,117 +192,6 @@ export const nth = (index, iterable) => {
  */
 export const pluck = (propertyName, iterable) => {
   return map(x => x[propertyName], iterable)
-}
-
-/**
- * Execute async functions provided by input iterable. Returns results as they resolve, with
- * no more than maxPoolSize promises pending at any time. Results may be out of order with
- * respect to the input order.
- *
- * The input iterable can yield anything. However, async and sync functions are
- * handled specially. Each function will be called, and the result placed into the pool to
- * be yielded when resolved. Promises will remain in the pool until they resolve, other
- * values will resolve immediately as you would expect.
- *
- * As always with async iterables, if the input iterable yields a Promise, pool must wait
- * until the Promise resolves before advancing the input iterable. This
- * defeats the purpose of pool. So if you need to yield a promise from input iterator,
- * wrap it with a function like so: `() => promise`. Pool will call the function to get
- * the Promise, then advance the input iterable to get the next value.
- *
- * The iterator provides backpressure, and can stop function calls by stopping iteration.
- *
- * @param {Number} maxPoolSize - maximum number of pending promises at any given time
- * @param {AsyncIterable|Iterable} iterable - input iterable
- * @returns {AsyncGenerator} - a generator that provides the output values as they occur
- * @throws - if iterable throws, or if any functions yielded by iterable throw, or if any
- * Promise in the pool rejects, the exception will be caught and rethrown by pool, so the
- * iterator can handle it. Once an exception is thrown, the iteration is complete.
- */
-export const pool = async function * (maxPoolSize, iterable) {
-  // NOTE:
-  // Each Promise pushed to 'awaiting' is tagged with an id like this:
-  // const id = idSequence++
-  // const promise = asyncFunction().then(result => ({ result, id }))
-  // Each node in 'awaiting' has the same id so we can find it given the id from the resolved value
-  let idSequence = 31
-  let exception = null // if fillAwaiting catches an exception, it stores it here
-  const awaiting = new List() // fill with { promise, id, pushed} objects
-  let isDone = false
-  let restartFillAwaiting = null // Promise resolve function called to restart filling 'awaiting'
-  let pushedPromiseToAwaiting = null // Promise resolve function called when a new Promise is in 'awaiting'
-
-  // awaiting has a Promise for pushedPromiseToAwaiting in it as well as async function promises.
-  // So when asyncIterable is not done:
-  // (awaiting.length - 1) === [...awaiting].filter(value => value.pushed === false).length
-  // when asyncIterable is done, fillAwaiting is done too, so awaiting won't overfill, and the difference between
-  // those two calculations is moot.
-  const awaitingCallCount = () => awaiting.length - 1
-
-  // call when something is pushed to 'awaiting'
-  const onPushedPromiseToAwaiting = () => {
-    if (pushedPromiseToAwaiting) {
-      // log('pushedPromiseToAwaiting')
-      pushedPromiseToAwaiting()
-      pushedPromiseToAwaiting = null
-    }
-  }
-
-  // Need a way to interrupt the Promise.race in the main iterator loop when something is pushed
-  // into awaiting. The onPushedPromiseToAwaiting function will resolve the promise below.
-  const makePushedPromise = () => {
-    const id = idSequence++
-    const promise = new Promise((resolve, reject) => { pushedPromiseToAwaiting = resolve }).then(result => ({ result, id }))
-    const pushed = true // to indicate that this promise is the onPushedPromiseToAwaiting interrupt
-    return { promise, id, pushed }
-  }
-
-  // This function pulls values from asyncIterable, calls the resulting function
-  // and pushes the returned Promise into 'awaiting' after tagging it with an id.
-  const fillAwaiting = async () => {
-    try {
-      for await (const value of iterable) {
-        const id = idSequence++
-        // support async functions, sync functions, and values
-        const promise = (typeof value === 'function')
-          ? Promise.resolve(value()).then(result => ({ result, id }))
-          : Promise.resolve(value).then(result => ({ result, id }))
-        const pushed = false
-        awaiting.push({ promise, id, pushed })
-        onPushedPromiseToAwaiting()
-        if (awaitingCallCount() >= maxPoolSize) {
-          await new Promise((resolve, reject) => { restartFillAwaiting = resolve })
-        }
-      }
-    } catch (error) {
-      exception = error
-    } finally {
-      isDone = true
-      onPushedPromiseToAwaiting() // if main loop is waiting, need to interrupt it
-    }
-  }
-
-  // Primary iterator loop is here.
-  fillAwaiting()
-  awaiting.push(makePushedPromise())
-  while (awaiting.length > 0 || !isDone) { // eslint-disable-line
-    const promises = syncMap(value => value.promise, awaiting)
-    const { result, id } = await Promise.race(promises)
-    if (exception != null) throw exception
-
-    const node = awaiting.find(value => value.id === id)
-    if (node.value.pushed === true) {
-      if (!isDone) awaiting.push(makePushedPromise())
-    } else {
-      yield result
-    }
-    awaiting.remove(node) // This is why List is being used instead of Array
-
-    if (awaitingCallCount() < maxPoolSize && restartFillAwaiting) {
-      restartFillAwaiting()
-      restartFillAwaiting = null
-    }
-  }
 }
 
 /**

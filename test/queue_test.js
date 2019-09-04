@@ -3,13 +3,25 @@ import { Queue, QueueFull, QueueDone } from '../src/queue.js'
 import { chainable } from '../src/chainable.js'
 import { RingBuffer } from '../src/ringbuffer.js'
 
-const fastIterator = (asyncIterable) => asyncIterable
+// Verifying that an alternate buffer will work.
+// Array is about 25x slower than RingBuffer for this task, who
+// knows what the Proxy adds to that - irrelevant compared to the waits
+const makeBuffer = (capacity) => {
+  const handler = {
+    get: function (target, prop, reciever) {
+      if (prop === 'capacity') return capacity
+      return Reflect.get(...arguments)
+    }
+  }
+  return new Proxy([], handler)
+}
+
 const callLater = (period, fn) => new Promise(resolve => setTimeout(() => resolve(fn()), period))
 const makeAndPush = (capacity, iterable) => {
   // Just testing that you can use an Array, even though it is about 25x slower for this purpose.
-  const ringBuffer = []
-  ringBuffer.capacity = capacity
-  const queue = new Queue(ringBuffer)
+  // const ringBuffer = []
+  // ringBuffer.capacity = capacity
+  const queue = new Queue(makeBuffer(capacity))
   for (const value of iterable) {
     queue.push(value)
   }
@@ -139,7 +151,7 @@ tape('queue: capacity reports maximum buffer length', test => {
 })
 
 tape('queue: push returns the queue length', test => {
-  const queue = new Queue(new RingBuffer(6))
+  const queue = new Queue()
   const actualLengths = []
   for (const value of [0, 1, 2, 3, 4]) {
     actualLengths.push(queue.push(value))

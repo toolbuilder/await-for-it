@@ -72,7 +72,7 @@ const mergeTest = async (iterators, asyncIterables, test) => {
   const interleavedSlice = interleaved.slice(0, iterators[0].length)
   const separated = [interleavedSlice.filter(s => s === s.toUpperCase()), interleavedSlice.filter(s => s !== s.toUpperCase())]
   // test that first part of interleaved is neither all upperCase or all lowerCase
-  const isInterleaved = separated[0].length < interleavedSlice.length && separated[1].length < interleavedSlice.length
+  const isInterleaved = separated.filter(a => a.length > 0).length === separated.length
   test.true(isInterleaved, 'elements are interleaved, so not simply concatenating sequences')
 }
 

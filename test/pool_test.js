@@ -123,6 +123,23 @@ tape('pool: async function rejection propagates to iterator', async test => {
   }
 })
 
+tape('pool: sync function throw propagates to iterator', async test => {
+  const theError = new TestError('sync function throws!')
+  const poolsize = 5
+  const tracker = { promises: 0, calls: 0, resolves: 0 }
+  const throwingAsyncIterable = async function * () {
+    yield makeFastAsyncFunction(tracker)
+    yield makeFastAsyncFunction(tracker)
+    yield () => { throw theError }
+  }
+  try {
+    await chainable(throwingAsyncIterable()).pool(poolsize).toArray()
+  } catch (error) {
+    test.is(error, theError, 'the thrown error was caught directly')
+    test.end()
+  }
+})
+
 tape('pool: values from async functions are yielded when resolved', async test => {
   const randomInt = (maxInt) => Math.floor(Math.random() * Math.floor(maxInt))
   const makeVariableAsyncFunction = (tracker) => {
