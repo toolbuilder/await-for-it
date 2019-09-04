@@ -59,7 +59,7 @@ export const merge = async function * (...iterables) {
  *
  * Because of this, when the iterating code stops, calls to asyncFunction will also stop.
  *
- * @param {AsyncFunction} asyncFunction - async function with no parameters
+ * @param {Function|AsyncFunction} fn - synchronous or async function that takes no parameters
  * @param {Number} waitBetweenCalls - milliseconds to wait after an asyncFunction call resolves,
  * before calling asyncFunction again.
  * @param {boolean} immediate - If true, make first asyncFunction call immediately, otherwise wait
@@ -84,12 +84,12 @@ export const merge = async function * (...iterables) {
  *   console.log(value) // prints 'B' 5 times, and only calls the async function 5 times
  * }
  */
-export const poll = async function * (asyncFunction, waitBetweenCalls, immediate = true) {
+export const poll = async function * (fn, waitBetweenCalls, immediate = true) {
   if (immediate !== true) {
     await new Promise(resolve => setTimeout(() => resolve(), waitBetweenCalls))
   }
   while (true) {
-    yield await asyncFunction()
+    yield await Promise.resolve(fn()) // convert sync functions to async, noop for async functions
     await new Promise(resolve => setTimeout(() => resolve(), waitBetweenCalls))
   }
 }

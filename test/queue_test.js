@@ -1,11 +1,15 @@
 import tape from 'tape'
 import { Queue, QueueFull, QueueDone } from '../src/queue.js'
 import { chainable } from '../src/chainable.js'
+import { RingBuffer } from '../src/ringbuffer.js'
 
 const fastIterator = (asyncIterable) => asyncIterable
 const callLater = (period, fn) => new Promise(resolve => setTimeout(() => resolve(fn()), period))
-const makeAndPush = (maxLength, iterable) => {
-  const queue = new Queue(maxLength)
+const makeAndPush = (capacity, iterable) => {
+  // Just testing that you can use an Array, even though it is about 25x slower for this purpose.
+  const ringBuffer = []
+  ringBuffer.capacity = capacity
+  const queue = new Queue(ringBuffer)
   for (const value of iterable) {
     queue.push(value)
   }
@@ -30,7 +34,7 @@ tape('queue: fast pushing and done called after [Symbol.asyncIterator] called, d
 })
 
 tape('queue: fast iterator waits for data from slow pushing', async test => {
-  const queue = new Queue(10)
+  const queue = new Queue(new RingBuffer(10))
   const waitBetweenPushes = 100
   for (const value of [0, 1, 2, 3, 4]) {
     callLater(waitBetweenPushes * value, () => {
@@ -45,7 +49,7 @@ tape('queue: fast iterator waits for data from slow pushing', async test => {
 })
 
 tape('queue: push on full queue throws', async test => {
-  const queue = new Queue(3)
+  const queue = new Queue(new RingBuffer(3))
   queue.push(0)
   queue.push(1)
   queue.push(2)
@@ -63,7 +67,7 @@ tape('queue: push on full queue throws', async test => {
 
 tape('queue: fill, drain, then refill', async test => {
   // Queue sized so that it must drain between fillIt calls, or throw QueueFull
-  const queue = new Queue(6)
+  const queue = new Queue(new RingBuffer(6))
   const fillIt = (array) => array.forEach((v, i) => { queue.push(v) })
   callLater(100, () => fillIt([0, 1, 2, 3, 4]))
   callLater(500, () => fillIt([5, 6, 7, 8, 9]))
@@ -74,7 +78,7 @@ tape('queue: fill, drain, then refill', async test => {
 })
 
 tape('queue: accepts iterables as values', async test => {
-  const queue = new Queue(6)
+  const queue = new Queue(new RingBuffer(6))
   callLater(100, () => queue.push([0, 1, 2, 3, 4]))
   callLater(200, () => queue.push([5, 6, 7, 8, 9]))
   callLater(300, () => queue.done())
@@ -84,7 +88,7 @@ tape('queue: accepts iterables as values', async test => {
 })
 
 tape('queue: pushing promises behaves as expected', async test => {
-  const queue = new Queue(6)
+  const queue = new Queue(new RingBuffer(6))
   queue.push(new Promise(resolve => setTimeout(() => resolve(0), 100)))
   queue.push(new Promise(resolve => setTimeout(() => resolve(1), 0)))
   queue.push(new Promise(resolve => setTimeout(() => resolve(2), 25)))
@@ -128,14 +132,14 @@ tape('queue: length reports Queue length', test => {
   test.end()
 })
 
-tape('queue: maxLength reports maximum Queue length', test => {
+tape('queue: capacity reports maximum buffer length', test => {
   const queue = makeAndPush(42, [])
-  test.deepEqual(queue.maxLength, 42, 'Queue.maxLength reports correct max length')
+  test.deepEqual(queue.capacity, 42, 'Queue.capacity reports correct max length')
   test.end()
 })
 
 tape('queue: push returns the queue length', test => {
-  const queue = new Queue(6)
+  const queue = new Queue(new RingBuffer(6))
   const actualLengths = []
   for (const value of [0, 1, 2, 3, 4]) {
     actualLengths.push(queue.push(value))

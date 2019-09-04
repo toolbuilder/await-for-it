@@ -1,4 +1,4 @@
-import { List } from '@toolbuilder/list/src/list.js'
+import { RingBuffer } from './ringbuffer.js'
 
 export class QueueDone extends Error {}
 export class QueueFull extends Error {}
@@ -14,26 +14,26 @@ export class Queue {
   /**
    * Create a Queue. Each instance is a Generator (both Iterable and Iterator).
    *
-   * @param {number} maxQueueSize - the maximum size of the queue
+   * @param {RingBuffer} buffer - object to use as buffer, needs push and shift methods (like Array),
+   * and length and capacity attributes. Array doesn't have capacity attribute.
    */
-  constructor (maxQueueSize = 100000) {
+  constructor (buffer = new RingBuffer(1000)) {
     this.keepGoing = true
-    this.pushedValue = null // resolve method from next() Promise
-    this.queue = new List() // store pushed values if pushing is faster than iterating
-    this.maxQueueSize = maxQueueSize // maximum number of queued values
+    this.onPushedValue = null // resolve method from next() Promise
+    this.buffer = buffer // store pushed values if pushing is faster than iterating
   }
 
   /**
    * Get the number of values currently in the queue.
    * @returns {number} - the number of values currently in the queue.
    */
-  get length () { return this.queue.length }
+  get length () { return this.buffer.length }
 
   /**
    * Get the maximum number of values that the queue can hold.
    * @returns {number} - the maximum number of values
    */
-  get maxLength () { return this.maxQueueSize }
+  get capacity () { return this.buffer.capacity }
 
   /**
    * Push a value to the async iterable. Values are queued if the
@@ -50,28 +50,28 @@ export class Queue {
    * to a pool (e.g `pool(10, queue)`).
    *
    * If push throws QueueFull, you can still push values once
-   * `queue.length < queue.maxLength` again.
+   * `queue.length < queue.capacity` again.
    *
    * Once the queue fills, backpressure is provided by the iterating code. Stopping
    * the iterating code will stop the queue from emptying.
    *
    * @param {any} value - to be pushed into iterable
    * @returns {number} - the number of values in the queue at the end of the call
-   * @throws {QueueFull} - if queue.length === queue.maxLength
+   * @throws {QueueFull} - if queue.length === queue.capacity
    * @throws {QueueDone} - if queue.done() was called previously
    */
   push (value) {
     if (!this.keepGoing) throw new QueueDone('Queue done, cannot push new values')
-    if (this.pushedValue) { // indicates iterator is blocked waiting for input
-      this.pushedValue(value)
-      this.pushedValue = null
+    if (this.onPushedValue) { // indicates iterator is blocked waiting for input
+      this.onPushedValue(value)
+      this.onPushedValue = null
     } else { // queue not empty, so can just append pushed value
-      if (this.queue.length >= this.maxQueueSize) {
-        throw new QueueFull(`Cannot push to Queue, maximum queue length of ${this.maxQueueSize} reached`)
+      if (this.buffer.length >= this.capacity) {
+        throw new QueueFull(`Cannot push to Queue, maximum queue length of ${this.capacity} reached`)
       }
-      this.queue.push(value)
+      this.buffer.push(value)
     }
-    return this.queue.length
+    return this.buffer.length
   }
 
   /**
@@ -79,14 +79,14 @@ export class Queue {
    * be provided to the iterator before completion.
    *
    * @param {boolean} emptyQueue - if true, empty the queue before ending,
-   * otherwise end immediately.
+   * otherwise discard any values in the queue, and end immediately.
    */
   done (emptyQueue = true) {
     this.keepGoing = false
-    if (emptyQueue === false) this.queue = new List()
-    if (this.pushedValue != null) {
-      this.pushedValue(new QueueDone('Queue stopped by user'))
-      this.pushedValue = null
+    if (emptyQueue === false) this.buffer = new RingBuffer(this.buffer.capacity)
+    if (this.onPushedValue != null) {
+      this.onPushedValue(new QueueDone('Queue stopped by user'))
+      this.onPushedValue = null
     }
   }
 
@@ -94,13 +94,13 @@ export class Queue {
    * Implements Iterator protocol to make Queue a Generator.
    */
   async next () {
-    // Check for queue.length is so that queue empties before iteration completes.
-    if (this.keepGoing || this.queue.length > 0) {
-      if (this.queue.length > 0) {
-        return Promise.resolve(this.queue.shift()).then(value => ({ value, done: false }))
+    // Check for buffer.length so that queue empties before iteration completes.
+    if (this.keepGoing || this.buffer.length > 0) {
+      if (this.buffer.length > 0) {
+        return Promise.resolve(this.buffer.shift()).then(value => ({ value, done: false }))
       } else {
         // Promise resolves when Queue.push or Queue.done is called
-        return new Promise((resolve) => { this.pushedValue = resolve })
+        return new Promise((resolve) => { this.onPushedValue = resolve })
           .then(value => {
             if (value instanceof QueueDone) return { done: true }
             return { value, done: false }

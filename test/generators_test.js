@@ -54,6 +54,16 @@ tape('poll: can wait before first call', async test => {
   test.end()
 })
 
+tape('poll works with synchronous functions', async test => {
+  let count = 0
+  const syncFunction = () => count++
+
+  const waitTime = 100
+  const output = await chainable.poll(syncFunction, waitTime).take(5).toArray()
+  test.deepEqual(output, [0, 1, 2, 3, 4], 'poll called synchronous function correctly')
+  test.end()
+})
+
 const mergeTest = async (iterators, asyncIterables, test) => {
   const interleaved = await chainable.merge(...asyncIterables).toArray()
   // separate elements of interleaved back out into two arrays by letter case
