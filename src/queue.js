@@ -1,4 +1,5 @@
 import { RingBuffer } from './ringbuffer.js'
+import { isFiniteNumber } from '@toolbuilder/isnumber/src/isnumber.js'
 
 export class QueueDone extends Error {}
 export class QueueFull extends Error {}
@@ -14,13 +15,17 @@ export class Queue {
   /**
    * Create a Queue. Each instance is a Generator (both Iterable and Iterator).
    *
-   * @param {RingBuffer} buffer - object to use as buffer, needs push and shift methods (like Array),
-   * and length and capacity attributes. Array doesn't have capacity attribute.
+   * @param {RingBuffer|Number} buffer - if buffer is a number, it specifies the size of the
+   * internal buffer. Otherwise buffer is treated as the buffer itself.
    */
   constructor (buffer = new RingBuffer(1000)) {
     this.keepGoing = true
     this.onPushedValue = null // resolve method from next() Promise
-    this.buffer = buffer // store pushed values if pushing is faster than iterating
+    if (isFiniteNumber(buffer)) {
+      this.buffer = new RingBuffer(buffer)
+    } else {
+      this.buffer = buffer
+    }
   }
 
   /**

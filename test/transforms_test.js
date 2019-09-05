@@ -1,4 +1,5 @@
 import tape from 'tape'
+import { range } from 'iterablefu/src/generators.js'
 import { chainable } from '../src/chainable.js'
 
 const randomInt = (maxInt) => Math.floor(Math.random() * Math.floor(maxInt))
@@ -225,33 +226,55 @@ tape('take', async test => {
   test.end()
 })
 
-tape('throttle: immediate', async test => {
-  const waitTime = 100
-  const lowerBound = waitTime - 20
-  const upperBound = waitTime + 20
-  const startTime = Date.now()
-  const output = await chainable([0, 1, 2, 3, 4]).throttle(waitTime, true).map(x => Date.now()).toArray()
-  test.true(startTime - output[0] < 20, 'first value was yielded immediately')
-  const timeDifferences = []
-  let previousTime = output[0]
-  for (const time of output.slice(1)) {
-    timeDifferences.push(time - previousTime)
-    previousTime = time
-  }
-  const inBoundsCount = timeDifferences.filter(d => lowerBound < d && d < upperBound).length
-  // The fact that all timeDifferences are positive indicates that output was in order
-  test.equal(inBoundsCount, 4, 'all values were throttled within the time bounds')
+const waitTimeGood = (n, reference) => (n > reference - 15) && (n < reference + 15)
+
+tape('throttle: passes all values without change', async test => {
+  const throttlePeriod = 50
+  const items = 10
+  const output = await chainable(range(items))
+    .throttle(throttlePeriod, 0)
+    .toArray()
+  test.deepEqual(output, [...range(items)], 'throttle passes all items unchanged')
   test.end()
 })
 
-tape('throttle: first value delayed', async test => {
-  const waitTime = 100
-  const lowerBound = waitTime - 20
-  const upperBound = waitTime + 20
+tape('throttle: restricts rate of iteration', async test => {
+  const throttlePeriod = 100
+  const items = 5
+  const output = await chainable(range(items))
+    .throttle(throttlePeriod, 0)
+    .map(n => Date.now())
+    .diff((previousTime, now) => now - previousTime)
+    .filter(duration => waitTimeGood(duration, throttlePeriod))
+    .toArray()
+  test.equals(output.length, items - 1, 'throttle restricted rate of iteration')
+  test.end()
+})
+
+tape('throttle: slow iteration restricts rate of iteration', async test => {
+  const throttlePeriod = 50
+  const items = 10
+  const output = await chainable(range(items))
+    .throttle(throttlePeriod, 0) // <-- this is the one under test
+    .map(n => Date.now())
+    .throttle(2 * throttlePeriod, 0) // this one is restricting iteration rate
+    .diff((previousTime, now) => now - previousTime)
+    .filter(duration => waitTimeGood(duration, 2 * throttlePeriod))
+    .toArray()
+  // if throttle not implemented correctly, you'll see 3 * throttlePeriod delays
+  test.equals(output.length, items - 1, 'iteration restricted the rate of throttle')
+  test.end()
+})
+
+tape('throttle: will wait for initial wait period before yielding first item', async test => {
+  const throttlePeriod = 50
+  const initialWait = 100
   const startTime = Date.now()
-  const output = await chainable([0, 1, 2, 3, 4]).throttle(waitTime, false).map(x => Date.now()).toArray()
-  const delay = output[0] - startTime
-  test.true(lowerBound < delay && delay < upperBound, 'first value was delayed by waitTime')
+  const output = await chainable([0, 1, 2, 3])
+    .throttle(throttlePeriod, initialWait)
+    .map(n => Date.now())
+    .toArray()
+  test.true(waitTimeGood(output[0] - startTime, 100), 'throttle waiting initial wait time')
   test.end()
 })
 

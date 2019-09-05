@@ -230,22 +230,25 @@ export const take = async function * (n, iterable) {
 /**
  * Throttle an async iterator to a maximum iteration speed.
  *
- * @param {Number} waitBetweenValues - milliseconds to wait between yielding each value
- * @param {boolean} immediate - true indicates that first value should be yielded immediately,
+ * @param {Number} period - milliseconds to wait between yielding each value
+ * @param {Number} initialWait - milliseconds before yielding first value
  * @param {AsyncIterable|Iterable} iterable - the async iterable to throttle
  * @returns {AsyncGenerator} - the throttled sequence of values
- * otherwise the first value is yielded after waitBetweenValues milliseconds.
  * @example
- * const a = throttle(100, true, [0, 1, 2, 3, 4])
+ * const a = throttle(100, 0, [0, 1, 2, 3, 4])
  * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4] with 100ms wait after each element
  */
-export const throttle = async function * (waitBetweenValues, immediate, iterable) {
-  if (immediate !== true) {
-    await new Promise(resolve => setTimeout(() => resolve(), waitBetweenValues))
+export const throttle = async function * (period, initialWait, iterable) {
+  if (initialWait !== 0) {
+    await new Promise(resolve => setTimeout(() => resolve(), initialWait))
   }
   for await (const value of iterable) {
+    const startTime = Date.now()
     yield value
-    await new Promise(resolve => setTimeout(() => resolve(), waitBetweenValues))
+    const yieldDuration = Date.now() - startTime
+    if (yieldDuration < period) {
+      await new Promise(resolve => setTimeout(() => resolve(), period - yieldDuration))
+    }
   }
 }
 

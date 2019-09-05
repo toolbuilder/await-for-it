@@ -3,25 +3,18 @@ import { Queue, QueueFull, QueueDone } from '../src/queue.js'
 import { chainable } from '../src/chainable.js'
 import { RingBuffer } from '../src/ringbuffer.js'
 
-// Verifying that an alternate buffer will work.
-// Array is about 25x slower than RingBuffer for this task, who
-// knows what the Proxy adds to that - irrelevant compared to the waits
-const makeBuffer = (capacity) => {
-  const handler = {
-    get: function (target, prop, reciever) {
-      if (prop === 'capacity') return capacity
-      return Reflect.get(...arguments)
-    }
+// Alternate buffer implementation. Array is about 25x slower
+// than RingBuffer for the buffer use case push/shift.
+class ArrayBuffer extends Array {
+  constructor (capacity) {
+    super()
+    this.capacity = capacity
   }
-  return new Proxy([], handler)
 }
 
 const callLater = (period, fn) => new Promise(resolve => setTimeout(() => resolve(fn()), period))
-const makeAndPush = (capacity, iterable) => {
-  // Just testing that you can use an Array, even though it is about 25x slower for this purpose.
-  // const ringBuffer = []
-  // ringBuffer.capacity = capacity
-  const queue = new Queue(makeBuffer(capacity))
+const makeQueueAndPush = (capacity, iterable) => {
+  const queue = new Queue(new ArrayBuffer(capacity))
   for (const value of iterable) {
     queue.push(value)
   }
@@ -29,18 +22,18 @@ const makeAndPush = (capacity, iterable) => {
 }
 
 tape('queue: fast pushing and done called before [Symbol.asyncIterator] called, drains completely', async test => {
-  const queue = makeAndPush(10, [0, 1, 2, 3, 4])
+  const queue = makeQueueAndPush(10, [0, 1, 2, 3, 4])
   test.deepEqual(queue.length, 5, 'fast pushes fill queue')
   queue.done()
-  const output = await chainable(queue).throttle(100, true).toArray()
+  const output = await chainable(queue).throttle(100, 0).toArray()
   test.deepEqual(output, [0, 1, 2, 3, 4], 'queue drains in order and completely')
   test.end()
 })
 
 tape('queue: fast pushing and done called after [Symbol.asyncIterator] called, drains completely', async test => {
-  const queue = makeAndPush(10, [0, 1, 2, 3, 4])
+  const queue = makeQueueAndPush(10, [0, 1, 2, 3, 4])
   callLater(500, () => queue.done())
-  const output = await chainable(queue).throttle(100, true).toArray()
+  const output = await chainable(queue).throttle(100, 0).toArray()
   test.deepEqual(output, [0, 1, 2, 3, 4], 'queue drains in order and completely')
   test.end()
 })
@@ -61,7 +54,7 @@ tape('queue: fast iterator waits for data from slow pushing', async test => {
 })
 
 tape('queue: push on full queue throws', async test => {
-  const queue = new Queue(new RingBuffer(3))
+  const queue = new Queue(3)
   queue.push(0)
   queue.push(1)
   queue.push(2)
@@ -79,7 +72,7 @@ tape('queue: push on full queue throws', async test => {
 
 tape('queue: fill, drain, then refill', async test => {
   // Queue sized so that it must drain between fillIt calls, or throw QueueFull
-  const queue = new Queue(new RingBuffer(6))
+  const queue = new Queue(6)
   const fillIt = (array) => array.forEach((v, i) => { queue.push(v) })
   callLater(100, () => fillIt([0, 1, 2, 3, 4]))
   callLater(500, () => fillIt([5, 6, 7, 8, 9]))
@@ -90,7 +83,7 @@ tape('queue: fill, drain, then refill', async test => {
 })
 
 tape('queue: accepts iterables as values', async test => {
-  const queue = new Queue(new RingBuffer(6))
+  const queue = new Queue(6)
   callLater(100, () => queue.push([0, 1, 2, 3, 4]))
   callLater(200, () => queue.push([5, 6, 7, 8, 9]))
   callLater(300, () => queue.done())
@@ -111,7 +104,7 @@ tape('queue: pushing promises behaves as expected', async test => {
 })
 
 tape('queue: done() lets queue drain and then ends iterator', async test => {
-  const queue = makeAndPush(10, [0, 1, 2, 3, 4])
+  const queue = makeQueueAndPush(10, [0, 1, 2, 3, 4])
   queue.done()
   const output = await chainable(queue).toArray()
   test.deepEqual(output, [0, 1, 2, 3, 4], 'queue drained fully')
@@ -119,7 +112,7 @@ tape('queue: done() lets queue drain and then ends iterator', async test => {
 })
 
 tape('queue: done(false) ends iterator immediately, even when values queued', async test => {
-  const queue = makeAndPush(6, [0, 1, 2, 3, 4])
+  const queue = makeQueueAndPush(6, [0, 1, 2, 3, 4])
   queue.done(false)
   const output = await chainable(queue).toArray()
   test.deepEqual(output, [], 'queue ended immediately')
@@ -127,7 +120,7 @@ tape('queue: done(false) ends iterator immediately, even when values queued', as
 })
 
 tape('queue: done iterable throws on subsequent push', async test => {
-  const queue = makeAndPush(6, [0, 1, 2, 3, 4])
+  const queue = makeQueueAndPush(6, [0, 1, 2, 3, 4])
   queue.done()
   try {
     queue.push(42)
@@ -139,23 +132,51 @@ tape('queue: done iterable throws on subsequent push', async test => {
 })
 
 tape('queue: length reports Queue length', test => {
-  const queue = makeAndPush(6, [0, 1, 2, 3, 4])
+  const queue = makeQueueAndPush(6, [0, 1, 2, 3, 4])
   test.deepEqual(queue.length, 5, 'Queue.length reports correct length')
   test.end()
 })
 
 tape('queue: capacity reports maximum buffer length', test => {
-  const queue = makeAndPush(42, [])
+  const queue = makeQueueAndPush(42, [])
   test.deepEqual(queue.capacity, 42, 'Queue.capacity reports correct max length')
   test.end()
 })
 
 tape('queue: push returns the queue length', test => {
   const queue = new Queue()
-  const actualLengths = []
+  const returnedQueueLengths = []
   for (const value of [0, 1, 2, 3, 4]) {
-    actualLengths.push(queue.push(value))
+    returnedQueueLengths.push(queue.push(value))
   }
-  test.deepEqual(actualLengths, [1, 2, 3, 4, 5], 'Queue.push reports the correct queue length')
+  test.deepEqual(returnedQueueLengths, [1, 2, 3, 4, 5], 'Queue.push reports the correct queue length')
   test.end()
+})
+
+tape('queue: push returns zero queue length for fast iteration', async test => {
+  const queue = new Queue(5)
+  const returnedQueueLengths = []
+  chainable(queue).toArray() // send queue off to be drained as fast as possible
+  // slowly push values into queue, so buffer remains empty
+  for await (const value of chainable([0, 1, 2, 3, 4]).throttle(50, 50)) {
+    returnedQueueLengths.push(queue.push(value))
+  }
+  test.deepEqual(returnedQueueLengths, [0, 0, 0, 0, 0], 'push returns zero when queue buffer empty')
+  test.end()
+})
+
+tape('queue: rejected promise propagates to iterating code', async test => {
+  const theError = new Error('the error')
+  const queue = new Queue(5)
+
+  queue.push(new Promise((resolve, reject) => setTimeout(() => reject(theError), 100)))
+  queue.done()
+  try {
+    for await (const value of queue) {
+      test.fail(`should never get here, got ${value}`)
+    }
+  } catch (error) {
+    test.is(error, theError, 'caught the thrown error')
+    test.end()
+  }
 })

@@ -10,7 +10,8 @@
   "dependencies": {
     "@toolbuilder/isnumber": "^0.1.0",
     "esm": "^3.2.25",
-    "iterablefu": "^0.3.1"
+    "iterablefu": "^0.3.1",
+    "knuth-shuffle": "^1.0.8"
   },
   "devDependencies": {
     "@toolbuilder/list": "^0.1.1",

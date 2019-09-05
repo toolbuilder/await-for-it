@@ -23,7 +23,7 @@ tape('pool: slow iteration, fast asyncFunction, fast asyncIterable', async test 
     poolSize = Math.max(poolSize, unresolved)
     return value
   }
-  const output = await asyncIterable.map(fn).pool(maxPoolSize).throttle(100, true).toArray()
+  const output = await asyncIterable.map(fn).pool(maxPoolSize).throttle(100, 0).toArray()
   test.true(poolSize <= maxPoolSize, 'pool size did not exceed maxPoolSize')
   test.deepEqual(tracker.promises, tracker.calls, 'all the asyncFunctions were called')
   test.deepEqual(output.sort(), input, 'return value of all asyncFunctions is returned')
@@ -51,7 +51,7 @@ tape('pool: fast iteration, fast asyncIterable, slow asyncFunction', async test 
 tape('pool: fast iteration, slow asyncIterable, fast asyncFunction', async test => {
   const input = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   const tracker = { poolSize: 0, maxPoolSize: 5, promises: 0, calls: 0, resolves: 0 }
-  const asyncIterable = chainable(input).map(() => makeFastAsyncFunction(tracker)).throttle(100, true)
+  const asyncIterable = chainable(input).map(() => makeFastAsyncFunction(tracker)).throttle(100, 0)
   const fn = (value) => {
     const unresolved = tracker.calls - tracker.resolves
     tracker.poolSize = Math.max(tracker.poolSize, unresolved)
