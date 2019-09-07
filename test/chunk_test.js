@@ -46,12 +46,12 @@ tape('chunk: passes iterable exceptions to iterator', async test => {
     yield new Promise(resolve => setTimeout(() => resolve(2), 100))
     throw theError
   }
-  try {
-    await chainable(throwingIterable()).chunk(3, 100).toArray()
-  } catch (error) {
-    test.is(error, theError, 'chunk rethrows the error from throwingIterable')
-    test.end()
-  }
+  await chainable(throwingIterable())
+    .chunk(3, 100)
+    .catch(error => test.is(error, theError, 'chunk rethrows the error from throwingIterable'))
+    .runAwait()
+
+  test.end()
 })
 
 tape('chunk: rejected promises from iterable are passed to iterator', async test => {

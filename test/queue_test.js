@@ -3,8 +3,8 @@ import { Queue, QueueFull, QueueDone } from '../src/queue.js'
 import { chainable } from '../src/chainable.js'
 import { RingBuffer } from '../src/ringbuffer.js'
 
-// Alternate buffer implementation. Array is about 25x slower
-// than RingBuffer for the buffer use case push/shift.
+// Alternate buffer implementation to verify that any buffer works.
+// Array is about 20x slower than RingBuffer for the push/shift use case.
 class ArrayBuffer extends Array {
   constructor (capacity) {
     super()
@@ -154,13 +154,16 @@ tape('queue: push returns the queue length', test => {
 })
 
 tape('queue: push returns zero queue length for fast iteration', async test => {
-  const queue = new Queue(5)
+  // const queue = new Queue(5)
   const returnedQueueLengths = []
-  chainable(queue).toArray() // send queue off to be drained as fast as possible
-  // slowly push values into queue, so buffer remains empty
-  for await (const value of chainable([0, 1, 2, 3, 4]).throttle(50, 50)) {
-    returnedQueueLengths.push(queue.push(value))
-  }
+
+  const queue = new Queue(5)
+  chainable(queue).run()
+  // slowly push values into queue, so buffer can remain empty
+  await chainable([0, 1, 2, 3, 4])
+    .throttle(50, 50)
+    .finally(() => queue.done())
+    .forEach(value => returnedQueueLengths.push(queue.push(value)))
   test.deepEqual(returnedQueueLengths, [0, 0, 0, 0, 0], 'push returns zero when queue buffer empty')
   test.end()
 })

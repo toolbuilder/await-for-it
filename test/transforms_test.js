@@ -1,6 +1,7 @@
 import tape from 'tape'
 import { range } from 'iterablefu/src/generators.js'
 import { chainable } from '../src/chainable.js'
+import { wait } from '../src/promises.js'
 
 const randomInt = (maxInt) => Math.floor(Math.random() * Math.floor(maxInt))
 
@@ -50,6 +51,46 @@ tape('arrayToObject', async test => {
     ]
   ]
   await chainable(tests).forEach(makeTestRunner('arrayToObject', test))
+  test.end()
+})
+
+tape('callAwait', async test => {
+  const callOutput = []
+  const fn = async x => { await wait(50); callOutput.push(x) }
+  const passing = await chainable([0, 1, 2, 3, 4])
+    .callAwait(fn)
+    // if callAwait waited, the last element of output should match the input to map
+    .map(x => ([x, callOutput[callOutput.length - 1]]))
+    .map(([x, y]) => x === y)
+    .filter(bool => bool === true)
+    .toArray()
+  test.equal(passing.length, 5, 'callAwait waited each time fn was called')
+
+  const output = await chainable([0, 1, 2, 3, 4])
+    .callAwait(x => x * x)
+    .toArray()
+
+  test.deepEqual(output, [0, 1, 2, 3, 4], 'callAwait passed each value unchanged')
+  test.end()
+})
+
+tape('callNoAwait', async test => {
+  const callOutput = []
+  const fn = async x => { await wait(50); callOutput.push(x) }
+  const passing = await chainable([0, 1, 2, 3, 4])
+    .callNoAwait(fn)
+    // if callNoAwait waited, the last element of output would match the input to map
+    .map(x => ([x, callOutput[callOutput.length - 1]]))
+    .map(([x, y]) => x === y)
+    .filter(bool => bool === true)
+    .toArray()
+  test.true(passing.length === 0, 'callNoAwait did not await when fn was called')
+
+  const output = await chainable([0, 1, 2, 3, 4])
+    .callNoAwait(x => x * x)
+    .toArray()
+
+  test.deepEqual(output, [0, 1, 2, 3, 4], 'callNoAwait passed each value unchanged')
   test.end()
 })
 
@@ -275,13 +316,5 @@ tape('throttle: will wait for initial wait period before yielding first item', a
     .map(n => Date.now())
     .toArray()
   test.true(waitTimeGood(output[0] - startTime, 100), 'throttle waiting initial wait time')
-  test.end()
-})
-
-tape('tap', async test => {
-  const output = []
-  const output2 = await chainable([0, 1, 2, 3, 4]).tap(x => output.push(2 * x)).toArray()
-  test.deepEqual(output, [0, 2, 4, 6, 8], 'tap function is called in order with iterable values')
-  test.deepEqual(output2, [0, 1, 2, 3, 4], 'output is unaffected by tap function')
   test.end()
 })

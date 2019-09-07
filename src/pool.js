@@ -5,10 +5,11 @@ import { map as syncMap } from 'iterablefu/src/transforms.js'
  * no more than maxPoolSize promises pending at any time. Results may be out of order with
  * respect to the input order.
  *
- * The input iterable can yield anything. However, async and sync functions are
- * handled specially. Each function will be called, and the result placed into the pool to
- * be yielded when resolved. Promises will remain in the pool until they resolve, other
- * values will resolve immediately as you would expect.
+ * The input iterable can yield anything but constructor functions. However, async and sync
+ * functions are handled specially. Each function will be called, and the result placed into
+ * the pool to be yielded when resolved. Promises will remain in the pool until they resolve,
+ * other values will resolve immediately as you would expect. Consider using promiseWithTimeout,
+ * or your own favorite timeout promise.
  *
  * As always with async iterables, if the input iterable yields a Promise, pool must wait
  * until the Promise resolves before advancing the input iterable. This
@@ -29,22 +30,21 @@ import { map as syncMap } from 'iterablefu/src/transforms.js'
 export const pool = async function * (maxPoolSize, iterable) {
   let idSequence = 31 // generates unique keys for awaiting map, no reason it has to start with 31
   let exception = null // if fillAwaiting catches an exception, it stores it here
-  const awaiting = new Map() // fill with { promise, id, pushed} objects
+  const awaiting = new Map() // key is id, value is { promise, pushed } objects
   let isDone = false
-  let restartFillAwaiting = null // Promise resolve function called to restart filling 'awaiting'
-  let pushedPromiseToAwaiting = null // Promise resolve function called when a new Promise is in 'awaiting'
+  let restartFillAwaiting = null // Promise resolve function called to restart fillAwaiting function
+  let pushedPromiseToAwaiting = null // Promise resolve function called to restart output loop
 
   // awaiting has a Promise for pushedPromiseToAwaiting in it as well as async function promises.
-  // So when asyncIterable is not done:
+  // So when ierable is not done:
   // (awaiting.size - 1) === [...awaiting].filter(value => value.pushed === false).length
-  // when asyncIterable is done, fillAwaiting is done too, so awaiting won't overfill, and the difference between
-  // those two calculations is moot.
+  // when iterable is done, fillAwaiting is done too, so awaiting won't overfill, and the fact
+  // that (awaiting.size - 1) is not entirely correct doesn't matter.
   const awaitingCallCount = () => awaiting.size - 1
 
   // call when something is pushed to 'awaiting'
   const onPushedPromiseToAwaiting = () => {
     if (pushedPromiseToAwaiting) {
-      // log('pushedPromiseToAwaiting')
       pushedPromiseToAwaiting()
       pushedPromiseToAwaiting = null
     }
@@ -59,7 +59,7 @@ export const pool = async function * (maxPoolSize, iterable) {
     awaiting.set(id, { promise, pushed })
   }
 
-  // This function pulls values from asyncIterable, calls the resulting function
+  // This function pulls values from iterable, calls the resulting function,
   // and pushes the returned Promise into 'awaiting' after tagging it with an id.
   const fillAwaiting = async () => {
     try {
@@ -84,7 +84,7 @@ export const pool = async function * (maxPoolSize, iterable) {
     }
   }
 
-  // Primary iterator loop is here.
+  // Primary output loop is here.
   fillAwaiting()
   makePushedPromise(awaiting)
   while (awaiting.size > 0 || !isDone) { // eslint-disable-line

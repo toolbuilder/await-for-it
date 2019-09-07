@@ -1,7 +1,7 @@
 /**
  * RingBuffer implements classic fixed length ring buffer, or circular queue, buffering.
  *
- * The methods match the Array signature for push, pop, unshift, shift methods.
+ * The methods match the Array signature for push, pop, unshift, and shift.
  *
  * For buffer operation either use push/shift together, or unshift/pop together.
  *
@@ -43,7 +43,7 @@ export class RingBuffer {
 
   /**
    * Pushes a value onto the back of the buffer. If length === capacity,
-   * the value at the front of the buffer is removed.
+   * the value at the front of the buffer is discarded.
    * @param {any} value - value to push
    */
   push (value) {
@@ -79,7 +79,7 @@ export class RingBuffer {
 
   /**
    * Pushes a value on the front of the buffer. If length === capacity,
-   * the value at the back is removed to maintain length.
+   * the value at the back is discarded.
    * @param {any} value - to push onto the front
    */
   unshift (value) {

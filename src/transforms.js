@@ -36,6 +36,40 @@ export const arrayToObject = function (propertyNames, iterable) {
 }
 
 /**
+ * Pass the input sequence to the output sequence without change, but execute `fn(item)` for each
+ * item in the sequence. Awaits the result of each function call before yielding the value.
+ *
+ * @param {AsyncFunction|Function} fn - synchronous function, `fn(item)` is called for each item in the sequence
+ * @param {AsyncIterable|Iterable} iterable - the input sequence
+ * @returns {AsyncGenerator} that is equivalent to the input iterable
+ * @example
+ * const a = callAwait(console.log, [1, 2, 3, 4, 5]) // logs each value
+ */
+export const callAwait = async function * (fn, iterable) {
+  for await (const value of iterable) {
+    await fn(value)
+    yield value
+  }
+}
+
+/**
+ * Pass the input sequence to the output sequence without change, but execute `fn(item)` for each
+ * item in the sequence. Will not await the result before yielding the value.
+ *
+ * @param {AsyncFunction|Function} fn - synchronous function, `fn(item)` is called for each item in the sequence
+ * @param {AsyncIterable|Iterable} iterable - the input sequence
+ * @returns {AsyncGenerator} that is equivalent to the input iterable
+ * @example
+ * const a = callNoAwait(console.log, [1, 2, 3, 4, 5]) // logs each value
+ */
+export const callNoAwait = async function * (fn, iterable) {
+  for await (const value of iterable) {
+    fn(value)
+    yield value
+  }
+}
+
+/**
  * Execute fn(previous, current) and yields the result for each pair.
  * Would be useful for calculating time differences between timestamps.
  *
@@ -250,18 +284,4 @@ export const throttle = async function * (period, initialWait, iterable) {
       await new Promise(resolve => setTimeout(() => resolve(), period - yieldDuration))
     }
   }
-}
-
-/**
- * Pass the input sequence to the output sequence without change, but execute `fn(item)` for each
- * item in the sequence.
- *
- * @param {Function} fn - synchronous function, `fn(item)` is called for each item in the sequence
- * @param {AsyncIterable|Iterable} iterable - the input sequence
- * @returns {AsyncGenerator} that is equivalent to the input iterable
- * @example
- * const a = tap(console.log, [1, 2, 3, 4, 5])
- */
-export const tap = (fn, iterable) => {
-  return map(x => { fn(x); return x }, iterable)
 }
