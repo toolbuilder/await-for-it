@@ -4,7 +4,12 @@ import tape from 'tape'
 const makeSlowAsyncFunction = (score) => {
   const delay = 100
   const promiseCount = score.promises++
-  return () => { score.calls++; return new Promise(resolve => setTimeout(() => { score.resolves++; resolve(promiseCount) }, delay)) }
+  return () => {
+    score.calls++
+    return new Promise(resolve => setTimeout(
+      () => { score.resolves++; resolve(promiseCount) },
+      delay))
+  }
 }
 
 const makeFastAsyncFunction = (score) => {
@@ -98,12 +103,17 @@ tape('pool: asyncIterable exceptions propagates to iterator', async test => {
     yield makeFastAsyncFunction(tracker)
     throw theError
   }
-  try {
-    await chainable(throwingAsyncIterable()).pool(poolsize).toArray()
-  } catch (error) {
-    test.is(error, theError, 'thrown error was caught directly')
-    test.end()
-  }
+
+  let caughtException = false
+  await chainable(throwingAsyncIterable())
+    .pool(poolsize)
+    .catch(e => {
+      caughtException = true
+      test.is(e, theError, 'thrown error was caught directly')
+    })
+    .runAwait()
+  test.true(caughtException, 'exception was caught')
+  test.end()
 })
 
 tape('pool: async function rejection propagates to iterator', async test => {
@@ -115,12 +125,17 @@ tape('pool: async function rejection propagates to iterator', async test => {
     yield makeFastAsyncFunction(tracker)
     yield () => new Promise((resolve, reject) => setTimeout(() => reject(theError), 1000))
   }
-  try {
-    await chainable(throwingAsyncIterable()).pool(poolsize).toArray()
-  } catch (error) {
-    test.is(error, theError, 'the thrown error was caught directly')
-    test.end()
-  }
+
+  let caughtException = false
+  await chainable(throwingAsyncIterable())
+    .pool(poolsize)
+    .catch(e => {
+      caughtException = true
+      test.is(e, theError, 'the thrown error was caught directly')
+    })
+    .toArray()
+  test.true(caughtException, 'exception was caught')
+  test.end()
 })
 
 tape('pool: sync function throw propagates to iterator', async test => {
@@ -132,12 +147,17 @@ tape('pool: sync function throw propagates to iterator', async test => {
     yield makeFastAsyncFunction(tracker)
     yield () => { throw theError }
   }
-  try {
-    await chainable(throwingAsyncIterable()).pool(poolsize).toArray()
-  } catch (error) {
-    test.is(error, theError, 'the thrown error was caught directly')
-    test.end()
-  }
+
+  let caughtException = false
+  await chainable(throwingAsyncIterable())
+    .pool(poolsize)
+    .catch(e => {
+      caughtException = true
+      test.is(e, theError, 'the thrown error was caught directly')
+    })
+    .toArray()
+  test.true(caughtException, 'exception was caught')
+  test.end()
 })
 
 tape('pool: values from async functions are yielded when resolved', async test => {

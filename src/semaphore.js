@@ -1,7 +1,6 @@
 /**
  * Promise based semaphore.
  */
-// NOTE: if acquire was to return a release function, this would be a Mutex (roughly)
 export class Semaphore {
   constructor (max = 1) {
     this._max = max
@@ -36,5 +35,3 @@ export class Semaphore {
     }
   }
 }
-
-export const semaphore = max => new Semaphore(max)

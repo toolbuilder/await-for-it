@@ -1,6 +1,6 @@
 import tape from 'tape'
 import { Semaphore } from '../src/semaphore.js'
-import { wait } from '../src/promises.js'
+import { wait } from '../src/timeouts.js'
 
 const times = (n, fn) => {
   for (let i = 0; i < n; ++i) {

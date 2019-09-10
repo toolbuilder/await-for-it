@@ -1,6 +1,6 @@
 import tape from 'tape'
 import { Mutex } from '../src/mutex.js'
-import { wait } from '../src/promises.js'
+import { wait } from '../src/timeouts.js'
 import { isFunction } from '../src/is.js'
 
 const times = (n, fn) => {

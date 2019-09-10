@@ -21,6 +21,7 @@ export class Queue {
   constructor (buffer = new RingBuffer(1000)) {
     this.keepGoing = true
     this.onPushedValue = null // resolve method from next() Promise
+    this.exception = null
     if (isFiniteNumber(buffer)) {
       this.buffer = new RingBuffer(buffer)
     } else {
@@ -39,6 +40,20 @@ export class Queue {
    * @returns {number} - the maximum number of values
    */
   get capacity () { return this.buffer.capacity }
+
+  // TODO: on, once for internal buffer events 'empty', 'full', 'half-full'
+
+  /**
+   * Terminate iteration over the queue iterator by rejecting the Promise for
+   * the next element. In other words, throw an exception in the iterable chain.
+   *
+   * @param {any} exception - typically an instance of Error
+   * @example
+   * const queue = new Queue()
+   * await chainable(queue).catch(e => console.log(e)).runAwait()
+   * queue.reject(new Error('error')) // prints Error from the catch clause above
+   */
+  reject (exception) { this.exception = exception }
 
   /**
    * Push a value to the async iterable. Values are queued if the
@@ -96,9 +111,10 @@ export class Queue {
   }
 
   /**
-   * Implements Iterator protocol to make Queue a Generator.
+   * Implements Iterator protocol to make Queue an iterator.
    */
   async next () {
+    if (this.exception) throw this.exception
     // Check for buffer.length so that queue empties before iteration completes.
     if (this.keepGoing || this.buffer.length > 0) {
       if (this.buffer.length > 0) {

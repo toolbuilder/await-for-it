@@ -1,30 +1,4 @@
 
-export class Chainable {
-  constructor (iterable) {
-    this.iterable = iterable
-  }
-
-  catch (fn) {
-    const catcher = async function * (iterable) {
-      try { yield * iterable } catch (error) { fn(error) }
-    }
-    this.iterable = catcher(this.iterable)
-    return this
-  }
-
-  finally (fn) {
-    const doFinally = async function * (fn, iterable) {
-      try { yield * iterable } finally { fn() }
-    }
-    this.iterable = doFinally(fn, this.iterable)
-    return this
-  }
-
-  async * [Symbol.asyncIterator] () {
-    yield * this.iterable
-  }
-}
-
 /**
  * Dynamically create a ChainableClass. This differs from makeChainableIterator only in that the class can't be
  * called as a function.
@@ -38,8 +12,33 @@ export class Chainable {
 export const makeChainableClass = (generators, transforms, reducers) => {
   // construct chainable iterable class using class semantics
   // then add methods using the classic prototype assignment technique
+  class Chainable {
+    constructor (iterable) {
+      this.iterable = iterable
+    }
 
-  // Dynamically add static Sequence methods to class
+    catch (fn) {
+      const catcher = async function * (iterable) {
+        try { yield * iterable } catch (error) { fn(error) }
+      }
+      this.iterable = catcher(this.iterable)
+      return this
+    }
+
+    finally (fn) {
+      const doFinally = async function * (fn, iterable) {
+        try { yield * iterable } finally { fn() }
+      }
+      this.iterable = doFinally(fn, this.iterable)
+      return this
+    }
+
+    async * [Symbol.asyncIterator] () {
+      yield * this.iterable
+    }
+  }
+
+  // Dynamically add static Sequence methods to Chainable
   for (const methodName in generators) {
     Chainable[methodName] = function (...args) {
       const iterable = generators[methodName](...args)
@@ -47,7 +46,7 @@ export const makeChainableClass = (generators, transforms, reducers) => {
     }
   }
 
-  // Dynamically add Transform methods to class
+  // Dynamically add Transform methods to Chainable
   for (const methodName in transforms) {
     Chainable.prototype[methodName] = function (...args) {
       this.iterable = transforms[methodName](...args, this.iterable)
@@ -55,7 +54,7 @@ export const makeChainableClass = (generators, transforms, reducers) => {
     }
   }
 
-  // Dynamically add Reducer methods to class
+  // Dynamically add Reducer methods to Chainable
   for (const methodName in reducers) {
     Chainable.prototype[methodName] = function (...args) {
       return reducers[methodName](...args, this.iterable)
@@ -69,7 +68,7 @@ const getMethodsOf = (constructorFunction, stopAt = Object) => {
   // We'll get back to constructorFunction when we access the prototype.constructor
   const instanceMethods = []
   const staticMethods = []
-  let prototype = constructorFunction.prototype
+  let prototype = constructorFunction.prototype // not Object.getPrototypeOf
   while (prototype && (prototype !== stopAt.prototype)) {
     const constructor = prototype.constructor
     for (const methodName of Object.getOwnPropertyNames(prototype)) {
@@ -92,15 +91,17 @@ export const makeFactory = (ChainableClass) => {
     return new ChainableClass(iterable)
   }
 
-  getMethodsOf(ChainableClass).staticMethods.forEach(({ constructor, methodName }) => {
+  getMethodsOf(ChainableClass)
+    .staticMethods
+    .forEach(({ constructor, methodName }) => {
     // methods are in order from subclass to superclass, so
     // if method already exists, it was created for subclass
-    if (!ChainableIterable[methodName]) {
-      ChainableIterable[methodName] = function (...args) {
-        return constructor[methodName](...args)
+      if (!ChainableIterable[methodName]) {
+        ChainableIterable[methodName] = function (...args) {
+          return constructor[methodName](...args)
+        }
       }
-    }
-  })
+    })
   return ChainableIterable
 }
 

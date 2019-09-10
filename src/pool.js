@@ -1,4 +1,10 @@
-import { map as syncMap } from 'iterablefu/src/transforms.js'
+import { concatenate } from 'iterablefu/src/generators.js'
+import { isFunction, isSyncIterable } from './is.js'
+
+// Alternative to wrapping a single promise in an Array to get an iterable
+const valueToIterator = function * (value) {
+  yield value
+}
 
 /**
  * Execute functions provided by input iterable. Returns results as they resolve, with
@@ -28,81 +34,46 @@ import { map as syncMap } from 'iterablefu/src/transforms.js'
  * iterating code can handle it. Once an exception is thrown, the iterator is done.
  */
 export const pool = async function * (maxPoolSize, iterable) {
-  let idSequence = 31 // generates unique keys for awaiting map, no reason it has to start with 31
-  let exception = null // if fillAwaiting catches an exception, it stores it here
-  const awaiting = new Map() // key is id, value is { promise, pushed } objects
-  let isDone = false
-  let restartFillAwaiting = null // Promise resolve function called to restart fillAwaiting function
-  let pushedPromiseToAwaiting = null // Promise resolve function called to restart output loop
+  let idSequence = 31 // generates unique keys for promisePool, no reason it has to start with 31
+  const promisePool = new Map() // key is id, value is a promise for the function result
+  const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+  let nextPromise = null // promise getting next value from iterator
 
-  // awaiting has a Promise for pushedPromiseToAwaiting in it as well as async function promises.
-  // So when ierable is not done:
-  // (awaiting.size - 1) === [...awaiting].filter(value => value.pushed === false).length
-  // when iterable is done, fillAwaiting is done too, so awaiting won't overfill, and the fact
-  // that (awaiting.size - 1) is not entirely correct doesn't matter.
-  const awaitingCallCount = () => awaiting.size - 1
-
-  // call when something is pushed to 'awaiting'
-  const onPushedPromiseToAwaiting = () => {
-    if (pushedPromiseToAwaiting) {
-      pushedPromiseToAwaiting()
-      pushedPromiseToAwaiting = null
+  const getNextValue = async () => {
+    const { done, value } = await Promise.resolve(iterator.next())
+    if (!done) {
+      const id = ++idSequence
+      const promise = isFunction(value)
+        ? Promise.resolve(value()).then(value => ({ value, id }))
+        : Promise.resolve(value).then(value => ({ value, id }))
+      promisePool.set(id, promise)
     }
+    return { done }
   }
 
-  // Need a way to interrupt the Promise.race in the main iterator loop when something is pushed
-  // into awaiting. The onPushedPromiseToAwaiting function will resolve the promise below.
-  const makePushedPromise = (awaiting) => {
-    const id = idSequence++
-    const promise = new Promise((resolve, reject) => { pushedPromiseToAwaiting = resolve }).then(result => ({ result, id }))
-    const pushed = true // to indicate that this promise is the onPushedPromiseToAwaiting interrupt
-    awaiting.set(id, { promise, pushed })
+  // Pool should only ask for one value at a time from iterator. When running promise.race, the
+  // getNextValue() promise might lose, so we need to keep it around for the next await. This
+  // makes sure that backpressure is applied to iterator, and ensures that we see any promise
+  // rejections.
+  const nextValuePromise = () => {
+    if (nextPromise == null) nextPromise = getNextValue().then(result => { nextPromise = null; return result })
+    return nextPromise
   }
 
-  // This function pulls values from iterable, calls the resulting function,
-  // and pushes the returned Promise into 'awaiting' after tagging it with an id.
-  const fillAwaiting = async () => {
-    try {
-      for await (const value of iterable) {
-        const id = idSequence++
-        // support async functions, sync functions, and everything else
-        const promise = (typeof value === 'function')
-          ? Promise.resolve(value()).then(result => ({ result, id }))
-          : Promise.resolve(value).then(result => ({ result, id }))
-        const pushed = false // indicates promise is part of the pool, not for onPushedPromiseToAwaiting
-        awaiting.set(id, { promise, pushed })
-        onPushedPromiseToAwaiting()
-        if (awaitingCallCount() >= maxPoolSize) {
-          await new Promise((resolve, reject) => { restartFillAwaiting = resolve })
-        }
-      }
-    } catch (error) {
-      exception = error
-    } finally {
-      isDone = true
-      onPushedPromiseToAwaiting() // if main loop is waiting, need to interrupt it
-    }
-  }
+  let { done } = await nextValuePromise()
+  while (!done || promisePool.size > 0) { // eslint-disable-line
 
-  // Primary output loop is here.
-  fillAwaiting()
-  makePushedPromise(awaiting)
-  while (awaiting.size > 0 || !isDone) { // eslint-disable-line
-    const promises = syncMap(value => value.promise, awaiting.values())
-    const { result, id } = await Promise.race(promises)
-    if (exception != null) throw exception
-
-    const { pushed } = awaiting.get(id)
-    if (pushed === true) {
-      if (!isDone) makePushedPromise(awaiting)
+    if (done || promisePool.size === maxPoolSize) {
+      const { value, id } = await Promise.race(promisePool.values())
+      promisePool.delete(id)
+      yield value
+    } else if (promisePool.size === 0) {
+      ;({ done } = await nextValuePromise())
     } else {
-      yield result
-    }
-    awaiting.delete(id)
-
-    if (awaitingCallCount() < maxPoolSize && restartFillAwaiting) {
-      restartFillAwaiting()
-      restartFillAwaiting = null
+      let value, id
+      const promises = concatenate(promisePool.values(), valueToIterator(nextValuePromise()))
+      ;({ done, value, id } = await Promise.race(promises))
+      if (id) { promisePool.delete(id); yield value }
     }
   }
 }

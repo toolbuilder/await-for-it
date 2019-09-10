@@ -1,5 +1,5 @@
 import tape from 'tape'
-import { promiseWithTimeout } from '../src/promises.js'
+import { callWithTimeout, wait, waitToCall } from '../src/timeouts.js'
 
 const msgResolvedBeforeTimeout = 'Resolved Before Timeout'
 const msgRejectedBeforeTimeout = 'Rejected Before Timeout'
@@ -22,24 +22,47 @@ const rejectOnTimeout = () => {
   return (resolve, reject) => reject(msgRejectedAfterTimeout)
 }
 
-tape('promiseWithTimeout', async test => {
+tape('callWithTimeout', async test => {
   const beforeTimeout = 50
   const timeout = 100
   const afterTimeout = 150
-  await promiseWithTimeout(timeout, resolveBeforeTimeout(beforeTimeout), rejectOnTimeout())
+  await callWithTimeout(timeout, resolveBeforeTimeout(beforeTimeout), rejectOnTimeout())
     .then(result => test.equal(result, msgResolvedBeforeTimeout, 'can resolve before timeout'))
     .catch(error => test.fail(`unhandled exception ${error}`))
 
-  await promiseWithTimeout(timeout, rejectBeforeTimeout(beforeTimeout), resolveOnTimeout())
+  await callWithTimeout(timeout, rejectBeforeTimeout(beforeTimeout), resolveOnTimeout())
     .then(result => test.fail(`exception not thrown ${result}`))
     .catch(result => test.equal(result, msgRejectedBeforeTimeout, 'can reject before timeout'))
 
-  await promiseWithTimeout(timeout, resolveBeforeTimeout(afterTimeout), rejectOnTimeout())
+  await callWithTimeout(timeout, resolveBeforeTimeout(afterTimeout), rejectOnTimeout())
     .then(result => test.fail(`exception not thrown ${result}`))
     .catch(result => test.equal(result, msgRejectedAfterTimeout, 'can reject after timeout'))
 
-  await promiseWithTimeout(timeout, rejectBeforeTimeout(afterTimeout), resolveOnTimeout())
+  await callWithTimeout(timeout, rejectBeforeTimeout(afterTimeout), resolveOnTimeout())
     .then(result => test.equal(result, msgResolvedAfterTimeout, 'can resolve after timeout'))
     .catch(error => test.fail(`unhandled exception ${error}`))
+  test.end()
+})
+
+const allowableJitter = 10
+const approximately = (n, ref) => (n > ref - allowableJitter) && (n < ref + allowableJitter)
+
+tape('wait', async test => {
+  const waitTime = 50
+  const startTime = Date.now()
+  await wait(waitTime)
+  const stopTime = Date.now()
+  const waited = stopTime - startTime
+  test.true(approximately(waited, waitTime), 'wait waited the proper amount of time')
+  test.end()
+})
+
+tape('waitToCall', async test => {
+  const fn = () => Date.now()
+  const waitTime = 50
+  const startTime = Date.now()
+  const callTime = await waitToCall(waitTime, fn)
+  const waited = callTime - startTime
+  test.true(approximately(waited, waitTime), 'waitToCall waited to call fn')
   test.end()
 })

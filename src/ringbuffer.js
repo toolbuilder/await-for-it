@@ -18,7 +18,12 @@ export class RingBuffer {
    */
   constructor (capacity) {
     this.capacity = capacity
-    this._buffer = new Array(capacity).fill(NaN)
+    this._buffer = new Array(capacity)
+    this._first = 0
+    this.length = 0
+  }
+
+  clear () {
     this._first = 0
     this.length = 0
   }

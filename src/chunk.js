@@ -1,5 +1,8 @@
 import { isAsyncIterable, isSyncIterable } from './is.js'
 import { isFiniteNumber } from '@toolbuilder/isnumber/src/isnumber.js'
+import { waitToCall } from './timeouts.js'
+import { RingBuffer } from './ringbuffer.js'
+
 /**
  * Chunk every n items into an array, and output that array in the output sequence.
  * Chunks are yielded after `timeout` milliseconds even if not full, so that values
@@ -19,64 +22,51 @@ export const chunk = async function * (n, timeout, iterable) {
   if (!(isFiniteNumber(timeout) && timeout > -1)) throw new RangeError(`chunk parameter 'timeout' must be a positive number: ${timeout}`)
   if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) throw new RangeError(`chunk parameter 'iterable' must be iterable: ${iterable}`)
 
-  // state for chunking process
-  let buffer = [] // store values from input iterable while building chunk
-  let fillListException = null // store exception thrown in fillList for later throwing
-  let done = false // true if iteration of iterable is done
-  let timer = null // timeout timer reference so it can be cleared when a chunk is ready
-  let restartFillBuffer = null // Promise resolve function to restart fillBuffer
-  let restartMainLoop = null // Promise resolve function to restart output loop
+  const buffer = new RingBuffer(n + 1) // '+1' isn't necessary, but just in case testing missed something...
+  const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+  let nextValuePromise = null // iterator.next()
 
-  // Runs promise resolve functions
-  const runFunction = (resolver) => {
-    if (resolver != null) {
-      resolver()
-      resolver = null
+  const shiftUpTo = n => {
+    const chunk = []
+    const toShift = Math.min(buffer.length, n)
+    for (let i = 0; i < toShift; ++i) {
+      chunk.push(buffer.shift())
     }
+    return chunk
   }
 
-  // state management functions
-  const onFirstPushOfChunk = () => { timer = setTimeout(() => onTimeout(), timeout) }
-  const onTimeout = () => { runFunction(restartMainLoop) }
-  const onChunkReady = () => { clearTimeout(timer); runFunction(restartMainLoop) }
-  const onDone = () => { done = true; clearTimeout(timer); runFunction(restartMainLoop) }
-  const onFillNextChunk = () => { if (!done) runFunction(restartFillBuffer) }
-
-  // asynchronously fill buffer, stop when full, restarted by main loop
-  const fillBuffer = async function () {
-    try {
-      for await (const value of iterable) {
-        buffer.push(value)
-        if (buffer.length === 1) onFirstPushOfChunk()
-        if (buffer.length === n) {
-          onChunkReady()
-          // Wait until iterator wanting chunks requests more data before filling buffer again.
-          // This allows iterator wanting chunks to provide back pressure to iterable
-          await new Promise((resolve, reject) => { restartFillBuffer = resolve })
-        }
-      }
-    } catch (error) {
-      fillListException = error // save error from iterable to rethrow in main loop
-    } finally {
-      onDone()
-    }
+  const pushValue = ({ value, done }) => {
+    if (!done) buffer.push(value)
+    return { done }
   }
 
-  fillBuffer()
-  // main loop yields chunks from fillBuffer to iterator
-  while (!done || buffer.length > 0) { // eslint-disable-line
-    if (buffer.length === 0) {
-      // fillBuffer or timeout will resolve this promise to restart loop
-      await new Promise((resolve, reject) => { restartMainLoop = resolve })
+  const pushNextValue = () => Promise.resolve(iterator.next()).then(pushValue)
+
+  // When pushNextValue() promise is in a Promise.race with timeout, it might not win. To provide
+  // backpressure to the input iterator, and to ensure we catch exceptions, keep the losing promise
+  // around until it resolves before calling next again.
+  const getNextValuePromise = () => {
+    if (!nextValuePromise) {
+      nextValuePromise = pushNextValue().then(result => { nextValuePromise = null; return result })
     }
-    if (buffer.length > 0) {
-      const chunk = buffer
-      buffer = []
-      yield chunk
-      onFillNextChunk()
-    }
+    return nextValuePromise
   }
-  // exception can be caught while awaiting, or yielding
-  // either way done === true now, so loop will end ensuring this check
-  if (fillListException != null) throw fillListException
+
+  const fillChunkOrTimeout = async () => {
+    let { done } = await getNextValuePromise()
+    if (!done && buffer.length < n) {
+      let timedOut
+      const chunkTimeout = waitToCall(timeout, () => ({ timedOut: true }))
+      do {
+        ;({ done, timedOut } = await Promise.race([getNextValuePromise(), chunkTimeout]))
+      } while (!done && !timedOut && buffer.length < n)
+    }
+    return done
+  }
+
+  let done // can be undefined, true, or false
+  do {
+    done = await fillChunkOrTimeout()
+    if (buffer.length > 0) yield shiftUpTo(n)
+  } while (!done || buffer.length > 0) // eslint-disable-line
 }

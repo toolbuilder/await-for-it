@@ -7,7 +7,6 @@ import * as reducers from './reducers.js'
 // Create an easy default chainable iterator builder for common use case
 const ChainableClass = makeChainableClass(generators, transforms, reducers)
 const chainable = makeFactory(ChainableClass)
-const ChainableIterable = chainable.ChainableIterable
 
 export { Poll } from './poll.js'
 export { Queue } from './queue.js'

@@ -15,15 +15,15 @@ import { isSyncIterable } from './is.js'
 export const merge = async function * (...iterables) {
   // use Promise.resolve in case generator is NOT async, there is no reliable test for async.
   // add id to result so we can tell which iterator it came from
-  const nextPromise = (id, generator) => {
-    return Promise.resolve(generator.next()).then(iterResult => ({ ...iterResult, id }))
+  const nextPromise = (id, iterator) => {
+    return Promise.resolve(iterator.next()).then(iterResult => ({ ...iterResult, id }))
   }
   const states = new Map()
   // initialize states
   iterables.forEach((iterable, id) => { // using iterables index as id
-    const generator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
-    const promise = nextPromise(id, generator)
-    states.set(id, { generator, promise })
+    const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+    const promise = nextPromise(id, iterator)
+    states.set(id, { iterator, promise })
   })
   while (states.size > 0) {
     const promises = map(state => state.promise, states.values())
@@ -38,7 +38,7 @@ export const merge = async function * (...iterables) {
       yield value // yield before advancing to keep iteration synchronized
       const winner = states.get(id)
       // advance the iterable that won the race, leave the others untouched for next race
-      winner.promise = nextPromise(id, winner.generator)
+      winner.promise = nextPromise(id, winner.iterator)
     }
   }
 }
