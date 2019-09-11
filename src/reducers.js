@@ -23,6 +23,46 @@ export const forEach = async (fn, iterable) => {
 }
 
 /**
+ * Publishes values from iterable to any subscribing function. Functions can
+ * be added and removed over time.
+ *
+ * Functions are passed the each value from the iterable. Only values provided
+ * after subscribing are provided. Any return value is ignored.
+ *
+ * @param {AsyncIterable|Iterable} iterable that provides the values
+ * @returns {Object} - Returns an object with subscribe and unsubscribed
+ * methods. The subscribe method accepts a function and returns an unsubscribe
+ * key. The unsubscribe method accepts an unsubscribe key, to remove the function.
+ * Also has start, stop, and running just like the run function.
+ * @example
+ * const publisher = chainable([0, 1, 2, 3]).throttle(50, 50).publish()
+ * const unsubscribeKey = publisher.subscribe(console.log) // prints 0, 1 - then unsubscribed
+ * wait(110, publisher.unsubscribe(unsubscribeKey)) // function is no longer called
+ */
+export const publish = (iterable) => {
+  const semaphore = new Semaphore(1)
+  let sequence = 0
+  const subscribers = new Map()
+  const runner = async () => {
+    for await (const value of iterable) {
+      if (!semaphore.acquireSync()) await semaphore.acquire() // stopped
+      semaphore.release()
+      for (const subscriber of subscribers.values()) {
+        subscriber(value)
+      }
+    }
+  }
+  runner() // start off running
+  return {
+    stop: () => { if (semaphore.available()) semaphore.acquire() },
+    start: () => { if (!semaphore.available()) semaphore.release() },
+    get running () { return semaphore.available() },
+    subscribe: (pushable) => { subscribers.set(++sequence, pushable); return sequence },
+    unsubscribe: key => { subscribers.delete(key) }
+  }
+}
+
+/**
  * The reduce() method executes a reducer function on each element of
  * the input iterable, resulting in a single output value.
  *

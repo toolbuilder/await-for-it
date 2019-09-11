@@ -21,6 +21,28 @@ tape('forEach', async test => {
   test.end()
 })
 
+tape('publish', async test => {
+  const input = [0, 1, 2, 3, 4]
+  const output1 = []
+  const output2 = []
+  const output3 = []
+
+  const control = chainable(input)
+    .throttle(50, 50)
+    .finally(() => {
+      test.deepEqual(output1, input, 'first subscriber got all data in the right order')
+      test.deepEqual(output2, input, 'second subscriber got all data in the right order')
+      test.deepEqual(output3, [], 'third subscriber was unsubscribed successfully')
+      test.end()
+    })
+    .publish()
+
+  control.subscribe(x => output1.push(x))
+  control.subscribe(x => output2.push(x))
+  const key = control.subscribe(x => output3.push(x))
+  control.unsubscribe(key)
+})
+
 tape('reduce', async test => {
   const input = [0, 1, 2, 3, 4]
   const fn = (a, v) => waitToCall(20 * Math.random(), () => { a.push(v); return a })
