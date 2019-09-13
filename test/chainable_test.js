@@ -42,13 +42,13 @@ tape('chainable: catch', async test => {
       .finally(() => { finallyCalled = true })
       .toArray()
   } catch (error) {
-    caughtError = true
+    caughtError = true // eslint-disable-line
     test.is(error, theError, 'rethrows from catch are catchable')
   }
   test.true(caughtError, 'rethrown exception caught')
   test.equal(finallyCalled, true, 'finally was still called')
 
-  caughtError = null
+  caughtError = null // eslint-disable-line
   const output = await chainable([0, 1, 2, 3, 4])
     .catch(error => { caughtError = error })
     .toArray()

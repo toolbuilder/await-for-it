@@ -1,3 +1,4 @@
+import { makeFactory } from '@toolbuilder/make-factory/src/factory.js'
 
 /**
  * Dynamically create a ChainableClass. This differs from makeChainableIterator only in that the class can't be
@@ -61,48 +62,6 @@ export const makeChainableClass = (generators, transforms, reducers) => {
     }
   }
   return Chainable
-}
-
-const getMethodsOf = (constructorFunction, stopAt = Object) => {
-  // To make iteration consistent, first find the constructorFunction prototype
-  // We'll get back to constructorFunction when we access the prototype.constructor
-  const instanceMethods = []
-  const staticMethods = []
-  let prototype = constructorFunction.prototype // not Object.getPrototypeOf
-  while (prototype && (prototype !== stopAt.prototype)) {
-    const constructor = prototype.constructor
-    for (const methodName of Object.getOwnPropertyNames(prototype)) {
-      if (methodName === 'constructor') continue
-      instanceMethods.push({ constructor, methodName })
-    }
-    for (const methodName of Object.getOwnPropertyNames(constructor)) {
-      if (methodName === 'length') continue
-      if (methodName === 'name') continue
-      if (methodName === 'prototype') continue
-      staticMethods.push({ constructor, methodName })
-    }
-    prototype = Object.getPrototypeOf(prototype)
-  }
-  return { instanceMethods, staticMethods }
-}
-
-export const makeFactory = (ChainableClass) => {
-  const ChainableIterable = function (iterable) {
-    return new ChainableClass(iterable)
-  }
-
-  getMethodsOf(ChainableClass)
-    .staticMethods
-    .forEach(({ constructor, methodName }) => {
-    // methods are in order from subclass to superclass, so
-    // if method already exists, it was created for subclass
-      if (!ChainableIterable[methodName]) {
-        ChainableIterable[methodName] = function (...args) {
-          return constructor[methodName](...args)
-        }
-      }
-    })
-  return ChainableIterable
 }
 
 /**

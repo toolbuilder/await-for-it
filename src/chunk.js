@@ -26,9 +26,9 @@ export const chunk = async function * (n, timeout, iterable) {
   const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
   let nextValuePromise = null // iterator.next()
 
-  const shiftUpTo = n => {
+  const shiftUpTo = count => {
     const chunk = []
-    const toShift = Math.min(buffer.length, n)
+    const toShift = Math.min(buffer.length, count)
     for (let i = 0; i < toShift; ++i) {
       chunk.push(buffer.shift())
     }
@@ -58,7 +58,7 @@ export const chunk = async function * (n, timeout, iterable) {
       let timedOut
       const chunkTimeout = waitToCall(timeout, () => ({ timedOut: true }))
       do {
-        ;({ done, timedOut } = await Promise.race([getNextValuePromise(), chunkTimeout]))
+        ({ done, timedOut } = await Promise.race([getNextValuePromise(), chunkTimeout]))
       } while (!done && !timedOut && buffer.length < n)
     }
     return done

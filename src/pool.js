@@ -68,7 +68,7 @@ export const pool = async function * (maxPoolSize, iterable) {
       promisePool.delete(id)
       yield value
     } else if (promisePool.size === 0) {
-      ;({ done } = await nextValuePromise())
+      ({ done } = await nextValuePromise())
     } else {
       let value, id
       const promises = concatenate(promisePool.values(), valueToIterator(nextValuePromise()))

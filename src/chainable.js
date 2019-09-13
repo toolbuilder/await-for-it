@@ -1,4 +1,5 @@
-import { makeFactory, makeChainableFactory, makeChainableClass } from './makechainable.js'
+import { makeFactory } from '@toolbuilder/make-factory/src/factory.js'
+import { makeChainableFactory, makeChainableClass } from './makechainable.js'
 import { isAsyncIterable, isSyncIterable } from './is.js'
 import * as generators from './generators.js'
 import * as transforms from './transforms.js'
