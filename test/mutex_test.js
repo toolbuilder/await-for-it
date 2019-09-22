@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { test as tape } from 'zora'
 import { Mutex } from '../src/mutex.js'
 import { wait } from '../src/timeouts.js'
 import { isFunction } from '../src/is.js'
@@ -43,21 +43,19 @@ tape('mutex: acquire', async test => {
   test.equal(state.started, 10, 'all threads started')
   test.equal(state.ended, 10, 'all threads ran and ended')
   test.equal(state.atOnce, 1, 'only one thread ran at once')
-  test.end()
 })
 
 tape('mutex: acquireSync', async test => {
   const mutex = new Mutex()
 
-  test.true(mutex.available(), 'mutex is available before first acquireSync')
+  test.ok(mutex.available(), 'mutex is available before first acquireSync')
   const release = mutex.acquireSync()
-  test.true(isFunction(release), 'first acquireSync returns release function')
-  test.false(mutex.available(), 'mutex is not avaialble after first acquireSync')
+  test.ok(isFunction(release), 'first acquireSync returns release function')
+  test.notOk(mutex.available(), 'mutex is not avaialble after first acquireSync')
   test.equal(mutex.acquireSync(), null, 'second acquireSync returns null')
 
   release()
   release() // verify that double release works ok
 
-  test.true(mutex.available(), 'muxtex is available after release function called')
-  test.end()
+  test.ok(mutex.available(), 'muxtex is available after release function called')
 })

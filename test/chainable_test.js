@@ -1,5 +1,5 @@
 import { chainable } from '../src/chainable.js'
-import tape from 'tape'
+import { test as tape } from 'zora'
 
 tape('chainable: finally', async test => {
   let testValue = 0
@@ -11,8 +11,6 @@ tape('chainable: finally', async test => {
   test.deepEqual(output, [0, 1, 2, 3], 'finally passes all values unchanged')
   test.deepEqual(testValueChecks, [0, 0, 0, 0], 'finally function was not called until after iteration')
   test.equal(testValue, 1, 'finally function was called once')
-
-  test.end()
 })
 
 class TestError extends Error {}
@@ -45,7 +43,7 @@ tape('chainable: catch', async test => {
     caughtError = true // eslint-disable-line
     test.is(error, theError, 'rethrows from catch are catchable')
   }
-  test.true(caughtError, 'rethrown exception caught')
+  test.ok(caughtError, 'rethrown exception caught')
   test.equal(finallyCalled, true, 'finally was still called')
 
   caughtError = null // eslint-disable-line
@@ -55,5 +53,4 @@ tape('chainable: catch', async test => {
 
   test.deepEqual(output, [0, 1, 2, 3, 4], 'catch passes values unchanged')
   test.equal(caughtError, null, 'catch function was not called when no exception')
-  test.end()
 })

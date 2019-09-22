@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { test as tape } from 'zora'
 // import mississippi from 'mississippi'
 import { chainable } from '../src/chainable.js'
 import { Poll } from '../src/poll.js'
@@ -22,7 +22,7 @@ tape('polling with functions', async test => {
     .take(5) // limit the length of the resulting sequence
     .forEach(value => console.log(`polling with sync function, value ${value}`))
   poll.done()
-  test.end()
+  test.ok(true)
 })
 
 // ping-pong

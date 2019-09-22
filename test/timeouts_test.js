@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { test as tape } from 'zora'
 import { callWithTimeout, wait, waitToCall } from '../src/timeouts.js'
 
 const msgResolvedBeforeTimeout = 'Resolved Before Timeout'
@@ -41,7 +41,6 @@ tape('callWithTimeout', async test => {
   await callWithTimeout(timeout, rejectBeforeTimeout(afterTimeout), resolveOnTimeout())
     .then(result => test.equal(result, msgResolvedAfterTimeout, 'can resolve after timeout'))
     .catch(error => test.fail(`unhandled exception ${error}`))
-  test.end()
 })
 
 const allowableJitter = 10
@@ -53,8 +52,7 @@ tape('wait', async test => {
   await wait(waitTime)
   const stopTime = Date.now()
   const waited = stopTime - startTime
-  test.true(approximately(waited, waitTime), 'wait waited the proper amount of time')
-  test.end()
+  test.ok(approximately(waited, waitTime), 'wait waited the proper amount of time')
 })
 
 tape('waitToCall', async test => {
@@ -63,6 +61,5 @@ tape('waitToCall', async test => {
   const startTime = Date.now()
   const callTime = await waitToCall(waitTime, fn)
   const waited = callTime - startTime
-  test.true(approximately(waited, waitTime), 'waitToCall waited to call fn')
-  test.end()
+  test.ok(approximately(waited, waitTime), 'waitToCall waited to call fn')
 })

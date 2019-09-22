@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { test as tape } from 'zora'
 import { chainable } from '../src/chainable.js'
 
 const fastSlowFast = async function * () {
@@ -34,12 +34,11 @@ tape('chunk', async test => {
     .chunk(3, [])
     .catch(error => {
       caughtException = true
-      test.true(error instanceof RangeError, 'throws range error with incorrect parameter')
+      test.ok(error instanceof RangeError, 'throws range error with incorrect parameter')
     })
     .runAwait()
 
-  test.true(caughtException, 'range error caught exception')
-  test.end()
+  test.ok(caughtException, 'range error caught exception')
 })
 
 class TestError extends Error {}
@@ -59,8 +58,7 @@ tape('chunk: passes iterable exceptions to iterator', async test => {
       caughtException = true
     })
     .runAwait()
-  test.true(caughtException, 'chunk threw exception')
-  test.end()
+  test.ok(caughtException, 'chunk threw exception')
 })
 
 tape('chunk: rejected promises from iterable are passed to iterator', async test => {
@@ -80,6 +78,5 @@ tape('chunk: rejected promises from iterable are passed to iterator', async test
       caughtException = true
     })
     .toArray()
-  test.true(caughtException, 'chunk threw exception')
-  test.end()
+  test.ok(caughtException, 'chunk threw exception')
 })

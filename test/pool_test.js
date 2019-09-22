@@ -1,5 +1,5 @@
 import { chainable } from '../src/chainable.js'
-import tape from 'tape'
+import { test as tape } from 'zora'
 
 const makeSlowAsyncFunction = (score) => {
   const delay = 100
@@ -29,10 +29,9 @@ tape('pool: slow iteration, fast asyncFunction, fast asyncIterable', async test 
     return value
   }
   const output = await asyncIterable.map(fn).pool(maxPoolSize).throttle(100, 0).toArray()
-  test.true(poolSize <= maxPoolSize, 'pool size did not exceed maxPoolSize')
+  test.ok(poolSize <= maxPoolSize, 'pool size did not exceed maxPoolSize')
   test.deepEqual(tracker.promises, tracker.calls, 'all the asyncFunctions were called')
   test.deepEqual(output.sort(), input, 'return value of all asyncFunctions is returned')
-  test.end()
 })
 
 tape('pool: fast iteration, fast asyncIterable, slow asyncFunction', async test => {
@@ -47,10 +46,9 @@ tape('pool: fast iteration, fast asyncIterable, slow asyncFunction', async test 
     return value
   }
   const output = await asyncIterable.map(fn).pool(maxPoolSize).toArray()
-  test.true(poolSize <= maxPoolSize, 'pool size did not exceed maxPoolSize')
+  test.ok(poolSize <= maxPoolSize, 'pool size did not exceed maxPoolSize')
   test.deepEqual(tracker.promises, tracker.calls, 'all the asyncFunctions were called')
   test.deepEqual(output.sort(), input, 'return value of all asyncFunctions is returned')
-  test.end()
 })
 
 tape('pool: fast iteration, slow asyncIterable, fast asyncFunction', async test => {
@@ -63,10 +61,9 @@ tape('pool: fast iteration, slow asyncIterable, fast asyncFunction', async test 
     return value
   }
   const output = await asyncIterable.map(fn).pool(tracker.maxPoolSize).toArray()
-  test.true(tracker.poolSize < 2, 'pool does not fill because asyncIterator is slow compared to asyncFunction')
+  test.ok(tracker.poolSize < 2, 'pool does not fill because asyncIterator is slow compared to asyncFunction')
   test.deepEqual(tracker.promises, tracker.calls, 'all the asyncFunctions were called')
   test.deepEqual(output.sort(), input, 'return value of all asyncFunctions is returned')
-  test.end()
 })
 
 tape('pool: fast iteration, fast SYNC iterable, fast asyncFunction', async test => {
@@ -79,17 +76,15 @@ tape('pool: fast iteration, fast SYNC iterable, fast asyncFunction', async test 
     return value
   }
   const output = await chainable(syncIterable).map(fn).pool(tracker.maxPoolSize).toArray()
-  test.true(tracker.poolSize < 2, 'pool does not fill')
+  test.ok(tracker.poolSize < 2, 'pool does not fill')
   test.deepEqual(tracker.promises, tracker.calls, 'all the asyncFunctions were called')
   test.deepEqual(output.sort(), input, 'return value of all asyncFunctions is returned')
-  test.end()
 })
 
 tape('pool: input iterable can provide async functions, sync functions, Promises, and other values', async test => {
   const iterable = [0, Promise.resolve(1), chainable([2, 3]), [4, 5], '6', async () => 7, () => 8, { toString: () => 9 }]
   const output = await chainable(iterable).pool(5).flatten().map(x => parseInt(x)).toArray()
   test.deepEqual(output, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'all values processed correctly')
-  test.end()
 })
 
 class TestError extends Error {}
@@ -112,8 +107,7 @@ tape('pool: asyncIterable exceptions propagates to iterator', async test => {
       test.is(e, theError, 'thrown error was caught directly')
     })
     .runAwait()
-  test.true(caughtException, 'exception was caught')
-  test.end()
+  test.ok(caughtException, 'exception was caught')
 })
 
 tape('pool: async function rejection propagates to iterator', async test => {
@@ -134,8 +128,7 @@ tape('pool: async function rejection propagates to iterator', async test => {
       test.is(e, theError, 'the thrown error was caught directly')
     })
     .toArray()
-  test.true(caughtException, 'exception was caught')
-  test.end()
+  test.ok(caughtException, 'exception was caught')
 })
 
 tape('pool: sync function throw propagates to iterator', async test => {
@@ -156,8 +149,7 @@ tape('pool: sync function throw propagates to iterator', async test => {
       test.is(e, theError, 'the thrown error was caught directly')
     })
     .toArray()
-  test.true(caughtException, 'exception was caught')
-  test.end()
+  test.ok(caughtException, 'exception was caught')
 })
 
 tape('pool: values from async functions are yielded when resolved', async test => {
@@ -178,12 +170,11 @@ tape('pool: values from async functions are yielded when resolved', async test =
     return value
   }
   const output = await asyncIterable.map(fn).pool(maxPoolSize).toArray()
-  test.true(poolSize <= maxPoolSize, 'pool size did not exceed maxPoolSize')
+  test.ok(poolSize <= maxPoolSize, 'pool size did not exceed maxPoolSize')
   test.deepEqual(tracker.promises, tracker.calls, 'all the async functions were called')
   // want to ensure that output was resolved out of order with respect to input
   // JSON.stringify is good enough in this instance to use as deep equal
   const notEqual = JSON.stringify(output) !== JSON.stringify(input)
-  test.true(notEqual, 'some async function results were yielded out of order with respect to asyncIterable')
+  test.ok(notEqual, 'some async function results were yielded out of order with respect to asyncIterable')
   test.deepEqual(output.sort(), input, 'return value of all async functions is returned')
-  test.end()
 })

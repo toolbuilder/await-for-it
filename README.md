@@ -1,5 +1,19 @@
 # Async Iterables and Helpers
 
+## TODO
+
+Check out this fork of emittery which links event handling to async stream: <https://github.com/lorenzofox3/emittery>
+
+<https://nolanlawson.com/2019/08/11/high-performance-input-handling-on-the-web/>
+
+Promise callback is also called a `microtask`. Microtasks execute immediately after any synchronous execution is complete. There’s no chance to fit in any work between the two. So if you think you can break up a long-running task by separating it into microtasks, then it won’t do what you think it’s doing. <https://nolanlawson.com/2018/09/01/a-tour-of-javascript-timers-on-the-web/>
+
+## Note
+
+If both Node and the bundler use `package.json` "module", then the package has to be isomorhic without a build step. The
+bundler can define a variable that would otherwise be undefined, and do 'tree shaking'. I think that variable would commonly
+be `process.browser`. This is undefined for Node.
+
 ## Use Cases
 
 ### Event Handlers

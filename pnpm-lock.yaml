@@ -10,6 +10,7 @@ devDependencies:
   eslint: 6.3.0
   tap-nirvana: 1.1.0
   tape: 4.11.0
+  zora: 3.0.3
 lockfileVersion: 5.1
 packages:
   /@babel/code-frame/7.5.5:
@@ -1248,6 +1249,10 @@ packages:
       node: '>=0.4'
     resolution:
       integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==
+  /zora/3.0.3:
+    dev: true
+    resolution:
+      integrity: sha512-eQe9oYOTi7Q3+Wp6FwzdBXPZYTS+7vIpgdhStFT/9TBLtufjR9dzMPxF++87brkEyACzTYjOfTUB6JRLCfhGMg==
 specifiers:
   '@toolbuilder/eslint-config': ^0.1.0-rc1
   '@toolbuilder/isnumber': ^0.1.0
@@ -1259,3 +1264,4 @@ specifiers:
   knuth-shuffle: ^1.0.8
   tap-nirvana: ^1.1.0
   tape: ^4.11.0
+  zora: ^3.0.3

@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { test as tape } from 'zora'
 import { RingBuffer } from '../src/ringbuffer.js'
 
 tape('RingBuffer: push/shift', test => {
@@ -39,8 +39,6 @@ tape('RingBuffer: push/shift', test => {
     test.equal(shifted, expected, `ring buffer shifted ${shifted}`)
     test.deepEqual([...ring], buffer, `ring buffer has contents of [${[...ring]}]`)
   }
-
-  test.end()
 })
 
 tape('RingBuffer: unshift/pop', test => {
@@ -77,6 +75,4 @@ tape('RingBuffer: unshift/pop', test => {
     test.equal(popped, expected, `ring buffer pop ${popped}`)
     test.deepEqual([...ring], buffer, `ring buffer has contents of [${[...ring]}]`)
   }
-
-  test.end()
 })

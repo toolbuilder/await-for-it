@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { test as tape } from 'zora'
 import { Semaphore } from '../src/semaphore.js'
 import { wait } from '../src/timeouts.js'
 
@@ -41,7 +41,6 @@ tape('semaphore: as lock', async test => {
   test.equal(state.started, 10, 'all threads started')
   test.equal(state.ended, 10, 'all threads ran and ended')
   test.equal(state.atOnce, 1, 'only one thread ran at once')
-  test.end()
 })
 
 tape('semaphore: thread pool', async test => {
@@ -59,7 +58,6 @@ tape('semaphore: thread pool', async test => {
   test.equal(state.started, 10, 'all threads started')
   test.equal(state.ended, 10, 'all threads ran and ended')
   test.equal(state.atOnce, atOnce, `only ${atOnce} threads ran at once`)
-  test.end()
 })
 
 tape('semaphore: acquireSync', async test => {
@@ -87,5 +85,4 @@ tape('semaphore: acquireSync', async test => {
   test.equal(state.started, 10, 'all threads started')
   test.equal(state.ended, 10, 'all threads ran and ended')
   test.equal(state.atOnce, atOnce, `only ${atOnce} threads ran at once`)
-  test.end()
 })

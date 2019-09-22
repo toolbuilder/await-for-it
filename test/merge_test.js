@@ -1,4 +1,4 @@
-import tape from 'tape'
+import { test as tape } from 'zora'
 import { chainable } from '../src/chainable.js'
 
 const toLongAsync = (period, iterable) => chainable(iterable).throttle(period, 0)
@@ -20,21 +20,19 @@ const mergeTest = async (iterators, asyncIterables, test) => {
   const interleavedSlice = interleaved.slice(0, iterators[0].length)
   const separated = splitByCase(interleavedSlice)
   const isInterleaved = separated.filter(byCase => byCase.length > 0).length === separated.length
-  test.true(isInterleaved, 'elements are interleaved, so not simply concatenating sequences')
+  test.ok(isInterleaved, 'elements are interleaved, so not simply concatenating sequences')
 }
 
 tape('merge: fast iterables', async test => {
   const iterators = [['A', 'B', 'C', 'D'], ['h', 'i', 'j', 'k', 'l']]
   const asyncIterables = [chainable(iterators[0]), chainable(iterators[1])]
   await mergeTest(iterators, asyncIterables, test)
-  test.end()
 })
 
 tape('merge: slow iterables', async test => {
   const iterators = [['A', 'B', 'C', 'D'], ['h', 'i', 'j', 'k', 'l']]
   const asyncIterables = [toLongAsync(50, iterators[0]), toLongAsync(80, iterators[1])]
   await mergeTest(iterators, asyncIterables, test)
-  test.end()
 })
 
 tape('merge: async and sync iterables', async test => {
@@ -43,7 +41,6 @@ tape('merge: async and sync iterables', async test => {
   // and all of iterator[0] would come out first - mergeTest would then fail.
   const asyncIterables = [iterators[0], chainable(iterators[1]).throttle(50, 0)]
   await mergeTest(iterators, asyncIterables, test)
-  test.end()
 })
 
 class TestError extends Error {}
@@ -62,8 +59,7 @@ tape('merge: iterable exception is propagated to iterator', async test => {
     .catch(error => test.is(error, theError, 'exception thrown from iterable caught directly'))
     .finally(() => { finallyCalled = true })
     .runAwait()
-  test.true(finallyCalled, 'iteration complete')
-  test.end()
+  test.ok(finallyCalled, 'iteration complete')
 })
 
 tape('merge: promise rejection is propagated to iterator', async test => {
@@ -78,6 +74,4 @@ tape('merge: promise rejection is propagated to iterator', async test => {
     .merge(...iterables)
     .catch(error => test.is(error, theError, 'merge throws exact error caught'))
     .runAwait()
-
-  test.end()
 })

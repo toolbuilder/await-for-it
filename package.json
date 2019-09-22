@@ -20,7 +20,8 @@
     "@toolbuilder/list": "^0.1.1",
     "eslint": "^6.3.0",
     "tap-nirvana": "^1.1.0",
-    "tape": "^4.11.0"
+    "tape": "^4.11.0",
+    "zora": "^3.0.3"
   },
   "eslintConfig": {
     "extends": "@toolbuilder/eslint-config"
