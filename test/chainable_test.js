@@ -1,4 +1,4 @@
-import { chainable } from '../src/chainable.js'
+import { chainable } from '../src/asynckronus.js'
 import { test as tape } from 'zora'
 
 tape('chainable: finally', async test => {

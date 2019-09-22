@@ -1,7 +1,7 @@
 {
   "description": "Handy async iterables like pool, queue, merge, chunk, flatten, map, filter, etc.",
   "version": "0.1.0-alpha01",
-  "name": "asynciterablefu",
+  "name": "asynckronus",
   "main": "src/index.js",
   "module": "src/chainable.js",
   "scripts": {
@@ -19,8 +19,10 @@
     "@toolbuilder/eslint-config": "^0.1.0-rc1",
     "@toolbuilder/list": "^0.1.1",
     "eslint": "^6.3.0",
+    "rollup": "^1.21.4",
     "tap-nirvana": "^1.1.0",
     "tape": "^4.11.0",
+    "tape-run": "^6.0.1",
     "zora": "^3.0.3"
   },
   "eslintConfig": {

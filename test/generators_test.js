@@ -1,5 +1,5 @@
 import { test as tape } from 'zora'
-import { chainable } from '../src/chainable.js'
+import { chainable } from '../src/asynckronus.js'
 
 tape('from', async test => {
   const output = await chainable.from([0, 1, 2, 3, 4]).toArray()

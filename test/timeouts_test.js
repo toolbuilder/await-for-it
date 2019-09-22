@@ -1,5 +1,5 @@
 import { test as tape } from 'zora'
-import { callWithTimeout, wait, waitToCall } from '../src/timeouts.js'
+import { callWithTimeout, wait, waitToCall } from '../src/asynckronus.js'
 
 const msgResolvedBeforeTimeout = 'Resolved Before Timeout'
 const msgRejectedBeforeTimeout = 'Rejected Before Timeout'

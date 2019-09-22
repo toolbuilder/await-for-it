@@ -1,5 +1,5 @@
 import { test as tape } from 'zora'
-import { RingBuffer } from '../src/ringbuffer.js'
+import { RingBuffer } from '../src/asynckronus.js'
 
 tape('RingBuffer: push/shift', test => {
   let value = 0

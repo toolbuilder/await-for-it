@@ -1,7 +1,5 @@
 import { test as tape } from 'zora'
-// import mississippi from 'mississippi'
-import { chainable } from '../src/chainable.js'
-import { Poll } from '../src/poll.js'
+import { chainable, Poll } from '../src/asynckronus.js'
 
 // Event handler events into async iterable
 

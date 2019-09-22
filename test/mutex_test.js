@@ -1,7 +1,5 @@
 import { test as tape } from 'zora'
-import { Mutex } from '../src/mutex.js'
-import { wait } from '../src/timeouts.js'
-import { isFunction } from '../src/is.js'
+import { Mutex, wait, isFunction } from '../src/asynckronus.js'
 
 const times = (n, fn) => {
   for (let i = 0; i < n; ++i) {

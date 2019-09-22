@@ -1,6 +1,5 @@
 import { test as tape } from 'zora'
-import { Semaphore } from '../src/semaphore.js'
-import { wait } from '../src/timeouts.js'
+import { Semaphore, wait } from '../src/asynckronus.js'
 
 const times = (n, fn) => {
   for (let i = 0; i < n; ++i) {

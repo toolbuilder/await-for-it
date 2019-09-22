@@ -1,7 +1,6 @@
 import { test as tape } from 'zora'
 import { range } from 'iterablefu/src/generators.js'
-import { chainable } from '../src/chainable.js'
-import { wait } from '../src/timeouts.js'
+import { chainable, wait } from '../src/asynckronus.js'
 
 const randomInt = (maxInt) => Math.floor(Math.random() * Math.floor(maxInt))
 

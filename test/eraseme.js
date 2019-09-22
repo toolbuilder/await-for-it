@@ -1,6 +1,4 @@
-import { chainable } from '../src/chainable.js'
-import { Queue } from '../src/queue.js'
-import { Poll } from '../src/poll.js'
+import { chainable, Queue, Poll } from '../src/aynckronus.js'
 
 let pollValue = 0
 const poll = new Poll(() => pollValue++, 50, 50)

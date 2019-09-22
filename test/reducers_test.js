@@ -1,7 +1,5 @@
-import { chainable, Poll } from '../src/chainable.js'
-import { waitToCall } from '../src/timeouts.js'
+import { chainable, Poll, waitToCall, Semaphore } from '../src/asynckronus.js'
 import { ChainableIterable } from 'iterablefu'
-import { Semaphore } from '../src/semaphore.js'
 import { test as tape } from 'zora'
 
 tape('forEach', async test => {

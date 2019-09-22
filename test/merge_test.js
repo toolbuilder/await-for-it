@@ -1,5 +1,5 @@
 import { test as tape } from 'zora'
-import { chainable } from '../src/chainable.js'
+import { chainable } from '../src/asynckronus.js'
 
 const toLongAsync = (period, iterable) => chainable(iterable).throttle(period, 0)
 
