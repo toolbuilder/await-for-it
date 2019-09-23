@@ -9,27 +9,15 @@ const transformTestsToUsePackage = async () => {
   await promises.mkdir('temp', { recursive: true })
   await promises.mkdir(bundleDir, { recursive: true })
   await promises.mkdir(srcDir, { recursive: true })
-  const filenames = (await promises.readdir('test/')).filter(filename => filename.endsWith('.js'))
+  const filenames = (await promises.readdir('test/')).filter(filename => filename.endsWith('_test.js'))
   for (const filename of filenames) {
     const lines = (await promises.readFile('test/' + filename, 'utf-8')).split('\n') // inefficient, but easy
     const browserSource = chainable(lines)
       .map(line => {
         return line
           .replace(
-            "import * as generators from '../src/generators.js'",
-            "import { generators } from 'iterablefu'")
-          .replace(
-            "import * as transforms from '../src/transforms.js'",
-            "import { transforms } from 'iterablefu'")
-          .replace(
-            "import * as reducers from '../src/reducers.js'",
-            "import { reducers } from 'iterablefu'")
-          .replace(
-            "import { makeChainableIterable } from '../src/makechainable.js'",
-            "import { makeChainableIterable } from 'iterablefu'")
-          .replace(
-            "import { chainable } from '../src/chainable.js'",
-            "import { chainable } from 'asynciterablefu'")
+            '../src/asynckronus.js',
+            'asynckronus')
       })
       .toArray()
       .join('\n')
@@ -40,7 +28,7 @@ const transformTestsToUsePackage = async () => {
 const inputOptionsBase = {
   // input can also take an array of input names, or an object that provides name: inputfile pairs
   input: 'temp/src/reducers_test.js',
-  external: ['iterablefu', 'zora']
+  external: ['asynckronus', 'iterablefu', 'zora']
 }
 
 const outputOptionsBase = {
@@ -50,6 +38,7 @@ const outputOptionsBase = {
     format: 'iife',
     name: 'reducers',
     globals: {
+      asynckronus: 'asynckronus',
       iterablefu: 'iterablefu',
       zora: 'zora'
     }
@@ -80,7 +69,8 @@ const makeBundles = async () => {
 
 const makeTestBundle = async () => {
   const source = []
-  source.push(await promises.readFile('umd/iterablefu.umd.js', 'utf-8'))
+  source.push(await promises.readFile('umd/asynckronus.js', 'utf-8'))
+  source.push(await promises.readFile('node_modules/iterablefu/umd/iterablefu.umd.js', 'utf-8'))
   source.push(await promises.readFile('node_modules/zora/dist/bundle/zora.js', 'utf-8'))
   const filenames = (await promises.readdir(bundleDir)).filter(filename => filename.endsWith('.js'))
   for (const filename of filenames) {

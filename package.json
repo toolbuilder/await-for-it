@@ -5,21 +5,31 @@
   "main": "src/index.js",
   "module": "src/chainable.js",
   "scripts": {
+    "bundle": "npm-run-all --serial bundle:clean bundle:umd bundle:test",
+    "bundle:clean": "rimraf umd temp",
+    "bundle:umd": "rollup -c rollup.config.js",
+    "bundle:test": "node -r esm scripts/forbrowser.js",
     "lint": "eslint src test",
-    "test": "tape -r esm test/*_test.js | tap-nirvana"
+    "test": "tape -r esm test/*_test.js | tap-nirvana",
+    "test:browser": "node -r esm scripts/cat.js temp/bundle.js | tape-run | tap-nirvana"
   },
   "dependencies": {
     "@toolbuilder/isnumber": "^0.1.0",
     "@toolbuilder/make-factory": "^0.1.0-rc2",
     "esm": "^3.2.25",
-    "iterablefu": "^0.3.1",
-    "knuth-shuffle": "^1.0.8"
+    "iterablefu": "^0.3.1"
   },
   "devDependencies": {
-    "@toolbuilder/eslint-config": "^0.1.0-rc1",
+    "@toolbuilder/eslint-config": "^0.1.0",
     "@toolbuilder/list": "^0.1.1",
     "eslint": "^6.3.0",
+    "multistream": "^4.0.0",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^3.0.0",
     "rollup": "^1.21.4",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^5.1.2",
+    "shelljs": "^0.8.3",
     "tap-nirvana": "^1.1.0",
     "tape": "^4.11.0",
     "tape-run": "^6.0.1",

@@ -1,4 +1,4 @@
-import { knuthShuffle } from 'knuth-shuffle'
+import { shuffle } from './shuffle.js'
 import { map } from 'iterablefu/src/transforms.js'
 import { isSyncIterable } from './is.js'
 
@@ -31,7 +31,7 @@ export const merge = async function * (...iterables) {
     // of `promises` does not change, a fast iterable near the front could prevent an
     // iterable at the back from advancing. In testing, I don't see this, but to be
     // safe, we'll shuffle the promises with a tested algorithm so you don't see weirdness.
-    const { value, done, id } = await Promise.race(knuthShuffle([...promises]))
+    const { value, done, id } = await Promise.race(shuffle([...promises]))
     if (done) {
       states.delete(id) // remove completed iterable
     } else {

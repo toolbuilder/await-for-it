@@ -1,4 +1,5 @@
 import { Semaphore } from './semaphore.js'
+import { isSyncIterable } from './is.js'
 
 /**
  * Executes function fn(item, index) for each item in the iterable sequence provided. Each function
@@ -122,7 +123,14 @@ export const run = (iterable) => {
  * await runAwait([0, 1, 2, 3, 4])
  */
 export const runAwait = async (iterable) => {
-  for await (const value of iterable) { // eslint-disable-line
+  // Rollup.js is removing the for await loop as if it is dead code, so fooling it with
+  // more complex code that does the same thing.
+  // for await (const value of iterable) { // eslint-disable-line
+  // }
+  const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+  let { done } = await iterator.next()
+  while (!done) {
+    ({ done } = await iterator.next())
   }
 }
 

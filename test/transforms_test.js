@@ -1,5 +1,5 @@
 import { test as tape } from 'zora'
-import { range } from 'iterablefu/src/generators.js'
+import { generators } from 'iterablefu'
 import { chainable, wait } from '../src/asynckronus.js'
 
 const randomInt = (maxInt) => Math.floor(Math.random() * Math.floor(maxInt))
@@ -256,16 +256,16 @@ const waitTimeGood = (n, reference) => (n > reference - 15) && (n < reference + 
 tape('throttle: passes all values without change', async test => {
   const throttlePeriod = 50
   const items = 10
-  const output = await chainable(range(items))
+  const output = await chainable(generators.range(items))
     .throttle(throttlePeriod, 0)
     .toArray()
-  test.deepEqual(output, [...range(items)], 'throttle passes all items unchanged')
+  test.deepEqual(output, [...generators.range(items)], 'throttle passes all items unchanged')
 })
 
 tape('throttle: restricts rate of iteration', async test => {
   const throttlePeriod = 100
   const items = 5
-  const output = await chainable(range(items))
+  const output = await chainable(generators.range(items))
     .throttle(throttlePeriod, 0)
     .map(n => Date.now())
     .diff((previousTime, now) => now - previousTime)
@@ -277,7 +277,7 @@ tape('throttle: restricts rate of iteration', async test => {
 tape('throttle: slow iteration restricts rate of iteration', async test => {
   const throttlePeriod = 50
   const items = 10
-  const output = await chainable(range(items))
+  const output = await chainable(generators.range(items))
     .throttle(throttlePeriod, 0) // <-- this is the one under test
     .map(n => Date.now())
     .throttle(2 * throttlePeriod, 0) // this one is restricting iteration rate

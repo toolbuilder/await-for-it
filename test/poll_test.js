@@ -1,6 +1,6 @@
 import { test as tape } from 'zora'
 import { chainable, Poll } from '../src/asynckronus.js'
-import { range } from 'iterablefu/src/generators.js'
+import { generators } from 'iterablefu'
 
 const allowableJitter = 15
 const waitTimeGood = (n, reference) => (n > reference - allowableJitter) && (n < reference + allowableJitter)
@@ -14,7 +14,7 @@ tape('poll: function results are output in order', async test => {
     .take(pollCount)
     .toArray()
   poll.done()
-  test.deepEqual(output, [...range(5)], 'function results are output in order')
+  test.deepEqual(output, [...generators.range(5)], 'function results are output in order')
 })
 
 tape('poll: slow iteration controls polling period', async test => {
@@ -40,7 +40,7 @@ tape('poll: poller controls polling period with fast iteration', async test => {
   const output = await chainable(poll)
     .diff((previous, current) => current - previous)
     .take(durationCount)
-    .filter(duration => waitTimeGood(duration, pollingPeriod))
+    .filter(duration => duration > (pollingPeriod - allowableJitter))
     .toArray()
   poll.done()
   test.equal(output.length, durationCount, 'slower polling rate controls faster iterators')
@@ -54,7 +54,7 @@ tape('poll: slow async function controls polling period', async test => {
   const output = await chainable(poll)
     .diff((previous, current) => current - previous)
     .take(durationCount)
-    .filter(duration => waitTimeGood(duration, 2 * pollingPeriod))
+    .filter(duration => duration > (2 * (pollingPeriod - allowableJitter)))
     .toArray()
   poll.done()
   test.equal(output.length, durationCount, 'slow async function controls polling rate')
