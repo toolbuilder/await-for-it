@@ -72,35 +72,35 @@ packages:
     dev: true
     resolution:
       integrity: sha512-EYNwp3bU+98cpU4lAWYYL7Zz+2gryWH1qbdDTidVd6hkiR6weksdbMadyXKXNPEkQFhXM+hVO9ZygomHXp+AIw==
-  /@types/node/10.14.18:
+  /@types/node/10.14.19:
     dev: true
     resolution:
-      integrity: sha512-ryO3Q3++yZC/+b8j8BdKd/dn9JlzlHBPdm80656xwYUdmPkpTGTjkAdt6BByiNupGPE8w0FhBgvYy/fX9hRNGQ==
-  /@types/node/12.7.5:
+      integrity: sha512-j6Sqt38ssdMKutXBUuAcmWF8QtHW1Fwz/mz4Y+Wd9mzpBiVFirjpNQf363hG5itkG+yGaD+oiLyb50HxJ36l9Q==
+  /@types/node/12.7.8:
     dev: true
     resolution:
-      integrity: sha512-9fq4jZVhPNW8r+UYKnxF1e2HkDWOWKM5bC2/7c9wPV835I0aOrVbS/Hw/pWPk2uKrNXQqg9Z959Kz+IYDd5p3w==
+      integrity: sha512-FMdVn84tJJdV+xe+53sYiZS4R5yn1mAIxfj+DVoNiQjTYz1+OYmjwEZr1ev9nU0axXwda0QDbYl06QHanRVH3A==
   /@types/resolve/0.0.8:
     dependencies:
-      '@types/node': 12.7.5
+      '@types/node': 12.7.8
     dev: true
     resolution:
       integrity: sha512-auApPaJf3NPfe18hSoJkp8EbZzer2ISk7o8mCC3M9he/a04+gbMF97NkpD2S8riMGvm4BMRI59/SZQSaLTKpsQ==
-  /acorn-jsx/5.0.2_acorn@7.0.0:
+  /acorn-jsx/5.0.2_acorn@7.1.0:
     dependencies:
-      acorn: 7.0.0
+      acorn: 7.1.0
     dev: true
     peerDependencies:
       acorn: ^6.0.0 || ^7.0.0
     resolution:
       integrity: sha512-tiNTrP1MP0QrChmD2DdupCr6HWSFeKVw5d/dHTu4Y7rkAkRhU/Dt7dphAfIUyxtHpl/eBVip5uTNSpQJHylpAw==
-  /acorn/7.0.0:
+  /acorn/7.1.0:
     dev: true
     engines:
       node: '>=0.4.0'
     hasBin: true
     resolution:
-      integrity: sha512-PaF/MduxijYYt7unVGRuds1vBC9bFxbNf+VWqhOClfdgy7RlVkQqt610ig1/yxTgsDIfW1cWDel5EBbOy3jdtQ==
+      integrity: sha512-kL5CuoXA/dgxlBbVrflsflzQ3PAas7RYZB52NOm/6839iVYJgKMJ3cQJD+t2i5+qFa8h3MDpEOJiS64E8JLnSQ==
   /ajv/6.10.2:
     dependencies:
       fast-deep-equal: 2.0.1
@@ -548,7 +548,7 @@ packages:
     dependencies:
       debug: 4.1.1
       ecstatic: 4.1.2
-      electron: 5.0.10
+      electron: 5.0.11
       json-stringify-safe: 5.0.1
       stream-read: 1.1.2
       tempy: 0.1.0
@@ -556,9 +556,9 @@ packages:
     hasBin: true
     resolution:
       integrity: sha512-XWsPVKhkVjltoFshn0f4oHkXn4YMc+TMvBT9O6W9aS+7YQgKN0FTju9YrAzVTiNcaGxcMetmQXquSPkvZ5+4Mg==
-  /electron/5.0.10:
+  /electron/5.0.11:
     dependencies:
-      '@types/node': 10.14.18
+      '@types/node': 10.14.19
       electron-download: 4.1.1
       extract-zip: 1.6.7
     dev: true
@@ -567,7 +567,7 @@ packages:
     hasBin: true
     requiresBuild: true
     resolution:
-      integrity: sha512-OSyxTlJ+7Yf0B+6pTdHdxY9RvI4U+mVKAbn+CkAOWxlCPMg3K+jt5UHKSPRRLnXQhQ0Tulg4vupbC0k27aukVw==
+      integrity: sha512-2QVVycTmvMmKC3S9XV7zSvouYBooHRTOBx1r64nBwtMh44gPydR3HzUbyVYjjxsw+4vIuH6AqNuY48KtWRpajg==
   /emoji-regex/7.0.3:
     dev: true
     resolution:
@@ -698,8 +698,8 @@ packages:
       integrity: sha512-U1suiZ2oDVWv4zPO56S0NcR5QriEahGtdN2OR6FiOG4WJvcjBVFB0qI4+eKoWFH483PKGuLuu6V8Z4T5g63UVA==
   /espree/6.1.1:
     dependencies:
-      acorn: 7.0.0
-      acorn-jsx: 5.0.2_acorn@7.0.0
+      acorn: 7.1.0
+      acorn-jsx: 5.0.2_acorn@7.1.0
       eslint-visitor-keys: 1.1.0
     dev: true
     engines:
@@ -1987,7 +1987,7 @@ packages:
       rollup: 1.21.4
       rollup-pluginutils: 2.8.2
       serialize-javascript: 1.9.1
-      terser: 4.3.1
+      terser: 4.3.2
     dev: true
     peerDependencies:
       rollup: '>=0.66.0 <2'
@@ -2002,8 +2002,8 @@ packages:
   /rollup/1.21.4:
     dependencies:
       '@types/estree': 0.0.39
-      '@types/node': 12.7.5
-      acorn: 7.0.0
+      '@types/node': 12.7.8
+      acorn: 7.1.0
     dev: true
     hasBin: true
     resolution:
@@ -2481,7 +2481,7 @@ packages:
       node: '>=4'
     resolution:
       integrity: sha1-hSdBPNBxAINPzJy7gkK+lboOH+4=
-  /terser/4.3.1:
+  /terser/4.3.2:
     dependencies:
       commander: 2.20.0
       source-map: 0.6.1
@@ -2491,7 +2491,7 @@ packages:
       node: '>=6.0.0'
     hasBin: true
     resolution:
-      integrity: sha512-pnzH6dnFEsR2aa2SJaKb1uSCl3QmIsJ8dEkj0Fky+2AwMMcC9doMqLOQIH6wVTEKaVfKVvLSk5qxPBEZT9mywg==
+      integrity: sha512-obxk4x19Zlzj9zY4QeXj9iPCb5W8YGn4v3pn4/fHj0Nw8+R7N02Kvwvz9VpOItCZZD8RC+vnYCDL0gP6FAJ7Xg==
   /text-table/0.2.0:
     dev: true
     resolution:
@@ -2730,10 +2730,10 @@ packages:
       integrity: sha512-eQe9oYOTi7Q3+Wp6FwzdBXPZYTS+7vIpgdhStFT/9TBLtufjR9dzMPxF++87brkEyACzTYjOfTUB6JRLCfhGMg==
 specifiers:
   '@toolbuilder/eslint-config': ^0.1.0
-  '@toolbuilder/isnumber': ^0.1.0
+  '@toolbuilder/isnumber': ^0.1.1
   '@toolbuilder/list': ^0.1.1
-  '@toolbuilder/make-factory': ^0.1.0-rc2
-  eslint: ^6.3.0
+  '@toolbuilder/make-factory': ^0.1.1
+  eslint: ^6.4.0
   esm: ^3.2.25
   iterablefu: ^0.3.1
   multistream: ^4.0.0

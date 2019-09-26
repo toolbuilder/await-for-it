@@ -20,15 +20,15 @@
     "test:package": "node -r esm scripts/package_test.js"
   },
   "dependencies": {
-    "@toolbuilder/isnumber": "^0.1.0",
-    "@toolbuilder/make-factory": "^0.1.0-rc2",
+    "@toolbuilder/isnumber": "^0.1.1",
+    "@toolbuilder/make-factory": "^0.1.1",
     "esm": "^3.2.25",
     "iterablefu": "^0.3.1"
   },
   "devDependencies": {
     "@toolbuilder/eslint-config": "^0.1.0",
     "@toolbuilder/list": "^0.1.1",
-    "eslint": "^6.3.0",
+    "eslint": "^6.4.0",
     "multistream": "^4.0.0",
     "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.0",
