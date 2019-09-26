@@ -4,14 +4,20 @@
   "name": "asynckronus",
   "main": "src/index.js",
   "module": "src/chainable.js",
+  "files": [
+    "src",
+    "umd"
+  ],
   "scripts": {
+    "build": "npm-run-all --serial test lint bundle test:package test:browser",
     "bundle": "npm-run-all --serial bundle:clean bundle:umd bundle:test",
     "bundle:clean": "rimraf umd temp",
     "bundle:umd": "rollup -c rollup.config.js",
     "bundle:test": "node -r esm scripts/forbrowser.js",
     "lint": "eslint src test",
     "test": "tape -r esm test/*_test.js | tap-nirvana",
-    "test:browser": "node -r esm scripts/cat.js temp/bundle.js | tape-run | tap-nirvana"
+    "test:browser": "node -r esm scripts/cat.js temp/bundle.js | tape-run | tap-nirvana",
+    "test:package": "node -r esm scripts/package_test.js"
   },
   "dependencies": {
     "@toolbuilder/isnumber": "^0.1.0",
