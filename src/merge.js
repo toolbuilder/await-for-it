@@ -3,28 +3,30 @@ import { map } from 'iterablefu/src/transforms.js'
 import { isSyncIterable } from './is.js'
 
 /**
- * Merge the output of one or more async iterables into a single async iterable. Each
+ * Merge the output of one or more async (or sync) iterables into a single async iterable. Each
  * async iterable is advanced as fast as possible, so that slow iterators do not hold
  * up faster ones. Equal speed iterables are advanced at roughly the same pace.
  *
  * Backpressure is provided by the iterating code. Iteration can be stopped by stopping
  * the iterating code.
- * @param  {...Iterable} iterables - any number of async iterables to be merged
- * @returns {AsyncGenerator} - merged iterables
+ * @param  {...Iterable|...AsyncIterable} iterables - any number of sync or async iterables to be merged
+ * @returns {AsyncGenerator} - merged iterables as async iterable
  */
 export const merge = async function * (...iterables) {
-  // use Promise.resolve in case generator is NOT async, there is no reliable test for async.
+  // use Promise.resolve in case iterator is NOT async
   // add id to result so we can tell which iterator it came from
   const nextPromise = (id, iterator) => {
     return Promise.resolve(iterator.next()).then(iterResult => ({ ...iterResult, id }))
   }
   const states = new Map()
   // initialize states
-  iterables.forEach((iterable, id) => { // using iterables index as id
+  iterables.forEach((iterable, id) => { // using iterables index provided by forEach function as id
     const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
     const promise = nextPromise(id, iterator)
     states.set(id, { iterator, promise })
   })
+
+  // iterables are removed when done, so states.size === 0 indicates all iterables done
   while (states.size > 0) {
     const promises = map(state => state.promise, states.values())
     // `Promise.race` picks the first resolved promise in `promises`. Since the order

@@ -25,20 +25,20 @@ export const forEach = async (fn, iterable) => {
 
 /**
  * Publishes values from iterable to any subscribing function. Functions can
- * be added and removed over time.
+ * be added and removed during iteration.
  *
  * Functions are passed the each value from the iterable. Only values provided
  * after subscribing are provided. Any return value is ignored.
  *
  * @param {AsyncIterable|Iterable} iterable that provides the values
- * @returns {Object} - Returns an object with subscribe and unsubscribed
+ * @returns {Object} - Returns an object with subscribe and unsubscribe
  * methods. The subscribe method accepts a function and returns an unsubscribe
  * key. The unsubscribe method accepts an unsubscribe key, to remove the function.
  * Also has start, stop, and running just like the run function.
  * @example
  * const publisher = chainable([0, 1, 2, 3]).throttle(50, 50).publish()
- * const unsubscribeKey = publisher.subscribe(console.log) // prints 0, 1 - then unsubscribed
- * wait(110, publisher.unsubscribe(unsubscribeKey)) // function is no longer called
+ * const key = publisher.subscribe(console.log) // prints 0, 1 - then unsubscribed
+ * wait(110, publisher.unsubscribe(key)) // console.log is no longer called after 110ms
  */
 export const publish = (iterable) => {
   const semaphore = new Semaphore(1)

@@ -3,9 +3,10 @@
  * timeoutDuration milliseconds. The promiseFunction is always called, so the timeout cannot stop it.
  *
  * If the timeoutFunction resolves or rejects first, the promiseFunction resolution will be lost. If
- * the results are important to you, you'll need provide access another way.
+ * the results are important to you, you'll need to provide access another way.
  *
  * The timeoutFunction will only be called if the promiseFunction does not resolve before the timeout.
+ *
  * @param {Number} timeoutDuration - milliseconds to wait before calling timeoutFunction
  * @param {Function} promiseFunction - normal promise function with resolve, reject as parameters
  * @param {Function} timeoutFunction - normal promise function with resolve, reject as parameters,
@@ -23,6 +24,11 @@ export const callWithTimeout = function (timeoutDuration, promiseFunction, timeo
   return new Promise(withTimout)
 }
 
+/**
+ * Create a promise that resolves after `ms` milliseconds.
+ *
+ * @param {Number} ms - the minimum number of milliseconds to wait before resolving.
+ */
 export const wait = (ms) => {
   return new Promise(resolve => setTimeout(() => resolve(), ms))
 }

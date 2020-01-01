@@ -13,7 +13,7 @@ export class QueueFull extends Error {}
  */
 export class Queue {
   /**
-   * Create a Queue. Each instance is a Generator (both Iterable and Iterator).
+   * Create a Queue. Each Queue instance is a Generator (both Iterable and Iterator).
    *
    * @param {RingBuffer|Number} buffer - if buffer is a number, it specifies the size of the
    * internal buffer. Otherwise buffer is treated as the buffer itself.
@@ -30,18 +30,14 @@ export class Queue {
   }
 
   /**
-   * Get the number of values currently in the queue.
-   * @returns {number} - the number of values currently in the queue.
+   * @field {number} - the number of values currently in the queue
    */
   get length () { return this.buffer.length }
 
   /**
-   * Get the maximum number of values that the queue can hold.
-   * @returns {number} - the maximum number of values
+   * @field {number} - the maximum number of values that the queue can hold.
    */
   get capacity () { return this.buffer.capacity }
-
-  // TODO: on, once for internal buffer events 'empty', 'full', 'half-full'
 
   /**
    * Terminate iteration over the queue iterator by rejecting the Promise for
@@ -77,7 +73,7 @@ export class Queue {
    *
    * @param {any} value - to be pushed into iterable
    * @returns {number} - the number of values in the queue at the end of the call
-   * @throws {QueueFull} - if queue.length === queue.capacity
+   * @throws {QueueFull} - if queue.length === queue.capacity before the call
    * @throws {QueueDone} - if queue.done() was called previously
    */
   push (value) {
@@ -141,7 +137,7 @@ export class Queue {
    * // call done to complete iteration. Otherwise, it will just wait for more pushes
    * queue.done()
    * (async () => {
-   *   // [Symbol.asyncIterator] at top of for await ...of loop
+   *   // JavaScript runtime calls [Symbol.asyncIterator] at top of for await ...of loop
    *   for await (const value of queue) {
    *     console.log(value)
    *   }

@@ -1,7 +1,7 @@
 import { makeFactory } from '@toolbuilder/make-factory/src/factory.js'
 
 /**
- * Dynamically create a ChainableClass. This differs from makeChainableIterator only in that the class can't be
+ * Dynamically create a ChainableClass. This differs from makeChainableFactory only in that the class can't be
  * called as a function.
  *
  * @param {Object} generators - Each key is the name of a generator, the value is a generator function.
@@ -9,6 +9,7 @@ import { makeFactory } from '@toolbuilder/make-factory/src/factory.js'
  * an iterable as the last argument.
  * @param {Object} reducers - Each key is the name of a reducer, the value is a function that takes the iterable
  * to reduce as the last argument.
+ * @returns {Class} - chainable class
  */
 export const makeChainableClass = (generators, transforms, reducers) => {
   // construct chainable iterable class using class semantics
@@ -39,7 +40,7 @@ export const makeChainableClass = (generators, transforms, reducers) => {
     }
   }
 
-  // Dynamically add static Sequence methods to Chainable
+  // Dynamically add static Generator methods to Chainable
   for (const methodName in generators) {
     Chainable[methodName] = function (...args) {
       const iterable = generators[methodName](...args)
@@ -72,6 +73,7 @@ export const makeChainableClass = (generators, transforms, reducers) => {
  * the iterable to transform as the last argument.
  * @param {Object} reducers - Each key is the name of a reducer, the value is a function that takes the iterable to
  * reduce as the last argument.
+ * @returns {Function} - Chainable class factory, with static methods
  */
 export const makeChainableFactory = (generators, transforms, reducers) => {
   const ChainableClass = makeChainableClass(generators, transforms, reducers)

@@ -7,7 +7,9 @@ import { chainable, Poll } from '../src/asynckronus.js'
 
 // deduplication, priority queues, etc. Things that need to operate over window
 
-// debounce, dropping (if queue full, don't push), etc. Seems to be popular concept
+// debounce, dropping, throttling (if queue full, don't push), etc. Seems to be popular concept
+// Based on https://nolanlawson.com/2019/08/11/high-performance-input-handling-on-the-web/
+// Use requestAnimationFrame and requestPostAnimationFrame to trigger sampling of last value
 
 // history queue? Maybe persistent?
 

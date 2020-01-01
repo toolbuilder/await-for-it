@@ -47,6 +47,7 @@ export class Mutex {
   /**
    * Acquire a lock.
    * @returns {Promise} - returns a Promise that resolves to a release function. The release
+   * function can be called multiple times, it will only release once.
    */
   acquire () {
     const release = once(() => this._semaphore.release())

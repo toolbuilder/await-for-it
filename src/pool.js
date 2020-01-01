@@ -60,9 +60,14 @@ export const pool = async function * (maxPoolSize, iterable) {
     return nextPromise
   }
 
+  // Doing two things here:
+  // 1) iterating over the input iterable using nextValuePromise to put things in promisePool
+  // 2) yielding results from promisePool
+  // Constraints:
+  // Cannot iterate faster than we can yield results once promisePool is full.
+  // Anytime we get a new value in promisePool, need to run another race on promisePool.
   let { done } = await nextValuePromise()
-  while (!done || promisePool.size > 0) { // eslint-disable-line
-
+  while (!done || promisePool.size > 0) {
     if (done || promisePool.size === maxPoolSize) {
       const { value, id } = await Promise.race(promisePool.values())
       promisePool.delete(id)
@@ -74,6 +79,7 @@ export const pool = async function * (maxPoolSize, iterable) {
       const promises = concatenate(promisePool.values(), valueToIterator(nextValuePromise()))
       ;({ done, value, id } = await Promise.race(promises))
       if (id) { promisePool.delete(id); yield value }
+      // if !id, then iterable.next() resolved, either a new Promise in promisePool or it is done
     }
   }
 }

@@ -68,5 +68,5 @@ export const chunk = async function * (n, timeout, iterable) {
   do {
     done = await fillChunkOrTimeout()
     if (buffer.length > 0) yield shiftUpTo(n)
-  } while (!done || buffer.length > 0) // eslint-disable-line
+  } while (!done || buffer.length > 0)
 }

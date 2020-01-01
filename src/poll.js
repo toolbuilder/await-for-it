@@ -8,7 +8,7 @@ export class Poll {
    * Periodically call a function. If the polling period is faster than the iteration rate,
    * then the interation rate will slow polling so that no buffering is required. Because of
    * this, when the iterating code stops, calls to asyncFunction will also stop. However, you
-   * should call the `done` method so that any finally expressions can run.
+   * should call the `done` method so that any `finally` expressions can run.
    *
    * @param {Function|AsyncFunction} fn - synchronous or async function that takes no parameters
    * @param {Number} period - call fn every period milliseconds

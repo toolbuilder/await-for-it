@@ -23,6 +23,9 @@ export class RingBuffer {
     this.length = 0
   }
 
+  /**
+   * Empties the ring buffer.
+   */
   clear () {
     this._first = 0
     this.length = 0

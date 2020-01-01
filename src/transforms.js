@@ -14,10 +14,11 @@ const zipObject = (propertyNames, iterableValues) => {
   }
   return outputObject
 }
+
 /**
 * Converts a sequence of Arrays to a sequence of Objects by assigning the property names
 * to each array element in turn. The input sequence doesn't have to provide arrays, it can
-* provide any sequence of iterable objects.
+* provide any iterable object.
 *
 * If the arrays in iterable are too long, extra values are ignored.
 *
@@ -39,11 +40,12 @@ export const arrayToObject = function (propertyNames, iterable) {
  * Pass the input sequence to the output sequence without change, but execute `fn(item)` for each
  * item in the sequence. Awaits the result of each function call before yielding the value.
  *
- * @param {AsyncFunction|Function} fn - synchronous function, `fn(item)` is called for each item in the sequence
+ * @param {AsyncFunction|Function} fn - function, `fn(item)` is called for each item in the sequence
  * @param {AsyncIterable|Iterable} iterable - the input sequence
  * @returns {AsyncGenerator} that is equivalent to the input iterable
  * @example
- * const a = callAwait(console.log, [1, 2, 3, 4, 5]) // logs each value
+ * const a = callAwait(console.log, [1, 2, 3, 4, 5])
+ * [...a] // iterates over `a` and prints each value on a separate line
  */
 export const callAwait = async function * (fn, iterable) {
   for await (const value of iterable) {
