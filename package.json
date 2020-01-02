@@ -1,6 +1,6 @@
 {
   "description": "Handy async iterables like pool, queue, merge, chunk, flatten, map, filter, etc.",
-  "version": "0.1.0-alpha01",
+  "version": "0.1.0-alpha02",
   "name": "asynckronus",
   "main": "src/index.js",
   "module": "src/chainable.js",
