@@ -9,3 +9,4 @@ export const from = (iterable) => {
 }
 
 export { merge } from './merge.js'
+export { zip, zipAll } from './zip.js'
