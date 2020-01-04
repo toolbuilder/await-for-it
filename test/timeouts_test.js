@@ -1,4 +1,4 @@
-import { test as tape } from 'zora'
+import { test } from 'zora'
 import { callWithTimeout, wait, waitToCall } from '../src/asynckronus.js'
 
 const msgResolvedBeforeTimeout = 'Resolved Before Timeout'
@@ -22,44 +22,44 @@ const rejectOnTimeout = () => {
   return (resolve, reject) => reject(msgRejectedAfterTimeout)
 }
 
-tape('callWithTimeout', async test => {
+test('callWithTimeout', async assert => {
   const beforeTimeout = 50
   const timeout = 100
   const afterTimeout = 150
   await callWithTimeout(timeout, resolveBeforeTimeout(beforeTimeout), rejectOnTimeout())
-    .then(result => test.equal(result, msgResolvedBeforeTimeout, 'can resolve before timeout'))
-    .catch(error => test.fail(`unhandled exception ${error}`))
+    .then(result => assert.equal(result, msgResolvedBeforeTimeout, 'can resolve before timeout'))
+    .catch(error => assert.fail(`unhandled exception ${error}`))
 
   await callWithTimeout(timeout, rejectBeforeTimeout(beforeTimeout), resolveOnTimeout())
-    .then(result => test.fail(`exception not thrown ${result}`))
-    .catch(result => test.equal(result, msgRejectedBeforeTimeout, 'can reject before timeout'))
+    .then(result => assert.fail(`exception not thrown ${result}`))
+    .catch(result => assert.equal(result, msgRejectedBeforeTimeout, 'can reject before timeout'))
 
   await callWithTimeout(timeout, resolveBeforeTimeout(afterTimeout), rejectOnTimeout())
-    .then(result => test.fail(`exception not thrown ${result}`))
-    .catch(result => test.equal(result, msgRejectedAfterTimeout, 'can reject after timeout'))
+    .then(result => assert.fail(`exception not thrown ${result}`))
+    .catch(result => assert.equal(result, msgRejectedAfterTimeout, 'can reject after timeout'))
 
   await callWithTimeout(timeout, rejectBeforeTimeout(afterTimeout), resolveOnTimeout())
-    .then(result => test.equal(result, msgResolvedAfterTimeout, 'can resolve after timeout'))
-    .catch(error => test.fail(`unhandled exception ${error}`))
+    .then(result => assert.equal(result, msgResolvedAfterTimeout, 'can resolve after timeout'))
+    .catch(error => assert.fail(`unhandled exception ${error}`))
 })
 
 const allowableJitter = 10
 const approximately = (n, ref) => (n > ref - allowableJitter) && (n < ref + allowableJitter)
 
-tape('wait', async test => {
+test('wait', async assert => {
   const waitTime = 50
   const startTime = Date.now()
   await wait(waitTime)
   const stopTime = Date.now()
   const waited = stopTime - startTime
-  test.ok(approximately(waited, waitTime), 'wait waited the proper amount of time')
+  assert.ok(approximately(waited, waitTime), 'wait waited the proper amount of time')
 })
 
-tape('waitToCall', async test => {
+test('waitToCall', async assert => {
   const fn = () => Date.now()
   const waitTime = 50
   const startTime = Date.now()
   const callTime = await waitToCall(waitTime, fn)
   const waited = callTime - startTime
-  test.ok(approximately(waited, waitTime), 'waitToCall waited to call fn')
+  assert.ok(approximately(waited, waitTime), 'waitToCall waited to call fn')
 })

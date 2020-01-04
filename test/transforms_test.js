@@ -1,4 +1,4 @@
-import { test as tape } from 'zora'
+import { test } from 'zora'
 import { generators } from 'iterablefu'
 import { chainable, wait } from '../src/asynckronus.js'
 
@@ -12,7 +12,7 @@ const makeTestRunner = (transformName, test) => {
   }
 }
 
-tape('arrayToObject', async test => {
+test('arrayToObject', async assert => {
   const tests = [
     // format: [testName, inputIterable, input parameter array, expectedOutput]
     [
@@ -49,10 +49,10 @@ tape('arrayToObject', async test => {
       ]
     ]
   ]
-  await chainable(tests).forEach(makeTestRunner('arrayToObject', test))
+  await chainable(tests).forEach(makeTestRunner('arrayToObject', assert))
 })
 
-tape('callAwait', async test => {
+test('callAwait', async assert => {
   const callOutput = []
   const fn = async x => { await wait(50); callOutput.push(x) }
   const passing = await chainable([0, 1, 2, 3, 4])
@@ -62,16 +62,16 @@ tape('callAwait', async test => {
     .map(([x, y]) => x === y)
     .filter(bool => bool === true)
     .toArray()
-  test.equal(passing.length, 5, 'callAwait waited each time fn was called')
+  assert.equal(passing.length, 5, 'callAwait waited each time fn was called')
 
   const output = await chainable([0, 1, 2, 3, 4])
     .callAwait(x => x * x)
     .toArray()
 
-  test.deepEqual(output, [0, 1, 2, 3, 4], 'callAwait passed each value unchanged')
+  assert.deepEqual(output, [0, 1, 2, 3, 4], 'callAwait passed each value unchanged')
 })
 
-tape('callNoAwait', async test => {
+test('callNoAwait', async assert => {
   const callOutput = []
   const fn = async x => { await wait(50); callOutput.push(x) }
   const passing = await chainable([0, 1, 2, 3, 4])
@@ -81,16 +81,16 @@ tape('callNoAwait', async test => {
     .map(([x, y]) => x === y)
     .filter(bool => bool === true)
     .toArray()
-  test.ok(passing.length === 0, 'callNoAwait did not await when fn was called')
+  assert.ok(passing.length === 0, 'callNoAwait did not await when fn was called')
 
   const output = await chainable([0, 1, 2, 3, 4])
     .callNoAwait(x => x * x)
     .toArray()
 
-  test.deepEqual(output, [0, 1, 2, 3, 4], 'callNoAwait passed each value unchanged')
+  assert.deepEqual(output, [0, 1, 2, 3, 4], 'callNoAwait passed each value unchanged')
 })
 
-tape('diff', async test => {
+test('diff', async assert => {
   const tests = [
     // format: [testName, inputIterable, input parameter array, expectedOutput]
     [
@@ -124,10 +124,10 @@ tape('diff', async test => {
       []
     ]
   ]
-  await chainable(tests).forEach(makeTestRunner('diff', test))
+  await chainable(tests).forEach(makeTestRunner('diff', assert))
 })
 
-tape('filter', async test => {
+test('filter', async assert => {
   const isEvenNumber = x => x % 2 === 0
 
   const tests = [
@@ -145,10 +145,10 @@ tape('filter', async test => {
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     ]
   ]
-  await chainable(tests).forEach(makeTestRunner('filter', test))
+  await chainable(tests).forEach(makeTestRunner('filter', assert))
 })
 
-tape('flatten: synchronous iterables', async test => {
+test('flatten: synchronous iterables', async assert => {
   const tests = [
     // format: [testName, inputIterable, inputParameters, expectedOutput]
     [
@@ -164,16 +164,16 @@ tape('flatten: synchronous iterables', async test => {
       ['Chainable', 'Iterable', 'Sequence', 'Generator', 'Transform']
     ]
   ]
-  await chainable(tests).forEach(makeTestRunner('flatten', test))
+  await chainable(tests).forEach(makeTestRunner('flatten', assert))
 })
 
-tape('flatten: async iterables', async test => {
+test('flatten: async iterables', async assert => {
   const input = chainable([0, 1, chainable([2, 3, 4]), 5, [6, 7], 'happy!'])
   const output = await input.flatten().toArray()
-  test.deepEqual(output, [0, 1, 2, 3, 4, 5, 6, 7, 'happy!'], 'flattens async and sync iterables')
+  assert.deepEqual(output, [0, 1, 2, 3, 4, 5, 6, 7, 'happy!'], 'flattens async and sync iterables')
 })
 
-tape('flattenRecursive', async test => {
+test('flattenRecursive', async assert => {
   const tests = [
     // format: [testName, inputIterable, inputParameters, expectedOutput]
     [
@@ -190,43 +190,43 @@ tape('flattenRecursive', async test => {
     ]
   ]
 
-  await chainable(tests).forEach(makeTestRunner('flattenRecursive', test))
+  await chainable(tests).forEach(makeTestRunner('flattenRecursive', assert))
 })
 
-tape('map: using sync function', async test => {
+test('map: using sync function', async assert => {
   const actual = await chainable([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).map(x => 2 * x).toArray()
-  test.deepEqual(actual, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18], 'each element was mapped')
+  assert.deepEqual(actual, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18], 'each element was mapped')
 })
 
-tape('map: using async function', async test => {
+test('map: using async function', async assert => {
   const asyncFunction = async x => new Promise(resolve => setTimeout(() => resolve(2 * x), randomInt(100)))
   const actual = await chainable([0, 1, 2, 3, 4]).map(asyncFunction).toArray()
-  test.deepEqual(actual, [0, 2, 4, 6, 8], 'each element was mapped in order')
+  assert.deepEqual(actual, [0, 2, 4, 6, 8], 'each element was mapped in order')
 })
 
-tape('mapWith', async test => {
+test('mapWith', async assert => {
   const asyncGenerator = async function * (iterable) {
     for await (const x of iterable) {
       yield x * x
     }
   }
   const output = await chainable([0, 1, 2, 3]).mapWith(asyncGenerator).toArray()
-  test.deepEqual(output, [0, 1, 4, 9], 'each element was mapped by asyncGenerator')
+  assert.deepEqual(output, [0, 1, 4, 9], 'each element was mapped by asyncGenerator')
 })
 
-tape('nth', async test => {
+test('nth', async assert => {
   let output = await chainable([0, 1, 2, 3, 4]).chunk(2, 100).nth(0).toArray()
-  test.deepEqual(output, [0, 2, 4], 'nth elements were picked')
+  assert.deepEqual(output, [0, 2, 4], 'nth elements were picked')
   output = await chainable([0, 1, 2, 3, 4, 5]).chunk(2, 100).nth(-1).toArray()
-  test.deepEqual(output, [1, 3, 5], 'negative indices work correctly')
+  assert.deepEqual(output, [1, 3, 5], 'negative indices work correctly')
 })
 
-tape('pluck', async test => {
+test('pluck', async assert => {
   const output = await chainable([{ a: 1, b: 2 }, { a: 3, b: 4 }]).pluck('a').toArray()
-  test.deepEqual(output, [1, 3], 'correct values were plucked')
+  assert.deepEqual(output, [1, 3], 'correct values were plucked')
 })
 
-tape('reject', async test => {
+test('reject', async assert => {
   const isEvenNumber = x => x % 2 === 0
 
   const tests = [
@@ -238,31 +238,31 @@ tape('reject', async test => {
       [1, 3, 5, 7, 9]
     ]
   ]
-  await chainable(tests).forEach(makeTestRunner('reject', test))
+  await chainable(tests).forEach(makeTestRunner('reject', assert))
 })
 
-tape('take', async test => {
+test('take', async assert => {
   let output = await chainable([0, 1, 2, 3, 4, 5, 6, 7, 8]).take(5).toArray()
-  test.deepEqual(output.length, 5, 'only takes up to n values when iterable is longer than n')
-  test.deepEqual(output, [0, 1, 2, 3, 4], 'takes values in the proper order')
+  assert.deepEqual(output.length, 5, 'only takes up to n values when iterable is longer than n')
+  assert.deepEqual(output, [0, 1, 2, 3, 4], 'takes values in the proper order')
 
   output = await chainable([0, 1, 2]).take(5).toArray()
-  test.deepEqual(output.length, 3, 'takes the entire iterable if iterable shorter than n')
-  test.deepEqual(output, [0, 1, 2], 'values are taken in order')
+  assert.deepEqual(output.length, 3, 'takes the entire iterable if iterable shorter than n')
+  assert.deepEqual(output, [0, 1, 2], 'values are taken in order')
 })
 
 const waitTimeGood = (n, reference) => (n > reference - 15) && (n < reference + 15)
 
-tape('throttle: passes all values without change', async test => {
+test('throttle: passes all values without change', async assert => {
   const throttlePeriod = 50
   const items = 10
   const output = await chainable(generators.range(items))
     .throttle(throttlePeriod, 0)
     .toArray()
-  test.deepEqual(output, [...generators.range(items)], 'throttle passes all items unchanged')
+  assert.deepEqual(output, [...generators.range(items)], 'throttle passes all items unchanged')
 })
 
-tape('throttle: restricts rate of iteration', async test => {
+test('throttle: restricts rate of iteration', async assert => {
   const throttlePeriod = 100
   const items = 5
   const output = await chainable(generators.range(items))
@@ -271,10 +271,10 @@ tape('throttle: restricts rate of iteration', async test => {
     .diff((previousTime, now) => now - previousTime)
     .filter(duration => waitTimeGood(duration, throttlePeriod))
     .toArray()
-  test.equals(output.length, items - 1, 'throttle restricted rate of iteration')
+  assert.equals(output.length, items - 1, 'throttle restricted rate of iteration')
 })
 
-tape('throttle: slow iteration restricts rate of iteration', async test => {
+test('throttle: slow iteration restricts rate of iteration', async assert => {
   const throttlePeriod = 50
   const items = 10
   const output = await chainable(generators.range(items))
@@ -285,10 +285,10 @@ tape('throttle: slow iteration restricts rate of iteration', async test => {
     .filter(duration => waitTimeGood(duration, 2 * throttlePeriod))
     .toArray()
   // if throttle not implemented correctly, you'll see 3 * throttlePeriod delays
-  test.equals(output.length, items - 1, 'iteration restricted the rate of throttle')
+  assert.equals(output.length, items - 1, 'iteration restricted the rate of throttle')
 })
 
-tape('throttle: will wait for initial wait period before yielding first item', async test => {
+test('throttle: will wait for initial wait period before yielding first item', async assert => {
   const throttlePeriod = 50
   const initialWait = 100
   const startTime = Date.now()
@@ -296,5 +296,5 @@ tape('throttle: will wait for initial wait period before yielding first item', a
     .throttle(throttlePeriod, initialWait)
     .map(n => Date.now())
     .toArray()
-  test.ok(waitTimeGood(output[0] - startTime, 100), 'throttle waiting initial wait time')
+  assert.ok(waitTimeGood(output[0] - startTime, 100), 'throttle waiting initial wait time')
 })

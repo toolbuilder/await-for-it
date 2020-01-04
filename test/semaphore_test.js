@@ -1,4 +1,4 @@
-import { test as tape } from 'zora'
+import { test } from 'zora'
 import { Semaphore, wait } from '../src/asynckronus.js'
 
 const times = (n, fn) => {
@@ -26,7 +26,7 @@ const makeTestHarness = (lock, threadTime) => {
   return { state, thread }
 }
 
-tape('semaphore: as lock', async test => {
+test('semaphore: as lock', async assert => {
   const threadTime = 100
   const lock = new Semaphore()
   const { state, thread } = makeTestHarness(lock, threadTime)
@@ -37,12 +37,12 @@ tape('semaphore: as lock', async test => {
   await wait(2 * threadTime)
   times(3, thread)
   await wait(15 * threadTime)
-  test.equal(state.started, 10, 'all threads started')
-  test.equal(state.ended, 10, 'all threads ran and ended')
-  test.equal(state.atOnce, 1, 'only one thread ran at once')
+  assert.equal(state.started, 10, 'all threads started')
+  assert.equal(state.ended, 10, 'all threads ran and ended')
+  assert.equal(state.atOnce, 1, 'only one thread ran at once')
 })
 
-tape('semaphore: thread pool', async test => {
+test('semaphore: thread pool', async assert => {
   const threadTime = 100
   const atOnce = 3
   const lock = new Semaphore(atOnce)
@@ -54,34 +54,34 @@ tape('semaphore: thread pool', async test => {
   await wait(threadTime)
   times(3, thread)
   await wait(15 * threadTime)
-  test.equal(state.started, 10, 'all threads started')
-  test.equal(state.ended, 10, 'all threads ran and ended')
-  test.equal(state.atOnce, atOnce, `only ${atOnce} threads ran at once`)
+  assert.equal(state.started, 10, 'all threads started')
+  assert.equal(state.ended, 10, 'all threads ran and ended')
+  assert.equal(state.atOnce, atOnce, `only ${atOnce} threads ran at once`)
 })
 
-tape('semaphore: acquireSync', async test => {
+test('semaphore: acquireSync', async assert => {
   const threadTime = 100
   const atOnce = 3
   const lock = new Semaphore(atOnce)
   const { state, thread } = makeTestHarness(lock, threadTime)
 
-  test.equal(lock.acquireSync(), true, 'first lock available')
-  test.equal(lock.available(), true)
-  test.equal(lock.acquireSync(), true, 'second lock available')
-  test.equal(lock.available(), true)
-  test.equal(lock.acquireSync(), true, 'third lock available')
-  test.equal(lock.available(), false) // just took third lock
-  test.equal(lock.acquireSync(), false, 'fourth lock NOT available')
-  test.equal(lock.available(), false)
+  assert.equal(lock.acquireSync(), true, 'first lock available')
+  assert.equal(lock.available(), true)
+  assert.equal(lock.acquireSync(), true, 'second lock available')
+  assert.equal(lock.available(), true)
+  assert.equal(lock.acquireSync(), true, 'third lock available')
+  assert.equal(lock.available(), false) // just took third lock
+  assert.equal(lock.acquireSync(), false, 'fourth lock NOT available')
+  assert.equal(lock.available(), false)
   times(3, thread)
   await wait(2 * threadTime)
-  test.equal(state.started - state.ended, 3, 'no threads ran critical section because of sync locks')
+  assert.equal(state.started - state.ended, 3, 'no threads ran critical section because of sync locks')
   times(4, thread)
   await wait(threadTime)
   times(3, thread)
   times(3, () => lock.release()) // release the 3 sync locks
   await wait(15 * threadTime)
-  test.equal(state.started, 10, 'all threads started')
-  test.equal(state.ended, 10, 'all threads ran and ended')
-  test.equal(state.atOnce, atOnce, `only ${atOnce} threads ran at once`)
+  assert.equal(state.started, 10, 'all threads started')
+  assert.equal(state.ended, 10, 'all threads ran and ended')
+  assert.equal(state.atOnce, atOnce, `only ${atOnce} threads ran at once`)
 })

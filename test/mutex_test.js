@@ -1,4 +1,4 @@
-import { test as tape } from 'zora'
+import { test } from 'zora'
 import { Mutex, wait, isFunction } from '../src/asynckronus.js'
 
 const times = (n, fn) => {
@@ -27,7 +27,7 @@ const makeTestHarness = (lock, threadTime) => {
   return { state, thread }
 }
 
-tape('mutex: acquire', async test => {
+test('mutex: acquire', async assert => {
   const threadTime = 50
   const lock = new Mutex()
   const { state, thread } = makeTestHarness(lock, threadTime)
@@ -38,22 +38,22 @@ tape('mutex: acquire', async test => {
   await wait(2 * threadTime)
   times(3, thread)
   await wait(15 * threadTime)
-  test.equal(state.started, 10, 'all threads started')
-  test.equal(state.ended, 10, 'all threads ran and ended')
-  test.equal(state.atOnce, 1, 'only one thread ran at once')
+  assert.equal(state.started, 10, 'all threads started')
+  assert.equal(state.ended, 10, 'all threads ran and ended')
+  assert.equal(state.atOnce, 1, 'only one thread ran at once')
 })
 
-tape('mutex: acquireSync', async test => {
+test('mutex: acquireSync', async assert => {
   const mutex = new Mutex()
 
-  test.ok(mutex.available(), 'mutex is available before first acquireSync')
+  assert.ok(mutex.available(), 'mutex is available before first acquireSync')
   const release = mutex.acquireSync()
-  test.ok(isFunction(release), 'first acquireSync returns release function')
-  test.notOk(mutex.available(), 'mutex is not avaialble after first acquireSync')
-  test.equal(mutex.acquireSync(), null, 'second acquireSync returns null')
+  assert.ok(isFunction(release), 'first acquireSync returns release function')
+  assert.notOk(mutex.available(), 'mutex is not avaialble after first acquireSync')
+  assert.equal(mutex.acquireSync(), null, 'second acquireSync returns null')
 
   release()
   release() // verify that double release works ok
 
-  test.ok(mutex.available(), 'muxtex is available after release function called')
+  assert.ok(mutex.available(), 'muxtex is available after release function called')
 })

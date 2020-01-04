@@ -1,4 +1,4 @@
-import { test as tape } from 'zora'
+import { test } from 'zora'
 import { chainable } from '../src/asynckronus.js'
 
 const fastSlowFast = async function * () {
@@ -14,36 +14,36 @@ const fastSlowFast = async function * () {
   }
 }
 
-tape('chunk', async test => {
+test('chunk', async assert => {
   let output = await chainable([0, 1, 2, 3, 4, 5, 6, 7, 8]).chunk(3, 100).toArray()
-  test.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6, 7, 8]], 'can generate all full length chunks')
+  assert.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6, 7, 8]], 'can generate all full length chunks')
 
   output = await chainable([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).chunk(3, 100).toArray()
-  test.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10]], 'can generate partial chunks at end')
+  assert.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10]], 'can generate partial chunks at end')
 
   output = await chainable(fastSlowFast()).chunk(3, 100).toArray()
   // notice that timeout only runs when there is something in the buffer. That's why even with a long wait
   // between 4 and 5, we don't get an empty buffer where [5, 6, 7] is.
-  test.deepEqual(output, [[0, 1, 2], [3, 4], [5, 6, 7], [8, 9]], 'can yield partial chunk if it times out')
+  assert.deepEqual(output, [[0, 1, 2], [3, 4], [5, 6, 7], [8, 9]], 'can yield partial chunk if it times out')
 
   output = await chainable([0, 1, 2, 3, 4, 5, 6]).chunk(3, 100).toArray()
-  test.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6]], 'works with sync iterables too')
+  assert.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6]], 'works with sync iterables too')
 
   let caughtException = false
   await chainable([0, 1, 2])
     .chunk(3, [])
     .catch(error => {
       caughtException = true
-      test.ok(error instanceof RangeError, 'throws range error with incorrect parameter')
+      assert.ok(error instanceof RangeError, 'throws range error with incorrect parameter')
     })
     .runAwait()
 
-  test.ok(caughtException, 'range error caught exception')
+  assert.ok(caughtException, 'range error caught exception')
 })
 
 class TestError extends Error {}
 
-tape('chunk: passes iterable exceptions to iterator', async test => {
+test('chunk: passes iterable exceptions to iterator', async assert => {
   const theError = new TestError('REJECT')
   const throwingIterable = async function * () {
     yield 1
@@ -54,14 +54,14 @@ tape('chunk: passes iterable exceptions to iterator', async test => {
   await chainable(throwingIterable())
     .chunk(3, 100)
     .catch(error => {
-      test.is(error, theError, 'chunk rethrows the error from throwingIterable')
+      assert.is(error, theError, 'chunk rethrows the error from throwingIterable')
       caughtException = true
     })
     .runAwait()
-  test.ok(caughtException, 'chunk threw exception')
+  assert.ok(caughtException, 'chunk threw exception')
 })
 
-tape('chunk: rejected promises from iterable are passed to iterator', async test => {
+test('chunk: rejected promises from iterable are passed to iterator', async assert => {
   const theError = new TestError('REJECT')
   const throwingIterable = async function * () {
     yield 1
@@ -74,9 +74,9 @@ tape('chunk: rejected promises from iterable are passed to iterator', async test
   await chainable(throwingIterable())
     .chunk(3, 100)
     .catch(error => {
-      test.is(error, theError, 'chunk rethrows the error from rejected promise')
+      assert.is(error, theError, 'chunk rethrows the error from rejected promise')
       caughtException = true
     })
     .toArray()
-  test.ok(caughtException, 'chunk threw exception')
+  assert.ok(caughtException, 'chunk threw exception')
 })

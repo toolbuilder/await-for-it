@@ -1,11 +1,11 @@
-import { test as tape } from 'zora'
+import { test } from 'zora'
 import { chainable, Poll } from '../src/asynckronus.js'
 import { generators } from 'iterablefu'
 
 const allowableJitter = 15
 const waitTimeGood = (n, reference) => (n > reference - allowableJitter) && (n < reference + allowableJitter)
 
-tape('poll: function results are output in order', async test => {
+test('poll: function results are output in order', async assert => {
   let count = 0
   const pollingPeriod = 50
   const pollCount = 5
@@ -14,10 +14,10 @@ tape('poll: function results are output in order', async test => {
     .take(pollCount)
     .toArray()
   poll.done()
-  test.deepEqual(output, [...generators.range(5)], 'function results are output in order')
+  assert.deepEqual(output, [...generators.range(5)], 'function results are output in order')
 })
 
-tape('poll: slow iteration controls polling period', async test => {
+test('poll: slow iteration controls polling period', async assert => {
   const iterationPeriod = 100
   const pollingPeriod = 50
   const durationCount = 5
@@ -30,10 +30,10 @@ tape('poll: slow iteration controls polling period', async test => {
     .filter(duration => duration > (iterationPeriod - allowableJitter))
     .toArray()
   poll.done()
-  test.equals(output.length, durationCount, 'iteration period controls polling rate')
+  assert.equals(output.length, durationCount, 'iteration period controls polling rate')
 })
 
-tape('poll: poller controls polling period with fast iteration', async test => {
+test('poll: poller controls polling period with fast iteration', async assert => {
   const pollingPeriod = 50
   const durationCount = 5
   const poll = new Poll(() => Date.now(), pollingPeriod, 0)
@@ -43,10 +43,10 @@ tape('poll: poller controls polling period with fast iteration', async test => {
     .filter(duration => duration > (pollingPeriod - allowableJitter))
     .toArray()
   poll.done()
-  test.equal(output.length, durationCount, 'slower polling rate controls faster iterators')
+  assert.equal(output.length, durationCount, 'slower polling rate controls faster iterators')
 })
 
-tape('poll: slow async function controls polling period', async test => {
+test('poll: slow async function controls polling period', async assert => {
   const pollingPeriod = 50
   const durationCount = 5
   const fn = () => new Promise(resolve => setTimeout(() => resolve(Date.now()), 2 * pollingPeriod))
@@ -57,39 +57,39 @@ tape('poll: slow async function controls polling period', async test => {
     .filter(duration => duration > (2 * (pollingPeriod - allowableJitter)))
     .toArray()
   poll.done()
-  test.equal(output.length, durationCount, 'slow async function controls polling rate')
+  assert.equal(output.length, durationCount, 'slow async function controls polling rate')
 })
 
-tape('poll: can wait before first call', async test => {
+test('poll: can wait before first call', async assert => {
   const waitTime = 100
   const startTime = Date.now()
   const poll = new Poll(async () => Date.now(), waitTime, waitTime)
   const output = await chainable(poll).take(2).toArray()
   poll.done()
   const timeToFirstCall = output[0] - startTime
-  test.ok(waitTimeGood(timeToFirstCall, waitTime), 'polling waited to start')
+  assert.ok(waitTimeGood(timeToFirstCall, waitTime), 'polling waited to start')
 })
 
-tape('poll works with synchronous functions', async test => {
+test('poll works with synchronous functions', async assert => {
   let count = 0
   const syncFunction = () => count++
   const waitTime = 100
   const poll = new Poll(syncFunction, waitTime)
   const output = await chainable(poll).take(5).toArray()
-  test.deepEqual(output, [0, 1, 2, 3, 4], 'poll called synchronous function correctly')
+  assert.deepEqual(output, [0, 1, 2, 3, 4], 'poll called synchronous function correctly')
 })
 
-tape('poll: exception thrown by function propagates to iterator', async test => {
+test('poll: exception thrown by function propagates to iterator', async assert => {
   const theError = new Error('poll exception')
   const fn = () => new Promise((resolve, reject) => setTimeout(() => reject(theError), 50))
   const poll = new Poll(fn, 50)
   await chainable(poll)
-    .catch(error => test.is(error, theError, 'caught the thrown exception'))
+    .catch(error => assert.is(error, theError, 'caught the thrown exception'))
     .finally(() => poll.done())
     .toArray()
 })
 
-tape('poll: calling done stops iteration', async test => {
+test('poll: calling done stops iteration', async assert => {
   let count = 0
   let finallyCalled = false
   const pollingPeriod = 50
@@ -99,6 +99,6 @@ tape('poll: calling done stops iteration', async test => {
     .callAwait((x) => { if (x === pollCount) poll.done() })
     .finally(() => { finallyCalled = true })
     .runAwait()
-  test.equal(finallyCalled, true, 'poll.done completed iteration')
+  assert.equal(finallyCalled, true, 'poll.done completed iteration')
   poll.done()
 })
