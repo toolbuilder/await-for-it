@@ -1,4 +1,4 @@
-import { test as tape } from 'zora'
+import { test } from 'zora'
 import { chainable, Poll } from '../src/asynckronus.js'
 
 // Event handler events into async iterable
@@ -13,7 +13,7 @@ import { chainable, Poll } from '../src/asynckronus.js'
 
 // history queue? Maybe persistent?
 
-tape('polling with functions', async test => {
+test('polling with functions', async assert => {
   // count stands in as some useful application state you want to poll
   let count = 0
   const fn = () => count++ // function can be async or synchronous
@@ -22,7 +22,7 @@ tape('polling with functions', async test => {
     .take(5) // limit the length of the resulting sequence
     .forEach(value => console.log(`polling with sync function, value ${value}`))
   poll.done()
-  test.ok(true)
+  assert.ok(true)
 })
 
 // ping-pong

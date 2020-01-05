@@ -1,5 +1,6 @@
 import { concatenate } from 'iterablefu/src/generators.js'
-import { isFunction, isSyncIterable } from './is.js'
+import { isFunction } from './is.js'
+import { iteratorFrom } from './iteratorfrom.js'
 
 // Alternative to wrapping a single promise in an Array to get an iterable
 const valueToIterator = function * (value) {
@@ -36,7 +37,7 @@ const valueToIterator = function * (value) {
 export const pool = async function * (maxPoolSize, iterable) {
   let idSequence = 31 // generates unique keys for promisePool, no reason it has to start with 31
   const promisePool = new Map() // key is id, value is a promise for the function result
-  const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+  const iterator = iteratorFrom(iterable)
   let nextPromise = null // promise getting next value from iterator
 
   const getNextValue = async () => {

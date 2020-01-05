@@ -42,7 +42,7 @@ const main = async () => {
   console.log(`Testing package in ${tempDir}`)
   await transformTestsToUsePackage()
   try {
-    shell.cp('scripts/package.json', `${tempDir}/package.json`)
+    shell.cp('scripts/package_test.json', `${tempDir}/package.json`)
     await promises.mkdir(`${tempDir}/test`, { recursive: true })
     shell.cp('-R', testDir, `${tempDir}`)
     await exec('npm pack', {})

@@ -1,6 +1,6 @@
 import { shuffle } from './shuffle.js'
 import { map } from 'iterablefu/src/transforms.js'
-import { isSyncIterable } from './is.js'
+import { iteratorFrom } from './iteratorfrom.js'
 
 /**
  * Merge the output of one or more async (or sync) iterables into a single async iterable. Each
@@ -21,7 +21,7 @@ export const merge = async function * (...iterables) {
   const states = new Map()
   // initialize states
   iterables.forEach((iterable, id) => { // using iterables index provided by forEach function as id
-    const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+    const iterator = iteratorFrom(iterable)
     const promise = nextPromise(id, iterator)
     states.set(id, { iterator, promise })
   })

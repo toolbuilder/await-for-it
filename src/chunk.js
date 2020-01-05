@@ -1,4 +1,5 @@
 import { isAsyncIterable, isSyncIterable } from './is.js'
+import { iteratorFrom } from './iteratorfrom.js'
 import { isFiniteNumber } from '@toolbuilder/isnumber/src/isnumber.js'
 import { waitToCall } from './timeouts.js'
 import { RingBuffer } from './ringbuffer.js'
@@ -23,7 +24,7 @@ export const chunk = async function * (n, timeout, iterable) {
   if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) throw new RangeError(`chunk parameter 'iterable' must be iterable: ${iterable}`)
 
   const buffer = new RingBuffer(n + 1) // '+1' isn't necessary, but just in case testing missed something...
-  const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+  const iterator = iteratorFrom(iterable)
   let nextValuePromise = null // iterator.next()
 
   const shiftUpTo = count => {

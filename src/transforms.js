@@ -1,4 +1,5 @@
 import { isString, isAsyncIterable, isSyncIterable } from './is.js'
+import { iteratorFrom } from './iteratorfrom.js'
 import { zipAll } from 'iterablefu/src/generators.js'
 
 export { pool } from './pool.js'
@@ -84,7 +85,7 @@ export const callNoAwait = async function * (fn, iterable) {
  * console.log(await toArray(a)) // prints [1, 1, 1, 1]
  */
 export const diff = async function * (fn, iterable) {
-  const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+  const iterator = iteratorFrom(iterable)
   let { value, done } = await iterator.next()
   let previousValue = value;
   ({ value, done } = await iterator.next())

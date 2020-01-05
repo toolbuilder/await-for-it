@@ -1,5 +1,5 @@
 import { Semaphore } from './semaphore.js'
-import { isSyncIterable } from './is.js'
+import { iteratorFrom } from './iteratorfrom.js'
 
 /**
  * Executes function fn(item, index) for each item in the iterable sequence provided. Each function
@@ -127,7 +127,7 @@ export const runAwait = async (iterable) => {
   // more complex code that does the same thing.
   // for await (const value of iterable) { // eslint-disable-line
   // }
-  const iterator = isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
+  const iterator = iteratorFrom(iterable)
   let { done } = await iterator.next()
   while (!done) {
     ({ done } = await iterator.next())

@@ -65,8 +65,8 @@ test('chunk: rejected promises from iterable are passed to iterator', async asse
   const theError = new TestError('REJECT')
   const throwingIterable = async function * () {
     yield 1
-    // Timing ensures chunk timeout will happen, at which point chunk no longer sees
-    // the rejected value if a catch method is not appended to the Promise by chunk.
+    // Timing ensures chunk timeout will happen before exception. The initial implementation
+    // would lose the exception in this case
     yield new Promise((resolve, reject) => setTimeout(() => reject(theError), 150))
     yield 2
   }

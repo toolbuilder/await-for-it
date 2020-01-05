@@ -1,12 +1,11 @@
-import { isSyncIterable } from './is.js'
+import { iteratorFrom } from './iteratorfrom.js'
 
-const getIterator = iterable => isSyncIterable(iterable) ? iterable[Symbol.iterator]() : iterable[Symbol.asyncIterator]()
 const zipIsDone = nextResults => nextResults.reduce((done, nextResult) => done || nextResult.done, false)
 const zipAllIsDone = nextResults => nextResults.reduce((done, nextResult) => done && nextResult.done, true)
 
 // Common implementation for zip and zipAll
 const zipIt = async function * (isDone, iterables) {
-  const iterators = iterables.map(iterable => getIterator(iterable))
+  const iterators = iterables.map(iterable => iteratorFrom(iterable))
   let nextResults = await Promise.all(iterators.map(i => i.next()))
   while (!isDone(nextResults)) {
     yield nextResults.map(result => (!result.done) ? result.value : undefined)
@@ -32,9 +31,7 @@ const zipIt = async function * (isDone, iterables) {
  * console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c']]
  *
  */
-export const zip = (...iterables) => {
-  return zipIt(zipIsDone, iterables)
-}
+export const zip = (...iterables) => zipIt(zipIsDone, iterables)
 
 /**
  * Creates a sequence of arrays the same length as the *longest* iterable provided. The first array contains the first
@@ -55,6 +52,4 @@ export const zip = (...iterables) => {
  * console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c'], [undefined, 'd']]
  *
  */
-export const zipAll = (...iterables) => {
-  return zipIt(zipAllIsDone, iterables)
-}
+export const zipAll = (...iterables) => zipIt(zipAllIsDone, iterables)
