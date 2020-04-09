@@ -1,7 +1,7 @@
 {
-  "description": "Handy async iterables like pool, queue, merge, chunk, flatten, map, filter, etc.",
-  "version": "0.1.0-alpha04",
   "name": "asynckronus",
+  "version": "0.1.0-alpha04",
+  "description": "Handy async iterables like pool, queue, merge, chunk, flatten, map, filter, etc.",
   "main": "src/index.js",
   "module": "src/chainable.js",
   "files": [
@@ -12,14 +12,17 @@
     "build": "npm-run-all --serial test lint bundle test:package test:browser",
     "bundle": "npm-run-all --serial bundle:clean bundle:umd bundle:test",
     "bundle:clean": "rimraf umd temp",
-    "bundle:umd": "rollup -c rollup.config.js",
     "bundle:combinetests": "node -r esm scripts/combine_all_tests.js",
-    "bundle:umdtests": "rollup -c scripts/rollup.tests.config.js",
     "bundle:test": "npm-run-all --serial bundle:combinetests bundle:umdtests",
+    "bundle:umd": "rollup -c rollup.config.js",
+    "bundle:umdtests": "rollup -c scripts/rollup.tests.config.js",
     "lint": "eslint src test",
     "test": "tape -r esm test/*_test.js | tap-nirvana",
     "test:browser": "node -r esm scripts/cat.js temp/all_test_umd.js | tape-run | tap-nirvana",
     "test:package": "node -r esm scripts/package_test.js"
+  },
+  "eslintConfig": {
+    "extends": "@toolbuilder/eslint-config"
   },
   "dependencies": {
     "@toolbuilder/isnumber": "^0.1.1",
@@ -28,22 +31,22 @@
     "iterablefu": "^0.4.1"
   },
   "devDependencies": {
-    "@toolbuilder/eslint-config": "^0.1.0",
-    "@toolbuilder/list": "^0.1.1",
+    "@toolbuilder/eslint-config": "^0.1.2",
+    "@toolbuilder/list": "^1.0.0",
+    "documentation": "^12.3.0",
     "eslint": "^6.8.0",
+    "markedpp": "^1.0.1",
     "multistream": "^4.0.0",
     "npm-run-all": "^4.1.5",
-    "rimraf": "^3.0.0",
-    "rollup": "^1.27.14",
+    "rimraf": "^3.0.2",
+    "rollup": "^2.3.4",
     "rollup-plugin-node-resolve": "^5.2.0",
-    "rollup-plugin-terser": "^5.1.3",
+    "rollup-plugin-terser": "^5.3.0",
     "shelljs": "^0.8.3",
+    "sort-package-json": "^1.41.0",
     "tap-nirvana": "^1.1.0",
-    "tape": "^4.12.1",
-    "tape-run": "^6.0.1",
+    "tape": "^4.13.2",
+    "tape-run": "^7.0.0",
     "zora": "^3.1.8"
-  },
-  "eslintConfig": {
-    "extends": "@toolbuilder/eslint-config"
   }
 }
