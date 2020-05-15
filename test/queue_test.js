@@ -1,5 +1,6 @@
 import { test } from 'zora'
-import { chainable, RingBuffer, waitToCall, Semaphore, Queue, QueueFull, QueueDone } from '../src/asynckronus.js'
+import { chainable, waitToCall, Semaphore, Queue, QueueFull, QueueDone } from '../src/await-for-it'
+import { RingBuffer } from '@toolbuilder/ring-buffer'
 
 // Alternate buffer implementation to verify that any buffer works.
 // Array is about 20x slower than RingBuffer for the push/shift use case.

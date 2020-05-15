@@ -1,5 +1,5 @@
 import { test } from 'zora'
-import { Mutex, wait, isFunction } from '../src/asynckronus.js'
+import { Mutex, wait, isFunction } from '../src/await-for-it'
 
 const times = (n, fn) => {
   for (let i = 0; i < n; ++i) {

@@ -1,5 +1,5 @@
 import { test } from 'zora'
-import { callWithTimeout, wait, waitToCall } from '../src/asynckronus.js'
+import { callWithTimeout, wait, waitToCall } from '../src/await-for-it'
 
 const msgResolvedBeforeTimeout = 'Resolved Before Timeout'
 const msgRejectedBeforeTimeout = 'Rejected Before Timeout'

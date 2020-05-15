@@ -1,5 +1,5 @@
 import { test } from 'zora'
-import { Semaphore, wait } from '../src/asynckronus.js'
+import { Semaphore, wait } from '../src/await-for-it'
 
 const times = (n, fn) => {
   for (let i = 0; i < n; ++i) {

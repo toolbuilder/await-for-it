@@ -6,7 +6,6 @@ export { Poll } from './poll.js'
 export { Queue, QueueDone, QueueFull } from './queue.js'
 export { Mutex } from './mutex.js'
 export { Semaphore } from './semaphore.js'
-export { RingBuffer } from './ringbuffer.js'
 export { callWithTimeout, wait, waitToCall } from './timeouts.js'
 
 import * as generators from './generators.js'

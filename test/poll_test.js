@@ -1,5 +1,5 @@
 import { test } from 'zora'
-import { chainable, Poll } from '../src/asynckronus.js'
+import { chainable, Poll } from '../src/await-for-it'
 import { generators } from 'iterablefu'
 
 const allowableJitter = 15

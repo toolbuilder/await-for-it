@@ -1,5 +1,5 @@
 import { test } from 'zora'
-import { chainable, Poll } from '../src/asynckronus.js'
+import { chainable, Poll } from '../src/await-for-it'
 
 // Event handler events into async iterable
 

@@ -1,4 +1,4 @@
-import { chainable, Queue, Poll } from '../src/aynckronus.js'
+import { chainable, Queue, Poll } from '../src/await-for-it'
 
 let pollValue = 0
 const poll = new Poll(() => pollValue++, 50, 50)

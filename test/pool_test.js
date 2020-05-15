@@ -1,4 +1,4 @@
-import { chainable } from '../src/asynckronus.js'
+import { chainable } from '../src/await-for-it'
 import { test } from 'zora'
 
 const makeSlowAsyncFunction = (score) => {

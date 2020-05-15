@@ -1,4 +1,4 @@
-import { RingBuffer } from './ringbuffer.js'
+import { RingBuffer } from '@toolbuilder/ring-buffer'
 import { isFiniteNumber } from '@toolbuilder/isnumber/src/isnumber.js'
 
 export class QueueDone extends Error {}

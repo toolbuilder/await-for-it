@@ -1,4 +1,4 @@
-import { chainable, Poll, waitToCall, Semaphore } from '../src/asynckronus.js'
+import { chainable, Poll, waitToCall, Semaphore } from '../src/await-for-it'
 import { ChainableIterable } from 'iterablefu'
 import { test } from 'zora'
 

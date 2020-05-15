@@ -1,5 +1,5 @@
 import { test } from 'zora'
-import { chainable } from '../src/asynckronus.js'
+import { chainable } from '../src/await-for-it'
 
 test('from', async assert => {
   const output = await chainable.from([0, 1, 2, 3, 4]).toArray()

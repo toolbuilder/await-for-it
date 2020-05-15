@@ -1,5 +1,5 @@
 import { test } from 'zora'
-import { chainable } from '../src/asynckronus.js'
+import { chainable } from '../src/await-for-it'
 
 const fastSlowFast = async function * () {
   let i = 0

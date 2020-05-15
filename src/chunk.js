@@ -2,7 +2,7 @@ import { isAsyncIterable, isSyncIterable } from './is.js'
 import { iteratorFrom } from './iteratorfrom.js'
 import { isFiniteNumber } from '@toolbuilder/isnumber/src/isnumber.js'
 import { waitToCall } from './timeouts.js'
-import { RingBuffer } from './ringbuffer.js'
+import { RingBuffer } from '@toolbuilder/ring-buffer'
 
 /**
  * Chunk every n items into an array, and output that array in the output sequence.
