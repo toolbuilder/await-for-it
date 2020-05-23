@@ -9,6 +9,7 @@ export { chunk } from './chunk.js'
 const zipObject = (propertyNames, iterableValues) => {
   const outputObject = {}
   const pairs = zipAll(propertyNames, iterableValues)
+  // Unfortunately, Object.fromEntries creates keys for undefined
   for (const [propertyName, value] of pairs) {
     if (propertyName === undefined) continue
     outputObject[propertyName] = value
