@@ -54,67 +54,91 @@ import { generators, transforms, reducers } from 'await-for-it'
 * The event queue documentation is [here](docs/queue.md).
 * The polling documentation is [here](docs/poll.md).
 
-The documentation is in progress, and is currently all jumbled together because of the process used to generate it. The examples are for the chainable API which doesn't need the last 'iterable' parameter. However, the parameter listing for each method are for the 'data-last' functional API, and include the 'data-last' iterable as the last parameter. My apologies.
+The documentation is in progress, and is currently all jumbled together because of the process used to generate it. The examples are for the chainable API which doesn't need the last 'iterable' parameter. However, the parameter listings for each method are for the 'data-last' functional API, and include the 'data-last' iterable as the last parameter. My apologies for the mess.
 
 ## Examples
 
-### Event Handling
-
-The [Queue](docs/queue.md) lets you insert data into an asynchronous iterable while it is iterating.
-
-Here's an example that uses the standard [EventListener](https://dom.spec.whatwg.org/#interface-eventtarget)
-interface.
-
 ```javascript
-import { chainable, Queue } from 'asynckronus'
+import { chainable } from 'await-for-it'
 
-// Event handler class that uses the DOM EventListener interface
-class Handler = {
-  constructor (currentTarget) {
-    this.queue = new Queue(20) // buffer is 20 elements long
-    this.processor = chainable(this.queue).forEach(event => doSomething(event))
-    currentTarget.addEventListener('click', this)
-  }
-
-  handleEvent(e) {
-    this.queue.push(e)
-  }
-
-  done() { this.queue.done() }
-}
-
-const handler = new Handler(document.body)
+chainable([0, 1, 2, 3, 4]) // factory method makes ChainableIteable instance
+  .map(x => 2 * x)
+  .throttle(100, 1000) // wait 1000ms to start, then yield every 100ms
+  .callAwait(async (x) => someAsyncMethod(x)) // do something for every value
+  .catch(error => handleTheError(error)) // Just like Promise.catch
+  .finally(() => cleanup()) // always called even if there is an error
+  .run() // run the iterable like a pseudo-thread, no await
 ```
 
-### Batching
+### Catch and Finally
 
-Sometimes batching data is more efficient, but waiting for a complete batch might take too long to support
-liveness. [Chunk](docs/chunk.md) supports batching with timeout to support that use case.
+The `chainable` factory method dynamically creates a `ChainableIterable` from the functional API methods. However it adds in two methods to support error handling that aren't documented yet. The unit tests are in 'test/chainable_test.js'.
+
+The `catch` and `finally` methods allow a cleaner syntax than writing a bunch of try/catch/finally blocks around iteration. Usage is quite similar to the `Promise` methods `catch` and `finally`. You can use multiple `catch` and `finally` calls in the same iterator.
 
 ```javascript
-import { chainable } from 'asynckronus'
+  import { chainable } from 'await-for-it'
 
-const controller = chainable(yourDataSource)
-  .chunk(100, 1000) // process in batches of 100, or every 1000ms
-  .map(yourBatchFunction)
-  .catch(yourExceptionHandler)
-  .finally(yourCleanupCode)
-  .run()
+  chainable([0, 1, 2, 3])
+    .catch(error => { /* do something */ }) // stops iteration
+    .finally(() => ++testValue) // always called even if there is an error
+    .runAwait() // Run the iterator to completion, like a pseudo thread
+```
 
-// Elsewhere you can control process execution
+### Polling
+
+```javascript
+import { chainable, Poll } from 'await-for-it'
+
+// create a data source - could be events or whatever
+// Polling will happen no faster than every 1000ms, but
+// backpressure from the iterator can slow or stop polling.
+let count = 0
+const poll = new Poll(async () => count++, 1000)
+
+await chainable(poll)
+    .take(5) // stop polling after 5 numbers
+    .runAwait() // start the polling process
+// Poll is now stopped waiting for another next() call which will never come
+// Ordinarily you would call done() when some event happens, like this...
+  poll.done()
+```
+
+### Queues
+
+Here's a stupid Queue example.
+
+```javascript
+import { chainable, Poll, Queue } from 'await-for-it'
+
+// Make an event queue to handle the polled data
+const queue = new Queue(10) // input buffer size is 10
+// Build a processing chain for handling queue input
+chainable(queue).map(x => 2 * x).run()
+
+// Nothing is happening yet - need a data source...
+let count = 0
+const poll = new Poll(() => count++, 1000)
+// start polling whether anybody is subscribed or not
+const publisher = chainable(poll).publish()
+publisher.subscribe(x => queue.push(x)) // feed data into queue
+
+// Sometime later in response to some event...
+poll.done() // stop polling
+queue.done() // tell the iterator it is done, any queued values will still be processed
+```
+
+### Pseudo Threads
+
+You can start and stop iterators, sort of like pseudo-threads. Here's a silly example.
+
+```javascript
+import { chainable } from 'await-for-it'
+
+const controller = chainable([0, 1, 2, 3, 4])
+  .callAwait(async x => doSomething(x))
+  .run() // we're off and running now
+
 if (controller.running) controller.stop()
 controller.start()
 ```
-
-### Back Pressure
-
-
-## Smaller Bundles
-
-## Customization
-
-## Alternatives
-
-## Contributing
-
-## Issues

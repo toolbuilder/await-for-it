@@ -2,96 +2,42 @@
 
 ### Table of Contents
 
--   [makeChainableClass][1]
-    -   [Parameters][2]
--   [makeChainableFactory][3]
-    -   [Parameters][4]
--   [from][5]
-    -   [Parameters][6]
--   [merge][7]
-    -   [Parameters][8]
--   [zip][9]
-    -   [Parameters][10]
-    -   [Examples][11]
--   [zipAll][12]
-    -   [Parameters][13]
-    -   [Examples][14]
--   [arrayToObject][15]
-    -   [Parameters][16]
-    -   [Examples][17]
--   [callAwait][18]
-    -   [Parameters][19]
-    -   [Examples][20]
--   [callNoAwait][21]
-    -   [Parameters][22]
-    -   [Examples][23]
--   [diff][24]
-    -   [Parameters][25]
-    -   [Examples][26]
--   [filter][27]
-    -   [Parameters][28]
-    -   [Examples][29]
--   [flatten][30]
-    -   [Parameters][31]
-    -   [Examples][32]
--   [flattenRecursive][33]
-    -   [Parameters][34]
-    -   [Examples][35]
--   [map][36]
-    -   [Parameters][37]
-    -   [Examples][38]
--   [mapWith][39]
-    -   [Parameters][40]
-    -   [Examples][41]
--   [nth][42]
-    -   [Parameters][43]
-    -   [Examples][44]
--   [pluck][45]
-    -   [Parameters][46]
-    -   [Examples][47]
--   [reject][48]
-    -   [Parameters][49]
-    -   [Examples][50]
--   [take][51]
-    -   [Parameters][52]
-    -   [Examples][53]
--   [throttle][54]
-    -   [Parameters][55]
-    -   [Examples][56]
--   [pool][57]
-    -   [Parameters][58]
--   [chunk][59]
-    -   [Parameters][60]
--   [callWithTimeout][61]
-    -   [Parameters][62]
--   [wait][63]
-    -   [Parameters][64]
--   [waitToCall][65]
-    -   [Parameters][66]
--   [forEach][67]
-    -   [Parameters][68]
-    -   [Examples][69]
--   [publish][70]
-    -   [Parameters][71]
-    -   [Examples][72]
--   [reduce][73]
-    -   [Parameters][74]
-    -   [Examples][75]
--   [run][76]
-    -   [Parameters][77]
-    -   [Examples][78]
--   [runAwait][79]
-    -   [Parameters][80]
-    -   [Examples][81]
--   [toArray][82]
-    -   [Parameters][83]
-    -   [Examples][84]
--   [Semaphore][85]
-    -   [Parameters][86]
-    -   [available][87]
-    -   [acquireSync][88]
-    -   [acquire][89]
-    -   [release][90]
+* generators - used to create async iterables
+  * [from][5]
+  * [merge][7]
+  * [zip][9]
+  * [zipAll][12]
+* transforms - modify the contents of an iterable stream
+  * [arrayToObject][15]
+  * [callAwait][18]
+  * [callNoAwait][21]
+  * [chunk][59]
+  * [diff][24]
+  * [filter][27]
+  * [flatten][30]
+  * [flattenRecursive][33]
+  * [map][36]
+  * [mapWith][39]
+  * [nth][42]
+  * [pluck][45]
+  * [pool][57]
+  * [reject][48]
+  * [take][51]
+  * [throttle][54]
+* reducers - pump your iterable like a for...await loop
+  * [forEach][67]
+  * [publish][70]
+  * [reduce][73]
+  * [run][76]
+  * [runAwait][79]
+  * [toArray][82]
+* miscellaneous
+  * [Semaphore][85]
+  * [makeChainableClass][1]
+  * [makeChainableFactory][3]
+  * [callWithTimeout][61]
+  * [wait][63]
+  * [waitToCall][65]
 
 ## makeChainableClass
 
@@ -143,7 +89,7 @@ the iterating code.
 
 ### Parameters
 
--   `iterables` **...any** 
+-   `iterables` **...any**
 
 Returns **AsyncGenerator** merged iterables as async iterable
 
@@ -159,7 +105,7 @@ don't need the elements paired.
 
 ### Parameters
 
--   `iterables` **...any** 
+-   `iterables` **...any**
 
 ### Examples
 
@@ -185,7 +131,7 @@ fast as possible, and don't need the elements paired.
 
 ### Parameters
 
--   `iterables` **...any** 
+-   `iterables` **...any**
 
 ### Examples
 
@@ -409,7 +355,7 @@ Given a sequence of Objects, output the specified property of each Object as a s
 
 ### Parameters
 
--   `propertyName`  
+-   `propertyName`
 -   `iterable` **(AsyncIterable | Iterable)** the input sequence of Objects
 -   `propertyname` **[string][94]** the property to extract from each Object
 
@@ -587,7 +533,7 @@ forEach(fn, [1, 2, 3]) // prints the following...
 // item - 3, index - 2
 ```
 
-Returns **[undefined][96]** 
+Returns **[undefined][96]**
 
 ## publish
 

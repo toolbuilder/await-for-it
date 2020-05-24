@@ -2,15 +2,9 @@
 
 ### Table of Contents
 
--   [Poll][1]
-    -   [Parameters][2]
-    -   [done][3]
--   [callWithTimeout][4]
-    -   [Parameters][5]
--   [wait][6]
-    -   [Parameters][7]
--   [waitToCall][8]
-    -   [Parameters][9]
+* [Poll][1]
+  * [Parameters][2]
+  * [done][3]
 
 ## Poll
 
@@ -27,60 +21,12 @@ Periodically calls a function and provides the resolved values as an iterator.
 
 Stops polling
 
-## callWithTimeout
-
-Create a Promise that calls a timeoutFunction if the promiseFunction does not resolve before
-timeoutDuration milliseconds. The promiseFunction is always called, so the timeout cannot stop it.
-
-If the timeoutFunction resolves or rejects first, the promiseFunction resolution will be lost. If
-the results are important to you, you'll need to provide access another way.
-
-The timeoutFunction will only be called if the promiseFunction does not resolve before the timeout.
-
-### Parameters
-
--   `timeoutDuration` **[Number][11]** milliseconds to wait before calling timeoutFunction
--   `promiseFunction` **[Function][10]** normal promise function with resolve, reject as parameters
--   `timeoutFunction` **[Function][10]** normal promise function with resolve, reject as parameters,
-    called only if promise times out.
-
-## wait
-
-Create a promise that resolves after `ms` milliseconds.
-
-### Parameters
-
--   `ms` **[Number][11]** the minimum number of milliseconds to wait before resolving.
-
-## waitToCall
-
-Wait before calling a function and returning the resolved value.
-
-### Parameters
-
--   `ms` **[Number][11]** milliseconds to wait before calling function 'fn'
--   `fn` **(AsyncFunction | [Function][10])** function to call
-
-Returns **[Promise][12]** that resolves to the return value of fn, or the value it resolves
-to if fn is async.
 
 [1]: #poll
 
 [2]: #parameters
 
 [3]: #done
-
-[4]: #callwithtimeout
-
-[5]: #parameters-1
-
-[6]: #wait
-
-[7]: #parameters-2
-
-[8]: #waittocall
-
-[9]: #parameters-3
 
 [10]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function
 
