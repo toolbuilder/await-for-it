@@ -39,13 +39,13 @@ npm install --save await-for-it
 If you want the chainable API, use this import.
 
 ```javascript
-import { chainable } from 'await-for-it'
+import { chainable }  from '@toolbuilder/await-for-it
 ```
 
 If you want the functional API, use this import.
 
 ```javascript
-import { generators, transforms, reducers } from 'await-for-it'
+import { generators, transforms, reducers }  from '@toolbuilder/await-for-it
 ```
 
 ## API
@@ -59,7 +59,7 @@ The documentation is in progress, and is currently all jumbled together because 
 ## Examples
 
 ```javascript
-import { chainable } from 'await-for-it'
+import { chainable }  from '@toolbuilder/await-for-it
 
 chainable([0, 1, 2, 3, 4]) // factory method makes ChainableIteable instance
   .map(x => 2 * x)
@@ -77,7 +77,7 @@ The `chainable` factory method dynamically creates a `ChainableIterable` from th
 The `catch` and `finally` methods allow a cleaner syntax than writing a bunch of try/catch/finally blocks around iteration. Usage is quite similar to the `Promise` methods `catch` and `finally`. You can use multiple `catch` and `finally` calls in the same iterator.
 
 ```javascript
-  import { chainable } from 'await-for-it'
+  import { chainable }  from '@toolbuilder/await-for-it
 
   chainable([0, 1, 2, 3])
     .catch(error => { /* do something */ }) // stops iteration
@@ -88,7 +88,7 @@ The `catch` and `finally` methods allow a cleaner syntax than writing a bunch of
 ### Polling
 
 ```javascript
-import { chainable, Poll } from 'await-for-it'
+import { chainable, Poll }  from '@toolbuilder/await-for-it
 
 // create a data source - could be events or whatever
 // Polling will happen no faster than every 1000ms, but
@@ -109,7 +109,7 @@ await chainable(poll)
 Here's a stupid Queue example.
 
 ```javascript
-import { chainable, Poll, Queue } from 'await-for-it'
+import { chainable, Poll, Queue }  from '@toolbuilder/await-for-it
 
 // Make an event queue to handle the polled data
 const queue = new Queue(10) // input buffer size is 10
@@ -133,7 +133,7 @@ queue.done() // tell the iterator it is done, any queued values will still be pr
 You can start and stop iterators, sort of like pseudo-threads. Here's a silly example.
 
 ```javascript
-import { chainable } from 'await-for-it'
+import { chainable }  from '@toolbuilder/await-for-it
 
 const controller = chainable([0, 1, 2, 3, 4])
   .callAwait(async x => doSomething(x))

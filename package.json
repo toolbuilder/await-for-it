@@ -1,6 +1,6 @@
 {
-  "name": "await-for-it",
-  "version": "0.1.0",
+  "name": "@toolbuilder/await-for-it",
+  "version": "0.1.1",
   "description": "Concurrency using chainable async iterables, such as task pool, event queue, pub/sub, merge, chunk, throttle, etc.",
   "main": "src/index.js",
   "keywords": [
@@ -22,13 +22,13 @@
   ],
   "homepage": "https://github.com/toolbuilder/await-for-it#readme",
   "bugs": {
-   "url": "https://github.com/toolbuilder/await-for-it/issues"
+    "url": "https://github.com/toolbuilder/await-for-it/issues"
   },
   "repository": {
-   "type": "git",
-   "url": "https://github.com/toolbuilder/await-for-it.git"
+    "type": "git",
+    "url": "https://github.com/toolbuilder/await-for-it.git"
   },
- "scripts": {
+  "scripts": {
     "build": "npm-run-all --serial test lint",
     "lint": "eslint src test",
     "test": "tape -r esm test/*_test.js | tap-nirvana"
