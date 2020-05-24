@@ -2,14 +2,6 @@
 
 `Await-For-It` implements common concurrency patterns using async iterables. The iterables are chainable for ease of use. Or you can use the functional, data-last API.
 
-The AsyncIterable protocol provides a 'one-at-a-time' pull model. With typical implementations, this provides sequential serialization, and applies automatic backpressure. With a bit of effort, you can relax the sequential requirement within a given iterator to provide concurrency. That's what this package does.
-
-The AsyncIterable protocol intends callers to wait for the returned Promise to resolve before calling `next` again. The protocol doesn't require this, but all iterables in this package implement this behavior.
-
-In addition, `next` typically should not be called before yielding the current value. Operating this way automatically applies backpressure to any upstream iterable. All the iterators in this package behave this way once their concurrency limits are met. For example, once full, the pool will wait until a task resolves before calling next again.
-
-`Await-For-It` handles both async and sync iterables. However, once you enter the Promise-land, you can't go back. You could use the `chunk` transform for synchronous batch processing. If you want synchronous iterables try [IterableFu](https://www.npmjs.com/package/iterablefu). Both packages use the same names for the async/sync counterparts. For example, `zipAll` works the same way, but one is synchronous and this one asynchronous.
-
 ## Features
 
 * Event queues - push events or other data into an async iterable
@@ -39,13 +31,13 @@ npm install --save await-for-it
 If you want the chainable API, use this import.
 
 ```javascript
-import { chainable }  from '@toolbuilder/await-for-it
+import { chainable }  from '@toolbuilder/await-for-it'
 ```
 
 If you want the functional API, use this import.
 
 ```javascript
-import { generators, transforms, reducers }  from '@toolbuilder/await-for-it
+import { generators, transforms, reducers }  from '@toolbuilder/await-for-it'
 ```
 
 ## API
@@ -59,7 +51,7 @@ The documentation is in progress, and is currently all jumbled together because 
 ## Examples
 
 ```javascript
-import { chainable }  from '@toolbuilder/await-for-it
+import { chainable }  from '@toolbuilder/await-for-it'
 
 chainable([0, 1, 2, 3, 4]) // factory method makes ChainableIteable instance
   .map(x => 2 * x)
@@ -77,7 +69,7 @@ The `chainable` factory method dynamically creates a `ChainableIterable` from th
 The `catch` and `finally` methods allow a cleaner syntax than writing a bunch of try/catch/finally blocks around iteration. Usage is quite similar to the `Promise` methods `catch` and `finally`. You can use multiple `catch` and `finally` calls in the same iterator.
 
 ```javascript
-  import { chainable }  from '@toolbuilder/await-for-it
+  import { chainable }  from '@toolbuilder/await-for-it'
 
   chainable([0, 1, 2, 3])
     .catch(error => { /* do something */ }) // stops iteration
@@ -88,7 +80,7 @@ The `catch` and `finally` methods allow a cleaner syntax than writing a bunch of
 ### Polling
 
 ```javascript
-import { chainable, Poll }  from '@toolbuilder/await-for-it
+import { chainable, Poll }  from '@toolbuilder/await-for-it'
 
 // create a data source - could be events or whatever
 // Polling will happen no faster than every 1000ms, but
@@ -109,7 +101,7 @@ await chainable(poll)
 Here's a stupid Queue example.
 
 ```javascript
-import { chainable, Poll, Queue }  from '@toolbuilder/await-for-it
+import { chainable, Poll, Queue }  from '@toolbuilder/await-for-it'
 
 // Make an event queue to handle the polled data
 const queue = new Queue(10) // input buffer size is 10
@@ -133,7 +125,7 @@ queue.done() // tell the iterator it is done, any queued values will still be pr
 You can start and stop iterators, sort of like pseudo-threads. Here's a silly example.
 
 ```javascript
-import { chainable }  from '@toolbuilder/await-for-it
+import { chainable }  from '@toolbuilder/await-for-it'
 
 const controller = chainable([0, 1, 2, 3, 4])
   .callAwait(async x => doSomething(x))
@@ -142,3 +134,13 @@ const controller = chainable([0, 1, 2, 3, 4])
 if (controller.running) controller.stop()
 controller.start()
 ```
+
+## Notes
+
+The AsyncIterable protocol provides a 'one-at-a-time' pull model. With typical implementations, this provides sequential serialization, and applies automatic backpressure. With a bit of effort, you can relax the sequential requirement within a given iterator to provide concurrency. That's what this package does.
+
+The AsyncIterable protocol intends callers to wait for the returned Promise to resolve before calling `next` again. The protocol doesn't require this, but all iterables in this package implement this behavior.
+
+In addition, `next` typically should not be called before yielding the current value. Operating this way automatically applies backpressure to any upstream iterable. All the iterators in this package behave this way once their concurrency limits are met. For example, once full, the pool will wait until a task resolves before calling next again.
+
+`Await-For-It` handles both async and sync iterables. However, once you enter the Promise-land, you can't go back. You could use the `chunk` transform for synchronous batch processing. If you want synchronous iterables try [IterableFu](https://www.npmjs.com/package/iterablefu). Both packages use the same names for the async/sync counterparts. For example, `zipAll` works the same way, but one is synchronous and this one asynchronous.

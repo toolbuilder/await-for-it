@@ -1,6 +1,6 @@
 {
   "name": "@toolbuilder/await-for-it",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Concurrency using chainable async iterables, such as task pool, event queue, pub/sub, merge, chunk, throttle, etc.",
   "main": "src/index.js",
   "keywords": [
