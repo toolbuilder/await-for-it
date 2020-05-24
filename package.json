@@ -1,25 +1,16 @@
 {
   "name": "await-for-it",
-  "version": "0.1.0-alpha04",
+  "version": "0.1.0-alpha05",
   "description": "Handy async iterables like pool, queue, merge, chunk, flatten, map, filter, etc.",
   "main": "src/index.js",
-  "module": "src/chainable.js",
+  "module": "src/await-for-it.js",
   "files": [
-    "src",
-    "umd"
+    "src"
   ],
   "scripts": {
-    "build": "npm-run-all --serial test lint bundle test:package test:browser",
-    "bundle": "npm-run-all --serial bundle:clean bundle:umd bundle:test",
-    "bundle:clean": "rimraf umd temp",
-    "bundle:combinetests": "node -r esm scripts/combine_all_tests.js",
-    "bundle:test": "npm-run-all --serial bundle:combinetests bundle:umdtests",
-    "bundle:umd": "rollup -c rollup.config.js",
-    "bundle:umdtests": "rollup -c scripts/rollup.tests.config.js",
+    "build": "npm-run-all --serial test lint",
     "lint": "eslint src test",
-    "test": "tape -r esm test/*_test.js | tap-nirvana",
-    "test:browser": "node -r esm scripts/cat.js temp/all_test_umd.js | tape-run | tap-nirvana",
-    "test:package": "node -r esm scripts/package_test.js"
+    "test": "tape -r esm test/*_test.js | tap-nirvana"
   },
   "eslintConfig": {
     "extends": "@toolbuilder/eslint-config"

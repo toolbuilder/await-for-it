@@ -1,82 +1,60 @@
-# Asynckronus
+# Await-For-It
 
-`Asynckronus` supports async patterns using async iterables. It provides a task pool, event queuing,
-pub/sub, polling, batching, along with chainable operations such as map, reduce, filter, throttle, and zip.
+`Await-For-It` implements common concurrency patterns using async iterables. The iterables are chainable for ease of use. Or you can use the functional, data-last API.
 
-The library also provides a functional, 'data last', API. The library is about 3.4kb minimized and gzipped.
+The AsyncIterable protocol provides a 'one-at-a-time' pull model. With typical implementations, this provides sequential serialization, and applies automatic backpressure. With a bit of effort, you can relax the sequential requirement within a given iterator to provide concurrency. That's what this package does.
 
-It provides a chainable class factory so you can easily add methods or reduce bundle size.
+The AsyncIterable protocol intends callers to wait for the returned Promise to resolve before calling `next` again. The protocol doesn't require this, but all iterables in this package implement this behavior.
 
-If you want synchronous iterables try [IterableFu](https://www.npmjs.com/package/iterablefu).
+In addition, `next` typically should not be called before yielding the current value. Operating this way automatically applies backpressure to any upstream iterable. All the iterators in this package behave this way once their concurrency limits are met. For example, once full, the pool will wait until a task resolves before calling next again.
+
+`Await-For-It` handles both async and sync iterables. However, once you enter the Promise-land, you can't go back. You could use the `chunk` transform for synchronous batch processing. If you want synchronous iterables try [IterableFu](https://www.npmjs.com/package/iterablefu). Both packages use the same names for the async/sync counterparts. For example, `zipAll` works the same way, but one is synchronous and this one asynchronous.
 
 ## Features
 
-* Push events into an iterable with [Queue](docs/queue.md) : `queue.push(event)`
-* Execute tasks in an iterable chain with [Pool](docs/pool.md).
-* Batch data with timeouts [Chunk](docs/chunk.md): `chainable(recordByRecord).chunk(50, 1000).forEach(writeBatch)`.
-* Merge iterables with [Merge](docs/merge.md).
-* Publish/Subscribe [PubSub](docs/pubsub.md).
-* Polling functions [Polling](docs/polling.md).
-* Serialization
-* Chainable: `chainable([0, 1, 2]).map(x => 2*x).toArray()`.
-* Chained exception handling and finally: `chainable([0, 2]).catch(handlerFunction).finally(cleanupFunction).run()`.
-* Start and stop iteration [Processes](docs/processes.md)
-* Works with your generators (and iterables): `chainable(yourGenerator()).mapWith(yourTransformGenerator)`.
-* [Customizable](docs/customize.md), to add methods or reduce bundle sizes.
-* Functional API takes data last, so you can curry, pipe and compose with your functional library.
-* Written in ES6 javascript using ES6 modules.
+* Event queues - push events or other data into an async iterable
+* Task pool - process up to 'n' tasks at a time, and process the results in an async iterable
+* Pub/Sub - fork an async iterable to multiple consumers, register subscribers at any time
+* Start/Pause/Resume/Stop for iterables from **outside** the iterable - like a psuedo thread
+* Try/Catch/Finally - just like Promises, except for streams of Promises
+* Polling - execute a task periodically with backpressure, and process results in an async iterable
+* Throttle - limit the processing rate of an async iterable
+* Merge - Merge multiple async/sync streams as each stream resolves values
+* Concatenate - Combine multiple async/sync streams end to end
+* Chunk - group results into chunks, with timeouts for partial chunks, for efficient batch processing
+* Node Streams - works out of the box because Node streams are async iterables now.
+* Chainable - chain operations such as map, reduce, filter, throttle, and zip
+* Functional - all operations have a functional 'data last' equivalent via separate imports
 
-## Table of Contents
-
-<!-- !toc (minlevel=2 omit="Features;Table of Contents") -->
-
-* [Installation](#installation)
-* [Getting Started](#getting-started)
-* [API](#api)
-* [Examples](#examples)
-  * [Basics](#basics)
-  * [One Time Use](#one-time-use)
-  * [Iterablefu and Your Generators](#iterablefu-and-your-generators)
-* [Smaller Bundles](#smaller-bundles)
-* [Customization](#customization)
-* [When To Use](#when-to-use)
-* [Alternatives](#alternatives)
-* [Contributing](#contributing)
-* [Issues](#issues)
-* [License](#license)
-
-<!-- toc! -->
+In addition, the chainable implementation makes it easy to add or subtract methods from the chainable interface. This lets you reduce bundle size by providing only those iterables that you use. The package is about 3.4kb minimized and gzipped
 
 ## Installation
 
 ```bash
-npm install --save asynckronus
+npm install --save await-for-it
 ```
-
-Access UMD packages and map files from [unpkg](https://unpkg.com).
-
-```html
-<script src="https://unpkg.com/asynckronus/umd/asynckronus.min.js"></script>
-<script src="https://unpkg.com/asynckronus/umd/asynckronus.js"></script>
-```
-
-Both UMD packages create a global variable `asynckronus`.
 
 ## Getting Started
 
 If you want the chainable API, use this import.
 
 ```javascript
-import { chainable } from 'asynckronus'
+import { chainable } from 'await-for-it'
 ```
 
 If you want the functional API, use this import.
 
 ```javascript
-import { generators, transforms, reducers } from 'asynckronus'
+import { generators, transforms, reducers } from 'await-for-it'
 ```
 
 ## API
+
+* The bulk of the documentation is [here](docs/chainable.md).
+* The event queue documentation is [here](docs/queue.md).
+* The polling documentation is [here](docs/poll.md).
+
+The documentation is in progress, and is currently all jumbled together because of the process used to generate it. The examples are for the chainable API which doesn't need the last 'iterable' parameter. However, the parameter listing for each method are for the 'data-last' functional API, and include the 'data-last' iterable as the last parameter. My apologies.
 
 ## Examples
 
@@ -140,47 +118,3 @@ controller.start()
 ## Contributing
 
 ## Issues
-
-## License
-
-## TODO
-
-Check out this fork of emittery which links event handling to async stream: <https://github.com/lorenzofox3/emittery>
-
-<https://nolanlawson.com/2019/08/11/high-performance-input-handling-on-the-web/>
-
-Promise callback is also called a `microtask`. Microtasks execute immediately after any synchronous execution is complete. There’s no chance to fit in any work between the two. So if you think you can break up a long-running task by separating it into microtasks, then it won’t do what you think it’s doing. <https://nolanlawson.com/2018/09/01/a-tour-of-javascript-timers-on-the-web/>
-
-## Note
-
-If both Node and the bundler use `package.json` "module", then the package has to be isomorhic without a build step. The
-bundler can define a variable that would otherwise be undefined, and do 'tree shaking'. I think that variable would commonly
-be `process.browser`. This is undefined for Node.
-
-## Use Cases
-
-### Event Handlers
-
-If you want an event to trigger an asynchronous process, you could use a Promise chain to handle events. However, if you want to handle the events in order, or want to throttle events, an iterable chain is helpful.
-
-Event Handler -> Queue -> further async processing
-
-### Task Execution
-
-Pool: primary use case is that you want to execute a number of promise chains, but you want to limit the number running at
-any given time, or you want to handle the resolved values as a stream of data.
-
-Chunk: you want to group values or promise resolutions for processing as a group, like a single batch HTTP PUT of multiple values. Also, if you don't want a particular value to sit around too long, the timeout lets you ensure liveness.
-
-Queue: you want to process values from some other source, like an event handler, in an async stream of data.
-
-You want to restructure promise chains to async streams. Should show how this looks. Especially since a Promise has
-to catch errors or the whole chain blows up. Use async functions. What about a 'transaction'? The async functions handle
-the if/then dynamic length issues that require recursion in promise chains. Does chainable notation really help? Or is it
-just different.
-
-Promise result to iterable: Promise.then(result => queue.push(result))
-Query parameters to iterable: queue.push(queryData)
-Periodic execution to iterable: poll(asyncFunction, 1000)
-Task pool: pool(n, asyncIterable)
-Throttling: throttle(asyncIterable, wait)
