@@ -7,6 +7,7 @@ export { Queue, QueueDone, QueueFull } from './queue.js'
 export { Mutex } from './mutex.js'
 export { Semaphore } from './semaphore.js'
 export { callWithTimeout, wait, waitToCall } from './timeouts.js'
+export { iteratorFrom } from './iteratorfrom.js'
 
 import * as generators from './generators.js'
 import * as transforms from './transforms.js'

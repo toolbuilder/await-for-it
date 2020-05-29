@@ -5,14 +5,14 @@ The `ChainableClass` provides a chainable async iterable with lots of chaining m
 Constructing a `ChainableClass` like this:
 
 ```javascript
-import { chainable } from 'await-for-it'
+import { chainable } from '@toolbuilder/await-for-it'
 const chainableClassInstance = chainable([0, 1, 2])
 ```
 
 Is equivalent to constructing one like this:
 
 ```javascript
-import { ChainableClass } from 'await-for-it'
+import { ChainableClass } from '@toolbuilder/await-for-it'
 const chainableClassInstance = new ChainableClass([0, 1, 2])
 ```
 
@@ -378,7 +378,7 @@ Functions are passed the each value from the iterable. Only values provided
 after subscribing are provided. Any return value is ignored.
 
 ```javascript
-import { chainable, wait } from 'await-for-it'
+import { chainable, wait } from '@toolbuilder/await-for-it'
 
 const publisher = chainable([0, 1, 2, 3]).throttle(50, 50).publish()
 const key = publisher.subscribe(console.log) // prints 0, 1 - then unsubscribed

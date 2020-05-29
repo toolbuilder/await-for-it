@@ -1,6 +1,8 @@
 # Make Chainable
 
-Use the two methods here to build your own custom chainable async iterables. The file 'src/chainable.js' shows how this package uses these methods to create [ChainableClass](./ChainableClass.md) and [chainable](./chainable.md) from the functional API.
+Use the two methods here to build your own custom chainable async iterables. See [customization](./customization.md) for a walkthrough.
+
+The file 'src/chainable.js' shows how this package uses these methods to create [ChainableClass](./ChainableClass.md) and [chainable](./chainable.md) from the functional API.
 
 -   [makeChainableClass][1]
 -   [makeChainableFactory][3]
