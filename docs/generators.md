@@ -1,40 +1,23 @@
-# chainable
+# Generators
 
-The `chainable` import is a factory function/class for creating chainable async iterables. It provides a function call and several static methods.
+The functions here create a sequence of values from other input values. This is part of the functional API. The chainable API is [here](./chainable.md).
 
-All methods return a [ChainableClass](./ChainableClass.md) instance.
+The concept of 'generator' is a bit overloaded in JavaScript. There is the generator function, and the Generator object it produces. This package tries to distinguish between `transform` and `generator`. Although both are technically generator functions, `transforms` are intended to transform an input iterable. Whereas `generators` are intended to produce an iterable from other parameters. Sorry for any confusion.
 
-  * [Function Call][2]
-  * [from][3]
-  * [merge][4]
-  * [zip][5]
-  * [zipAll][6]
+### Table of Contents
 
-## Functioncall
-
-Call `chainable` as a function to create a chainable async iterable from the input iterable.
-
--   `iterable` **(AsyncIterable | Iterable)** any iterable to make chainable
-
-Returns a [ChainableClass](./ChainableClass.md) that is a chainable version of the input iterable.
-
-```javascript
-import { chainable } from 'await-for-it'
-chainable([0, 1, 3, 4]).map(x => 2 * x).run()
-```
+-   [from][1]
+-   [merge][3]
+-   [zip][5]
+-   [zipAll][8]
 
 ## from
 
-Call `chainable.from(iterable)` to create a chainable async iterable from the input iterable. You can use the [Functioncall][2] to achieve the same thing with less typing. This method exists to support the dynamic class construction method.
+This function exists as a generator solely so that the dynamically generated ChainableIterable class has a static constructor.
 
--   `iterable` **(AsyncIterable | Iterable)** any iterable to make chainable
+-   `iterable` **(AsyncIterable | Iterable)** input iterable
 
-Returns a [ChainableClass](./ChainableClass.md) that is a chainable version of the input iterable.
-
-```javascript
-import { chainable } from 'await-for-it'
-chainable.from([0, 1, 3, 4]).map(x => 2 * x).run()
-```
+Returns **(AsyncIterable | Iterable)** the input iterable
 
 ## merge
 
@@ -45,19 +28,11 @@ up faster ones. Equal speed iterables are advanced at roughly the same pace.
 Backpressure is provided by the iterating code. Iteration can be stopped by stopping
 the iterating code.
 
+### Parameters
+
 -   `iterables` **...(AsyncIterable | Iterable)**
 
-Returns [ChainableClass](./ChainableClass.md) that is a chainable version of the merged iterables.
-
-```javascript
-import { chainable } from 'await-for-it'
-
-const main = async () => {
-  const array = await chainable([0, 1, 2], [3, 4]).toArray()
-  console.log(array) // prints [0, 1, 2, 3, 4]
-  // NOTE: for async iterator inputs, faster iterators will advance faster
-}
-```
+Returns **AsyncGenerator** merged iterables as async iterable
 
 ## zip
 
@@ -71,14 +46,16 @@ don't need the elements paired.
 
 -   `iterables` **...(AsyncIterable | Iterable)**
 
-Returns [ChainableClass](./ChainableClass.md) that is a chainable version of the zipped iterables.
+### Examples
 
 ```javascript
 const a = [0, 1, 2]
 const b = ['a', 'b', 'c', 'd'] // this array is longer than a
-const c = await chainable.zip(a, b).toArray()
+const c = await toArray(zip(a, b))
 console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c']]
 ```
+
+Returns **AsyncGenerator** merged iterables as async iterable
 
 ## zipAll
 
@@ -93,17 +70,31 @@ fast as possible, and don't need the elements paired.
 
 -   `iterables` **...(AsyncIterable | Iterable)**
 
-Returns [ChainableClass](./ChainableClass.md) that is a chainable version of the zipped iterables
-
 ```javascript
 const a = [0, 1, 2]
 const b = ['a', 'b', 'c', 'd'] // this array is longer than a
-const c = await chainable.zipAll(a, b).toArray()
+const c = await toArray(zipAll(a, b))
 console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c'], [undefined, 'd']]
 ```
 
-[2]: #functioncall
-[3]: #from
-[4]: #merge
+Returns **AsyncGenerator** merged iterables as async iterable
+
+[1]: #from
+
+[2]: #parameters
+
+[3]: #merge
+
+[4]: #parameters-1
+
 [5]: #zip
-[6]: #zipAll
+
+[6]: #parameters-2
+
+[7]: #examples
+
+[8]: #zipall
+
+[9]: #parameters-3
+
+[10]: #examples-1
