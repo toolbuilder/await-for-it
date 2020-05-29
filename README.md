@@ -65,10 +65,12 @@ import { Poll, Queue, callWithTimeout } from '@toolbuilder/await-for-it'
 
 ### Functional API
 
+The chainable API is dynamically created from the functional API when `Await-For-It` is loaded. Underneath, the methods are the same.
+
 * entry point is the same of course [here](docs/await-for-it.md)
-* [generators](./generators.md) - create sequences of data
-* [transforms](./transforms.md) - transform sequences of data
-* [reducers](./reducers.md) - reduce or control sequences of data
+* [generators](docs/generators.md) - create sequences of data
+* [transforms](docs/transforms.md) - transform sequences of data
+* [reducers](docs/reducers.md) - reduce or control sequences of data
 
 The documentation is in progress. Sometimes the functional API examples show chainable API use. Sometimes it is the other way around. I will continue improving - especially in areas where you provide feedback.
 
