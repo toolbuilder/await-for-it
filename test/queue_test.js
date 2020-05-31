@@ -1,6 +1,7 @@
-import { test } from 'zora'
-import { chainable, waitToCall, Semaphore, Queue, QueueFull, QueueDone } from '../src/await-for-it'
 import { RingBuffer } from '@toolbuilder/ring-buffer'
+import { chainable as sync } from 'iterablefu'
+import { test } from 'zora'
+import { chainable, iteratorFrom, Poll, Queue, QueueDone, QueueFull, Semaphore, waitToCall } from '../src/await-for-it'
 
 // Alternate buffer implementation to verify that any buffer works.
 // Array is about 20x slower than RingBuffer for the push/shift use case.
@@ -159,30 +160,6 @@ test('queue: push returns the queue length', assert => {
   assert.deepEqual(returnedQueueLengths, [1, 2, 3, 4, 5], 'Queue.push reports the correct queue length')
 })
 
-test('queue: push returns zero queue length for fast iteration', async assert => {
-  const returnedQueueLengths = []
-
-  const queue = new Queue(5)
-
-  // slowly push values into queue, so buffer can remain empty
-  chainable([0, 1, 2, 3, 4])
-    .throttle(50, 50)
-    .finally(() => queue.done())
-    .forEach(value => returnedQueueLengths.push(queue.push(value)))
-
-  const semaphore = new Semaphore()
-  await semaphore.acquire()
-  chainable(queue)
-    .finally(() => {
-      assert.deepEqual(returnedQueueLengths, [0, 0, 0, 0, 0], 'push returns zero when queue buffer empty')
-      semaphore.release()
-    })
-    .run()
-
-  await semaphore.acquire() // wait for test to end
-  semaphore.release()
-})
-
 test('queue: rejected promise propagates to iterating code', async assert => {
   const theError = new Error('the error')
   const queue = new Queue(5)
@@ -234,4 +211,30 @@ test('queue: reject causes iteration to stop with rejection', async assert => {
 
   await semaphore.acquire()
   semaphore.release()
+})
+
+test('queue: iterator called faster than one-at-a-time', async assert => {
+  const values = 50
+  let count = 0
+  const dataSource = new Poll(async () => count++, 20, 100)
+  const queue = new Queue(10)
+
+  // slowly push data into the queue so that buffer never fills up
+  chainable(dataSource)
+    .take(values)
+    .callAwait(value => queue.push(value))
+    .finally(() => { dataSource.done(); queue.done() })
+    .run()
+
+  // pull from queue faster than data arrives, not as data arrives
+  const queueIterator = iteratorFrom(queue)
+  const promises = sync.range(values + 10).map(() => queueIterator.next()).toArray()
+  const resolvedPromiseResults = await chainable(promises).toArray()
+  const actualValues = sync(resolvedPromiseResults)
+    // don't want any values after done in case there are problems with out of sequence resolution
+    .takeWhile(result => result.done !== true)
+    .map(result => result.value)
+    .toArray()
+
+  assert.deepEqual(actualValues, sync.range(values).toArray(), 'all values returned in proper order')
 })

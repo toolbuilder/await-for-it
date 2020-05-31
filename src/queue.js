@@ -77,16 +77,12 @@ export class Queue {
    * @throws {QueueDone} - if queue.done() was called previously
    */
   push (value) {
-    if (!this.keepGoing) throw new QueueDone('Queue done, cannot push new values')
-    if (this.onPushedValue) { // indicates iterator is blocked waiting for input
-      this.onPushedValue(value)
-      this.onPushedValue = null
-    } else { // queue not empty, so can just append pushed value
-      if (this.buffer.length >= this.capacity) {
-        throw new QueueFull(`Cannot push to Queue, maximum queue length of ${this.capacity} reached`)
-      }
-      this.buffer.push(value)
+    if (!this.keepGoing) throw new QueueDone('Queue done already called, cannot push new values')
+    if (this.buffer.length >= this.capacity) {
+      throw new QueueFull(`Cannot push to Queue, maximum queue length of ${this.capacity} reached`)
     }
+    if (this.onPushedValue) { this.onPushedValue(); this.onPushedValue = null }
+    this.buffer.push(value)
     return this.buffer.length
   }
 
@@ -99,32 +95,9 @@ export class Queue {
    */
   done (emptyQueue = true) {
     this.keepGoing = false
+    // substitute empty buffer for non-empty one so that iterator completes
     if (emptyQueue === false) this.buffer = new RingBuffer(this.buffer.capacity)
-    if (this.onPushedValue != null) {
-      this.onPushedValue(new QueueDone('Queue stopped by user'))
-      this.onPushedValue = null
-    }
-  }
-
-  /**
-   * Implements Iterator protocol to make Queue an iterator.
-   */
-  async next () {
-    if (this.exception) throw this.exception
-    // Check for buffer.length so that queue empties before iteration completes.
-    if (this.keepGoing || this.buffer.length > 0) {
-      if (this.buffer.length > 0) {
-        return Promise.resolve(this.buffer.shift()).then(value => ({ value, done: false }))
-      } else {
-        // Promise resolves when Queue.push or Queue.done is called
-        return new Promise((resolve) => { this.onPushedValue = resolve })
-          .then(value => {
-            if (value instanceof QueueDone) return { done: true }
-            return { value, done: false }
-          })
-      }
-    }
-    return { done: true }
+    if (this.onPushedValue != null) { this.onPushedValue(); this.onPushedValue = null }
   }
 
   /**
@@ -143,7 +116,16 @@ export class Queue {
    *   }
    * })() // IIFE
    */
-  [Symbol.asyncIterator] () {
-    return this
+  async * [Symbol.asyncIterator] () {
+    // Check for buffer.length so that queue empties before iteration completes.
+    while (this.keepGoing || this.buffer.length > 0) {
+      if (this.exception) throw this.exception
+      if (this.buffer.length > 0) {
+        yield this.buffer.shift()
+      } else {
+        // Promise resolves when Queue.push or Queue.done is called
+        await new Promise((resolve) => { this.onPushedValue = resolve })
+      }
+    }
   }
 }
