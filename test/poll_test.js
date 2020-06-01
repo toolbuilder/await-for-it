@@ -1,6 +1,6 @@
+import { chainable as sync, generators } from 'iterablefu'
 import { test } from 'zora'
-import { chainable, Poll } from '../src/await-for-it'
-import { generators } from 'iterablefu'
+import { chainable, iteratorFrom, Poll } from '../src/await-for-it'
 
 const allowableJitter = 15
 const waitTimeGood = (n, reference) => (n > reference - allowableJitter) && (n < reference + allowableJitter)
@@ -101,4 +101,22 @@ test('poll: calling done stops iteration', async assert => {
     .runAwait()
   assert.equal(finallyCalled, true, 'poll.done completed iteration')
   poll.done()
+})
+
+test('poll: iterator called faster than one-at-a-time', async assert => {
+  const values = 50
+  let count = 0
+  const poller = new Poll(() => count++, 5)
+  const iterator = iteratorFrom(poller)
+  // Call next() more times than expected number of values in this tick - way before the first one will yield
+  const iteratorPromises = sync.range(0, values + 10).map(() => iterator.next()).toArray()
+  // Iterate the promises, waiting for each one to resolve.
+  const iteratorResults = await chainable(iteratorPromises).toArray()
+  const actual = sync(iteratorResults)
+    .takeWhile(result => result.done !== true)
+    .map(result => result.value) // now we have just arrays
+    .take(values) // Poll doesn't end iterator until done is called
+    .toArray()
+  poller.done()
+  assert.deepEqual(actual, sync.range(values).toArray(), 'all values yielded and provided in order')
 })

@@ -1,5 +1,7 @@
-import { chainable } from '../src/await-for-it'
+import { chainable as sync } from 'iterablefu'
 import { test } from 'zora'
+import { chainable, transforms } from '../src/await-for-it'
+import { runTest, waitRandomlyToCall } from './toofast'
 
 const makeSlowAsyncFunction = (score) => {
   const delay = 100
@@ -177,4 +179,13 @@ test('pool: values from async functions are yielded when resolved', async assert
   const notEqual = JSON.stringify(output) !== JSON.stringify(input)
   assert.ok(notEqual, 'some async function results were yielded out of order with respect to asyncIterable')
   assert.deepEqual(output.sort(), input, 'return value of all async functions is returned')
+})
+
+test('pool: iterator called faster than one-at-a-time', async assert => {
+  const values = 20
+  const slowFunctions = sync.range(values).map(value => () => waitRandomlyToCall(5, 5, () => value))
+  const iterable = transforms.pool(3, slowFunctions)
+  const results = await runTest(iterable, values)
+  // Can't test result order because Pool is intended to provide out of order results
+  assert.deepEqual(results.sort(), sync.range(values).toArray().sort(), 'all results provided before done')
 })

@@ -1,5 +1,7 @@
+import { chainable as sync } from 'iterablefu'
 import { test } from 'zora'
-import { chainable } from '../src/await-for-it'
+import { chainable, generators } from '../src/await-for-it'
+import { runTest } from './toofast'
 
 const toLongAsync = (period, iterable) => chainable(iterable).throttle(period, 0)
 
@@ -74,4 +76,14 @@ test('merge: promise rejection is propagated to iterator', async assert => {
     .merge(...iterables)
     .catch(error => assert.is(error, theError, 'merge throws exact error caught'))
     .runAwait()
+})
+
+test('merge: iterator called faster than one-at-a-time', async assert => {
+  const values = 50
+  const isEvenNumber = x => x % 2 === 0
+  const evensAndOdds = [sync.range(0, 0.5 * values, 2).toArray(), sync.range(1, 0.5 * values, 2).toArray()]
+  const iterator = generators.merge(...evensAndOdds)
+  const actual = await runTest(iterator, values)
+  const splitBackApart = [sync(actual).filter(isEvenNumber).toArray(), sync(actual).reject(isEvenNumber).toArray()]
+  assert.deepEqual(splitBackApart, evensAndOdds, 'all values yielded and provided in order')
 })

@@ -1,7 +1,8 @@
 import { RingBuffer } from '@toolbuilder/ring-buffer'
 import { chainable as sync } from 'iterablefu'
 import { test } from 'zora'
-import { chainable, iteratorFrom, Poll, Queue, QueueDone, QueueFull, Semaphore, waitToCall } from '../src/await-for-it'
+import { chainable, Queue, QueueDone, QueueFull, Semaphore, waitToCall } from '../src/await-for-it'
+import { randomlySlowIterator, runTest } from './toofast'
 
 // Alternate buffer implementation to verify that any buffer works.
 // Array is about 20x slower than RingBuffer for the push/shift use case.
@@ -215,26 +216,15 @@ test('queue: reject causes iteration to stop with rejection', async assert => {
 
 test('queue: iterator called faster than one-at-a-time', async assert => {
   const values = 50
-  let count = 0
-  const dataSource = new Poll(async () => count++, 20, 100)
   const queue = new Queue(10)
+  const data = sync.range(values).toArray()
 
-  // slowly push data into the queue so that buffer never fills up
-  chainable(dataSource)
-    .take(values)
-    .callAwait(value => queue.push(value))
-    .finally(() => { dataSource.done(); queue.done() })
+  // slowly push data into the queue so that queue never fills up
+  chainable(randomlySlowIterator(5, 5, data))
+    .callNoAwait(value => queue.push(value))
+    .finally(() => { queue.done() })
     .run()
 
-  // pull from queue faster than data arrives, not as data arrives
-  const queueIterator = iteratorFrom(queue)
-  const promises = sync.range(values + 10).map(() => queueIterator.next()).toArray()
-  const resolvedPromiseResults = await chainable(promises).toArray()
-  const actualValues = sync(resolvedPromiseResults)
-    // don't want any values after done in case there are problems with out of sequence resolution
-    .takeWhile(result => result.done !== true)
-    .map(result => result.value)
-    .toArray()
-
-  assert.deepEqual(actualValues, sync.range(values).toArray(), 'all values returned in proper order')
+  const actualValues = await runTest(queue, values)
+  assert.deepEqual(actualValues, data, 'all values returned in proper order')
 })

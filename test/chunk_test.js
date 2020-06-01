@@ -1,5 +1,7 @@
+import { chainable as sync } from 'iterablefu'
 import { test } from 'zora'
-import { chainable } from '../src/await-for-it'
+import { chainable, transforms } from '../src/await-for-it'
+import { randomlySlowIterator, runTest } from './toofast'
 
 const fastSlowFast = async function * () {
   let i = 0
@@ -79,4 +81,14 @@ test('chunk: rejected promises from iterable are passed to iterator', async asse
     })
     .toArray()
   assert.ok(caughtException, 'chunk threw exception')
+})
+
+test('chunk: iterator called faster than one-at-a-time', async assert => {
+  // chunk timeout is slower than throttle to make sure chunk is filled each time
+  const values = 50
+  const makeDataSource = () => sync.range(values).toArray()
+  const slowIterable = randomlySlowIterator(5, 5, makeDataSource())
+  const iterable = transforms.chunk(2, 4, slowIterable)
+  const actual = await runTest(iterable, values)
+  assert.deepEqual(sync(actual).flatten().toArray(), makeDataSource(), 'all values yielded and provided in order')
 })
