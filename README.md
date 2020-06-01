@@ -7,8 +7,9 @@ JavaScript's async iterable protocol provides nice guaranteed 'one-at-a-time' se
 * feed async data into an iterable (e.g. polling and event queues)
 * publish to multiple subscribers (e.g. pub/sub)
 * control the async processing (e.g. stop/start)
-* cleanup when done
-* catch errors
+* cleanup when done (finally)
+* catch errors (catch)
+* use common functions such as zip, merge, map, filter, reduce, toArray, and [more](docs/ChainableClass.md).
 
 `Await-For-It` provides these things for your code.
 
