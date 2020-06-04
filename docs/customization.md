@@ -53,7 +53,7 @@ console.log(a) // prints [0, 1, 4, 9]
 
 ## Add Or Remove Methods
 
-Perhaps you're tree shaking and need to minimize the amount of code pulled in to your bundle. In that case, use the [makeChainableFactory](./makechainable.md) method to generate your own version of [chainable](./chainable.md). You can use your own methods and methods from `Await-For-It` with `makeChainableFactory`.
+Perhaps you are tree shaking and need to minimize the amount of code pulled in to your bundle. In that case, use the [makeChainableFactory](./makechainable.md) method to generate your own version of [chainable](./chainable.md). You can use your own methods and methods from `Await-For-It` with `makeChainableFactory`.
 
 
 This section walks through an example that adds a few simple methods to those already provided by `Await-For-It`.

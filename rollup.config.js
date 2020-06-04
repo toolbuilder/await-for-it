@@ -1,8 +1,8 @@
-import resolve from 'rollup-plugin-node-resolve'
+import resolve from '@rollup/plugin-node-resolve'
 import { terser } from 'rollup-plugin-terser'
 
-const name = 'asynckronus'
-const input = `src/${name}.js`
+const name = 'awaitforit'
+const input = 'src/await-for-it.js'
 const format = 'umd'
 const sourcemap = true
 

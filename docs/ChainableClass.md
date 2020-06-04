@@ -17,37 +17,37 @@ const chainableClassInstance = new ChainableClass([0, 1, 2])
 ```
 
 * Static constructors
-  * [from][5]
-  * [merge][7]
-  * [zip][9]
-  * [zipAll][12]
+  * [from](#from)
+  * [merge](#merge)
+  * [zip](#zip)
+  * [zipAll](#zipAll)
 * Transforms - modify the contents of an iterable stream
-  * [arrayToObject][15]
-  * [callAwait][18]
-  * [callNoAwait][21]
-  * [chunk][59]
-  * [diff][24]
-  * [filter][27]
-  * [flatten][30]
-  * [flattenRecursive][33]
-  * [map][36]
-  * [mapWith][39]
-  * [nth][42]
-  * [pluck][45]
-  * [pool][57]
-  * [reject][48]
-  * [take][51]
-  * [throttle][54]
+  * [arrayToObject](#arraytoobject)
+  * [callAwait](#callawait)
+  * [callNoAwait](#callnoawait)
+  * [chunk](#chunk)
+  * [diff](#diff)
+  * [filter](#filter)
+  * [flatten](#flatten)
+  * [flattenRecursive](#flattenrecursive)
+  * [map](#map)
+  * [mapWith](#mathwith)
+  * [nth](#nth)
+  * [pluck](#pluck)
+  * [pool](#pool)
+  * [reject](#reject)
+  * [take](#take)
+  * [throttle](#throttle)
 * Reducers - pump your iterable like a for...await loop
-  * [forEach][67]
-  * [publish][70]
-  * [reduce][73]
-  * [run][76]
-  * [runAwait][79]
-  * [toArray][82]
+  * [forEach](#foreach)
+  * [publish](#publish)
+  * [reduce](#reduce)
+  * [run](#run)
+  * [runAwait](#runawait)
+  * [toArray](#toarray)
 * Error Handling
-  * [catch][83]
-  * [finally][84]
+  * [catch](#catch)
+  * [finally](#finally)
 
 ## from
 
@@ -171,8 +171,8 @@ can be processed in a timely manner. Never yields empty chunks.
 Backpressure is provided by the iterator when a chunk is yielded. Stopping the
 iterator will stop chunking and the input iterable.
 
--   `n` **[Number][9]** size of arrays
--   `timeout` **[Number][9]** number of milliseconds before yielding chunk if not full
+-   `n` **[Number][93]** size of arrays
+-   `timeout` **[Number][93]** number of milliseconds before yielding chunk if not full
 
 Returns **ChainableClass** that chunks the input iterable.
 
@@ -465,174 +465,6 @@ Returns **ChainableClass** that can be chained further.
 const a = await chainable([1, 2, 3]).finally(() => doSomething()).toArray()
 ```
 
-
-[1]: #makechainableclass
-
-[2]: #parameters
-
-[3]: #makechainablefactory
-
-[4]: #parameters-1
-
-[5]: #from
-
-[6]: #parameters-2
-
-[7]: #merge
-
-[8]: #parameters-3
-
-[9]: #zip
-
-[10]: #parameters-4
-
-[11]: #examples
-
-[12]: #zipall
-
-[13]: #parameters-5
-
-[14]: #examples-1
-
-[15]: #arraytoobject
-
-[16]: #parameters-6
-
-[17]: #examples-2
-
-[18]: #callawait
-
-[19]: #parameters-7
-
-[20]: #examples-3
-
-[21]: #callnoawait
-
-[22]: #parameters-8
-
-[23]: #examples-4
-
-[24]: #diff
-
-[25]: #parameters-9
-
-[26]: #examples-5
-
-[27]: #filter
-
-[28]: #parameters-10
-
-[29]: #examples-6
-
-[30]: #flatten
-
-[31]: #parameters-11
-
-[32]: #examples-7
-
-[33]: #flattenrecursive
-
-[34]: #parameters-12
-
-[35]: #examples-8
-
-[36]: #map
-
-[37]: #parameters-13
-
-[38]: #examples-9
-
-[39]: #mapwith
-
-[40]: #parameters-14
-
-[41]: #examples-10
-
-[42]: #nth
-
-[43]: #parameters-15
-
-[44]: #examples-11
-
-[45]: #pluck
-
-[46]: #parameters-16
-
-[47]: #examples-12
-
-[48]: #reject
-
-[49]: #parameters-17
-
-[50]: #examples-13
-
-[51]: #take
-
-[52]: #parameters-18
-
-[53]: #examples-14
-
-[54]: #throttle
-
-[55]: #parameters-19
-
-[56]: #examples-15
-
-[57]: #pool
-
-[58]: #parameters-20
-
-[59]: #chunk
-
-[60]: #parameters-21
-
-[61]: #callwithtimeout
-
-[62]: #parameters-22
-
-[63]: #wait
-
-[64]: #parameters-23
-
-[65]: #waittocall
-
-[66]: #parameters-24
-
-[67]: #foreach
-
-[68]: #parameters-25
-
-[69]: #examples-16
-
-[70]: #publish
-
-[71]: #parameters-26
-
-[72]: #examples-17
-
-[73]: #reduce
-
-[74]: #parameters-27
-
-[75]: #examples-18
-
-[76]: #run
-
-[77]: #parameters-28
-
-[78]: #examples-19
-
-[79]: #runawait
-
-[80]: #parameters-29
-
-[81]: #examples-20
-
-[82]: #toarray
-
-[83]: #catch
-
-[84]: #finally
 
 [91]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object
 

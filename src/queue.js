@@ -1,6 +1,3 @@
-import { RingBuffer } from '@toolbuilder/ring-buffer'
-import { isFiniteNumber } from '@toolbuilder/isnumber/src/isnumber.js'
-
 export class QueueDone extends Error {}
 export class QueueFull extends Error {}
 
@@ -15,29 +12,21 @@ export class Queue {
   /**
    * Create a Queue. Each Queue instance is a Generator (both Iterable and Iterator).
    *
-   * @param {RingBuffer|Number} buffer - if buffer is a number, it specifies the size of the
-   * internal buffer. Otherwise buffer is treated as the buffer itself.
+   * @param {Array|RingBuffer} buffer - a buffer for input that has not yet been processed
+   * by the iterable. By default, is is just an empty Array, although this is probably not
+   * what you want.
    */
-  constructor (buffer = new RingBuffer(1000)) {
+  constructor (buffer = []) {
     this.keepGoing = true
     this.onPushedValue = null // resolve method from next() Promise
-    this.exception = null
-    if (isFiniteNumber(buffer)) {
-      this.buffer = new RingBuffer(buffer)
-    } else {
-      this.buffer = buffer
-    }
+    this.exception = null // exception pushed in by user to be rethrown in iterator
+    this.buffer = buffer
   }
 
   /**
    * @field {number} - the number of values currently in the queue
    */
   get length () { return this.buffer.length }
-
-  /**
-   * @field {number} - the maximum number of values that the queue can hold.
-   */
-  get capacity () { return this.buffer.capacity }
 
   /**
    * Terminate iteration over the queue iterator by rejecting the Promise for
@@ -73,17 +62,12 @@ export class Queue {
    *
    * @param {any} value - to be pushed into iterable
    * @returns {number} - the number of values in the queue at the end of the call
-   * @throws {QueueFull} - if queue.length === queue.capacity before the call
-   * @throws {QueueDone} - if queue.done() was called previously
+   * @throws {QueueDone} - if queue.done() has already been called
    */
   push (value) {
     if (!this.keepGoing) throw new QueueDone('Queue done already called, cannot push new values')
-    if (this.buffer.length >= this.capacity) {
-      throw new QueueFull(`Cannot push to Queue, maximum queue length of ${this.capacity} reached`)
-    }
     if (this.onPushedValue) { this.onPushedValue(); this.onPushedValue = null }
-    this.buffer.push(value)
-    return this.buffer.length
+    return this.buffer.push(value)
   }
 
   /**
@@ -96,7 +80,7 @@ export class Queue {
   done (emptyQueue = true) {
     this.keepGoing = false
     // substitute empty buffer for non-empty one so that iterator completes
-    if (emptyQueue === false) this.buffer = new RingBuffer(this.buffer.capacity)
+    if (emptyQueue === false) this.buffer = []
     if (this.onPushedValue != null) { this.onPushedValue(); this.onPushedValue = null }
   }
 

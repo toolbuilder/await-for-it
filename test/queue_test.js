@@ -1,20 +1,11 @@
 import { RingBuffer } from '@toolbuilder/ring-buffer'
 import { chainable as sync } from 'iterablefu'
 import { test } from 'zora'
-import { chainable, Queue, QueueDone, QueueFull, Semaphore, waitToCall } from '../src/await-for-it'
+import { chainable, Queue, QueueDone, Semaphore, waitToCall } from '../src/await-for-it'
 import { randomlySlowIterator, runTest } from './toofast'
 
-// Alternate buffer implementation to verify that any buffer works.
-// Array is about 20x slower than RingBuffer for the push/shift use case.
-class ArrayBuffer extends Array {
-  constructor (capacity) {
-    super()
-    this.capacity = capacity
-  }
-}
-
-const makeQueueAndPush = (capacity, iterable) => {
-  const queue = new Queue(new ArrayBuffer(capacity))
+const makeQueueAndPush = (iterable) => {
+  const queue = new Queue() // verify default provides a buffer
   for (const value of iterable) {
     queue.push(value)
   }
@@ -22,7 +13,7 @@ const makeQueueAndPush = (capacity, iterable) => {
 }
 
 test('queue: fast pushing and done called before [Symbol.asyncIterator] called, drains completely', async assert => {
-  const queue = new Queue(new ArrayBuffer(10))
+  const queue = new Queue()
 
   // await to make sure done() called before asking for output
   await chainable([0, 1, 2, 3, 4])
@@ -37,7 +28,7 @@ test('queue: fast pushing and done called before [Symbol.asyncIterator] called, 
 })
 
 test('queue: fast pushing and done called after [Symbol.asyncIterator] called, drains completely', async assert => {
-  const queue = new Queue(new ArrayBuffer(10))
+  const queue = new Queue()
 
   chainable([0, 1, 2, 3, 4])
     .finally(() => {
@@ -64,29 +55,8 @@ test('queue: fast iterator waits for data from slow pushing', async assert => {
   assert.deepEqual(output, [0, 1, 2, 3, 4], 'queue drains in order and completely')
 })
 
-test('queue: push on full queue throws', async assert => {
-  const queue = new Queue(3)
-
-  queue.push(0)
-  queue.push(1)
-  queue.push(2)
-  let caughtException = false
-  try {
-    queue.push(3)
-  } catch (error) {
-    caughtException = true
-    assert.ok(error instanceof QueueFull, 'correct error type thrown')
-    waitToCall(50, () => queue.push(4)) // can still push after queue empties a bit
-    waitToCall(100, () => queue.done())
-    const output = await chainable(queue).toArray()
-    assert.deepEqual(output, [0, 1, 2, 4], 'queue still drains in order and completely after exception')
-  }
-  assert.ok(caughtException, 'exception was caught')
-})
-
 test('queue: fill, drain, then refill', async assert => {
-  // Queue sized so that it must drain between fillIt calls, or throw QueueFull
-  const queue = new Queue(6)
+  const queue = new Queue()
   const fillIt = (array) => array.forEach((v, i) => { queue.push(v) })
   waitToCall(100, () => fillIt([0, 1, 2, 3, 4]))
   waitToCall(500, () => fillIt([5, 6, 7, 8, 9]))
@@ -96,7 +66,7 @@ test('queue: fill, drain, then refill', async assert => {
 })
 
 test('queue: accepts iterables as values', async assert => {
-  const queue = new Queue(6)
+  const queue = new Queue()
   waitToCall(100, () => queue.push([0, 1, 2, 3, 4]))
   waitToCall(200, () => queue.push([5, 6, 7, 8, 9]))
   waitToCall(300, () => queue.done())
@@ -115,21 +85,21 @@ test('queue: pushing promises behaves as expected', async assert => {
 })
 
 test('queue: done() lets queue drain and then ends iterator', async assert => {
-  const queue = makeQueueAndPush(10, [0, 1, 2, 3, 4])
+  const queue = makeQueueAndPush([0, 1, 2, 3, 4])
   queue.done()
   const output = await chainable(queue).toArray()
   assert.deepEqual(output, [0, 1, 2, 3, 4], 'queue drained fully')
 })
 
 test('queue: done(false) ends iterator immediately, even when values queued', async assert => {
-  const queue = makeQueueAndPush(6, [0, 1, 2, 3, 4])
+  const queue = makeQueueAndPush([0, 1, 2, 3, 4])
   queue.done(false)
   const output = await chainable(queue).toArray()
   assert.deepEqual(output, [], 'queue ended immediately')
 })
 
 test('queue: done iterable throws on subsequent push', async assert => {
-  const queue = makeQueueAndPush(6, [0, 1, 2, 3, 4])
+  const queue = makeQueueAndPush([0, 1, 2, 3, 4])
   queue.done()
   let caughtException = false
   try {
@@ -143,13 +113,8 @@ test('queue: done iterable throws on subsequent push', async assert => {
 })
 
 test('queue: length reports Queue length', assert => {
-  const queue = makeQueueAndPush(6, [0, 1, 2, 3, 4])
+  const queue = makeQueueAndPush([0, 1, 2, 3, 4])
   assert.deepEqual(queue.length, 5, 'Queue.length reports correct length')
-})
-
-test('queue: capacity reports maximum buffer length', assert => {
-  const queue = makeQueueAndPush(42, [])
-  assert.deepEqual(queue.capacity, 42, 'Queue.capacity reports correct max length')
 })
 
 test('queue: push returns the queue length', assert => {
@@ -163,7 +128,7 @@ test('queue: push returns the queue length', assert => {
 
 test('queue: rejected promise propagates to iterating code', async assert => {
   const theError = new Error('the error')
-  const queue = new Queue(5)
+  const queue = new Queue()
 
   let caughtException = false
   const semaphore = new Semaphore()
@@ -189,7 +154,7 @@ test('queue: rejected promise propagates to iterating code', async assert => {
 
 test('queue: reject causes iteration to stop with rejection', async assert => {
   const theError = new Error('the error')
-  const queue = new Queue(5)
+  const queue = new Queue()
   let count = 0
   let caughtException = false
   const semaphore = new Semaphore()
@@ -216,7 +181,7 @@ test('queue: reject causes iteration to stop with rejection', async assert => {
 
 test('queue: iterator called faster than one-at-a-time', async assert => {
   const values = 50
-  const queue = new Queue(10)
+  const queue = new Queue()
   const data = sync.range(values).toArray()
 
   // slowly push data into the queue so that queue never fills up
