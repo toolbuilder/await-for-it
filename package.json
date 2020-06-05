@@ -1,8 +1,7 @@
 {
   "name": "@toolbuilder/await-for-it",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Concurrency using chainable async iterables, such as task pool, event queue, pub/sub, merge, chunk, throttle, etc.",
-  "main": "src/index.js",
   "keywords": [
     "async",
     "asynciterable",
@@ -16,10 +15,6 @@
     "observable",
     "event"
   ],
-  "module": "src/await-for-it.js",
-  "files": [
-    "src"
-  ],
   "homepage": "https://github.com/toolbuilder/await-for-it#readme",
   "bugs": {
     "url": "https://github.com/toolbuilder/await-for-it/issues"
@@ -28,6 +23,12 @@
     "type": "git",
     "url": "https://github.com/toolbuilder/await-for-it.git"
   },
+  "license": "MIT",
+  "main": "src/index.js",
+  "module": "src/await-for-it.js",
+  "files": [
+    "src"
+  ],
   "scripts": {
     "build": "npm-run-all --serial test lint",
     "lint": "eslint src test",
