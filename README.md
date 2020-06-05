@@ -80,11 +80,21 @@ The documentation is in progress. Sometimes the functional API examples show cha
 
 Here is a quick set of [examples](docs/examples.md)
 
+## Breaking Changes
+
+* `1.0.0` -
+  * `Queue` no longer throws `QueueFull` when the buffer reaches capacity. That's properly the buffer's job.
+  * `Queue` constructor no longer accepts a `Number` to specify buffer capacity. The constructor only accepts a buffer.
+  * `Queue` the default buffer is an empty `Array` although that is probably not what you want.
+  * `Queue` no longer provides a `capacity` property
+  * `RingBuffer` is no longer exported by `Await-For-It`. It is now [here](https://github.com/toolbuilder/ring-buffer).
+  * `Semaphore` and `Mutex` are no longer exported by `Await-For-It`. If you really need them they are [here](https://github.com/toolbuilder/semaphore).
+
 ## Alternatives
 
 `Await-For-It` is focused on solving common asynchronous patterns with asynchronous iterables. There are many other packages that solve common asynchronous patterns without async iterables. There are also a number of packages that provide async iterable support, but don't seem to fully support async concurrency patterns.
 
-There are lots of packages that support synchronous iterables, but doesn't help with concurrency. [Iterablefu](https://github.com/toolbuilder/iterablefu) is the synchronous version of `Await-For-It`.
+There are lots of packages that support synchronous iterables, but that doesn't help with concurrency. For example, [Iterablefu](https://github.com/toolbuilder/iterablefu) is the synchronous version of `Await-For-It`.
 
 There are popular `Observable` libraries. I worked with [RxJs](https://rxjs.dev/guide/observable) and [Kefir](https://kefirjs.github.io/kefir/) before writing `Await-For-It`. After working with both, I strongly prefer async generators and iterators to `Observables`. Here's why:
 
@@ -93,6 +103,8 @@ There are popular `Observable` libraries. I worked with [RxJs](https://rxjs.dev/
 * The async iterator protocol automatically applies back pressure. Compare to [this](https://codeburst.io/a-look-at-back-pressure-and-its-handling-in-rxjs-5bc8f04a2e8f) for RxJs.
 * Async iterables have direct support in the language: async generators, `yield *`, async functions, Promises, etc.
 * Async iterables work directly with synchronous iterables as input since JavaScript handles that for you.
+
+`Observables` use a push model, and async iterables use a pull model. `Await-For-It` provides [Queue](docs/queue.md) to bridge from push to pull. You might also look at [emittery](https://github.com/sindresorhus/emittery).
 
 Node streams are now async iterables, so this isn't an either/or decision. The [pipeline](https://nodejs.org/api/stream.html#stream_piping_to_writable_streams_from_async_iterators) method might be all you need.
 
