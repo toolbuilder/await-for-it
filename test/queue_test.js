@@ -1,7 +1,8 @@
 import { RingBuffer } from '@toolbuilder/ring-buffer'
+import { Semaphore } from '@toolbuilder/semaphore'
 import { chainable as sync } from 'iterablefu'
 import { test } from 'zora'
-import { chainable, Queue, QueueDone, Semaphore, waitToCall } from '../src/await-for-it'
+import { chainable, Queue, QueueDone, waitToCall } from '../src/await-for-it'
 import { randomlySlowIterator, runTest } from './toofast'
 
 const makeQueueAndPush = (iterable) => {

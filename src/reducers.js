@@ -1,4 +1,4 @@
-import { Semaphore } from './semaphore.js'
+import { Semaphore } from '@toolbuilder/semaphore'
 import { iteratorFrom } from './iteratorfrom.js'
 
 /**

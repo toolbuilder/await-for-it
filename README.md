@@ -20,6 +20,7 @@ If you just want synchronous iterables try [IterableFu](https://github.com/toolb
 * Event queues - push events or other data into an async iterable: [Queue](docs/queue.md)
 * Task pool - process up to `n` tasks at a time: [Pool](docs/ChainableClass.md#pool)
 * Pub/Sub - fork an async iterable to multiple consumers, register subscribers at any time: [Publish](docs/ChainableClass.md#publish)
+* Join - two iterables should advance together: [Zip](docs/chainable.md#zip)
 * Start/Stop iterables from **outside** the iterable, like a pseudo-thread: [Run](docs/ChainableClass.md#run)
 * Catch/Finally - just like Promises, except for streams of Promises: [Catch](docs/ChainableClass.md#catch)
 * Polling - execute a task periodically with backpressure from an async iterable: [Poll](docs/poll.md)
@@ -79,18 +80,22 @@ The documentation is in progress. Sometimes the functional API examples show cha
 
 Here is a quick set of [examples](docs/examples.md)
 
-## Why Not Something Else
+## Alternatives
 
-`Promise` chains work just fine if you don't need many of the features in the feature list above.
+`Await-For-It` is focused on solving common asynchronous patterns with asynchronous iterables. There are many other packages that solve common asynchronous patterns without async iterables. There are also a number of packages that provide async iterable support, but don't seem to fully support async concurrency patterns.
 
-`Await-For-It` is focused on solving common asynchronous patterns with asynchronous iterables. There are many other packages that solve common asynchronous patterns without async iterables. There are also a number of packages that provide async iterable support, but don't provide a number of the features listed above. And of course, there are lots of packages that support synchronous iterables. [Iterablefu](https://github.com/toolbuilder/iterablefu) is the synchronous version of `Await-For-It`.
+There are lots of packages that support synchronous iterables, but doesn't help with concurrency. [Iterablefu](https://github.com/toolbuilder/iterablefu) is the synchronous version of `Await-For-It`.
 
-There are popular `Observable` libraries too. I worked with [RxJs](https://rxjs.dev/guide/observable) and [Kefir](https://kefirjs.github.io/kefir/) before writing `Await-For-It`. After working with both, I strongly prefer async generators and iterators to `Observables`. Here's why:
+There are popular `Observable` libraries. I worked with [RxJs](https://rxjs.dev/guide/observable) and [Kefir](https://kefirjs.github.io/kefir/) before writing `Await-For-It`. After working with both, I strongly prefer async generators and iterators to `Observables`. Here's why:
 
-* As a JavaScript developer, you already need to learn how to use async iterables.
+* As a JavaScript developer, you already need to learn async iterables. Learning `Observables` is extra work.
 * Async iterables are literally iterables that return Promises, so the mental model is simpler.
 * The async iterator protocol automatically applies back pressure. Compare to [this](https://codeburst.io/a-look-at-back-pressure-and-its-handling-in-rxjs-5bc8f04a2e8f) for RxJs.
 * Async iterables have direct support in the language: async generators, `yield *`, async functions, Promises, etc.
-* Async iterables work directly with synchronous iterables as input
+* Async iterables work directly with synchronous iterables as input since JavaScript handles that for you.
 
 Node streams are now async iterables, so this isn't an either/or decision. The [pipeline](https://nodejs.org/api/stream.html#stream_piping_to_writable_streams_from_async_iterators) method might be all you need.
+
+`Promise` chains work just fine if you don't need to control the number of active tasks, or need to run the tasks sequentially.
+
+`for await` loops are perfect when you don't need to relax that 'one-at-a-time' behavior. But when you refactor a bunch of nested loops they'll look a lot like the functional or chainable API of `Await-For-It`.

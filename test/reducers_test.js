@@ -1,6 +1,7 @@
-import { chainable, Poll, waitToCall, Semaphore } from '../src/await-for-it'
+import { Semaphore } from '@toolbuilder/semaphore'
 import { ChainableIterable } from 'iterablefu'
 import { test } from 'zora'
+import { chainable, Poll, waitToCall } from '../src/await-for-it'
 
 test('forEach', async assert => {
   const input = [0, 1, 2, 3, 4]

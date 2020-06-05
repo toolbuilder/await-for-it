@@ -2,6 +2,7 @@ dependencies:
   '@toolbuilder/isnumber': 0.1.1
   '@toolbuilder/make-factory': 0.1.1
   '@toolbuilder/ring-buffer': 1.1.0
+  '@toolbuilder/semaphore': 0.1.0
   esm: 3.2.25
   iterablefu: 0.4.1
 devDependencies:
@@ -107,6 +108,12 @@ packages:
     dev: false
     resolution:
       integrity: sha512-5952f/PlWDsS6dkjgjKr7g9gI0PKr6NsPC7/MacPFeh19PlD++eyabp4L4zAyO3T0NLMAT+NPpSuUlam2cBTBg==
+  /@toolbuilder/semaphore/0.1.0:
+    dependencies:
+      esm: 3.2.25
+    dev: false
+    resolution:
+      integrity: sha512-gmG0znGsZRhKZ9nfScAKYM9W7rWZLOfqJScJFhoGBOLjg2SubLKRPhYvJF0LiaALQ9SP07ANq5vKawDf1Q3Ehw==
   /@types/color-name/1.1.1:
     dev: true
     resolution:
@@ -2911,6 +2918,7 @@ specifiers:
   '@toolbuilder/list': ^1.0.0
   '@toolbuilder/make-factory': ^0.1.1
   '@toolbuilder/ring-buffer': ^1.1.0
+  '@toolbuilder/semaphore': ^0.1.0
   eslint: ^6.8.0
   esm: ^3.2.25
   iterablefu: ^0.4.1

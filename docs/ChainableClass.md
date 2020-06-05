@@ -377,11 +377,15 @@ be added and removed during iteration.
 Functions are passed the each value from the iterable. Only values provided
 after subscribing are provided. Any return value is ignored.
 
+You can also start and stop the publisher if you like.
+
 ```javascript
 import { chainable, wait } from '@toolbuilder/await-for-it'
 
 const publisher = chainable([0, 1, 2, 3]).throttle(50, 50).publish()
 const key = publisher.subscribe(console.log) // prints 0, 1 - then unsubscribed
+if (publisher.running) publisher.stop()
+publisher.start()
 wait(110, publisher.unsubscribe(key)) // console.log is no longer called after 110ms
 ```
 
