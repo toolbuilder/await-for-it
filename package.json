@@ -1,6 +1,6 @@
 {
   "name": "@toolbuilder/await-for-it",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Concurrency using chainable async iterables, such as task pool, event queue, pub/sub, merge, chunk, throttle, etc.",
   "keywords": [
     "async",
@@ -30,11 +30,15 @@
     "src"
   ],
   "scripts": {
-    "build": "npm-run-all --serial lint lint:packagejson test test:packfile",
-    "lint": "eslint src test",
-    "lint:packagejson": "npmPkgJsonLint .",
-    "test": "tape -r esm test/*_test.js | tap-nirvana",
-    "test:packfile": "rollup --config node:@toolbuilder/rollup-config-pkgtest"
+    "check": "run-s check:*",
+    "check:packagejson": "npmPkgJsonLint .",
+    "check:packfile": "rollup --config node:@toolbuilder/rollup-config-pkgtest",
+    "check:src": "eslint src test",
+    "check:test": "run-s test",
+    "check:uncommitted": "uncommitted",
+    "prerelease": "run-s check",
+    "release": "standard-version",
+    "test": "tape -r esm \"test/*test.js\""
   },
   "eslintConfig": {
     "extends": "@toolbuilder/eslint-config"
@@ -51,14 +55,21 @@
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^8.0.1",
     "@toolbuilder/eslint-config": "^0.1.2",
+    "@toolbuilder/package-json-lint-config": "^0.1.0",
+    "@toolbuilder/rollup-config-pkgtest": "^0.1.0",
     "eslint": "^6.8.0",
     "npm-package-json-lint": "^5.1.0",
     "npm-run-all": "^4.1.5",
     "rollup": "^2.14.0",
     "rollup-plugin-terser": "^6.1.0",
+    "standard-version": "^8.0.0",
     "tap-nirvana": "^1.1.0",
     "tape": "^4.13.3",
     "tape-run": "^7.0.0",
+    "uncommitted": "^1.0.0",
     "zora": "^3.1.9"
+  },
+  "npmpackagejsonlint": {
+    "extends": "@toolbuilder/package-json-lint-config"
   }
 }
