@@ -1,19 +1,6 @@
 # Await-For-It
 
-`Await-For-It` implements common concurrency patterns using async iterables. The iterables are chainable for ease of use. Or you can use the functional, data-last API.
-
-JavaScript's async iterable protocol provides nice guaranteed 'one-at-a-time' serialization for async processes. Unlike individual `Promise` calls and `Observables`, async iterables automatically provide backpressure, without buffering problems, when downstream processing is going slowly. However, sometimes you want to relax that 'one-at-a-time' constraint in places (e.g. `task pools`). Also, it would be nice to easily:
-
-* feed async data into an iterable (e.g. [polling](docs/poll.md) and [event queues](docs/queue.md))
-* publish to multiple subscribers (e.g. [pub/sub](docs/ChainableClass.md#publish))
-* control the async processing (e.g. [stop/start](docs/ChainableClass.md#run))
-* cleanup when done ([finally](docs/ChainableClass.md#finally))
-* catch errors ([catch](docs/ChainableClass.md#catch))
-* use common functions such as zip, merge, map, filter, reduce, toArray, and [more](docs/ChainableClass.md).
-
-`Await-For-It` provides these things for your code.
-
-If you just want synchronous iterables try [IterableFu](https://github.com/toolbuilder/iterablefu).
+`Await-For-It` implements common concurrency patterns using async iterables. The iterables are chainable for ease of use. Or you can use the async generators on their own with the functional, data-last API.
 
 ## Features
 
@@ -31,6 +18,8 @@ If you just want synchronous iterables try [IterableFu](https://github.com/toolb
 * Chainable - chain operations such as map, reduce, filter, throttle, and zip: [ChainableClass](docs/ChainableClass.md#zip)
 * Functional - all operations have a functional 'data last' equivalent via separate imports
 * Customize - add/remove methods, and support your bundler's tree-shaking: [Customize](docs/customization.md)
+
+If you just want synchronous iterables try [IterableFu](https://github.com/toolbuilder/iterablefu).
 
 ## Installation
 
@@ -82,7 +71,10 @@ Here is a quick set of [examples](docs/examples.md)
 
 ## Breaking Changes
 
+After the 1.0.0 changes, there should be no breaking changes going forward.
+
 * `1.0.0` -
+  * See the updated [docs](docs/queue.md).
   * `Queue` no longer throws `QueueFull` when the buffer reaches capacity. That's properly the buffer's job.
   * `Queue` constructor no longer accepts a `Number` to specify buffer capacity. The constructor only accepts a buffer.
   * `Queue` the default buffer is an empty `Array` although that is probably not what you want.
