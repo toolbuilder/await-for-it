@@ -11,6 +11,7 @@ Transform methods can have any number of parameters, but the last parameter is *
 -   [filter][13]
 -   [flatten][16]
 -   [flattenRecursive][19]
+-   [flattenUnordered][20]
 -   [map][22]
 -   [mapWith][25]
 -   [nth][28]
@@ -133,6 +134,28 @@ async and sync iterables within the provided iterable.
 const input = [0, [1, 2, 3], [[4, 5], [[toAsync([6, 7])], [8, 9], 10]], 11, 12]
 const a = flattenRecursive(input)
 console.log(await toArray(a)) // prints [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+```
+
+Returns **AsyncGenerator** for the flattened sequence
+
+## flattenUnordered
+
+Flattens a sequence of items one level deep. Unlike flatten, flattenUnordered attempts
+to flatten several iterables at the same time, so the output is not in a predicatable
+order. Async and sync iterables within the provided iterable are supported. Strings
+are not flattened even though they are iterable.
+
+The number of iterables being flattened at the same time is limited by maxPoolSize. When
+this number is reached, flattenUnordered will begin to apply backpressure if it is being
+iterated more slowly than the input iterables can supply data. In other words, no more
+than maxPoolSize Promises will be pending at any given time.
+
+-   `maxPoolSize` **[Number][3]** maximum number of iterables to flatten at same time
+-   `iterable` **(AsyncIterable | Iterable)** the sequence to flatten
+
+```javascript
+const a = flattenUnordered(5, [[1, 2, 3], [4, 5], 6, [7, 8]])
+console.log(await toArray(a).sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8]
 ```
 
 Returns **AsyncGenerator** for the flattened sequence
@@ -364,7 +387,7 @@ to if fn is async.
 
 [19]: #flattenrecursive
 
-[20]: #parameters-6
+[20]: #flattenunordered
 
 [21]: #examples-6
 

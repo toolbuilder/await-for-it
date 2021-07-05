@@ -4,6 +4,7 @@ import { zipAll } from 'iterablefu/src/generators.js'
 
 export { pool } from './pool.js'
 export { chunk } from './chunk.js'
+export { flattenUnordered } from './flattenunordered.js'
 
 // Helper for arrayToObject. Matches property names to iterable values.
 const zipObject = (propertyNames, iterableValues) => {
@@ -121,14 +122,15 @@ export const filter = async function * (fn, iterable) {
 const shouldIterate = (value) => !isString(value) && (isSyncIterable(value) || isAsyncIterable(value))
 
 /**
- * Flattens a sequence of items one level deep. It does not flatten strings, even
- * though they are iterable. Can flatten async and sync iterables within the provided
- * iterable.
+ * Flattens a sequence of items one level deep. Each iterable is flattened fully before moving
+ * to the next. If you want multiple iterables flattened at the same time, see flattenUnordered.
+ * Flatten does not flatten strings, even though they are iterable. It can flatten async and
+ * sync iterables within the provided iterable.
  *
  * @param {AsyncIterable|Iterable} iterable - the iterable sequence to flatten
  * @returns {AsyncGenerator} for the flattened sequence
  * @example
- * const a = flatten([[0, 1], [2, 3], toAsync([4, 5]), [6]])
+ * const a = flatten([[0, 1], [2, 3], chainable([4, 5]), [6]])
  * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4, 5, 6]
  */
 export const flatten = async function * (iterable) {
@@ -143,13 +145,14 @@ export const flatten = async function * (iterable) {
 
 /**
  * Flattens a sequence by recursively returning items from each iterable in the sequence.
- * Does not flatten strings even though they are iterable. Can flatten combinations of
- * async and sync iterables within the provided iterable.
+ * Each iterable is flattened fully before moving to the next. Does not flatten strings
+ * even though they are iterable. Can flatten combinations of async and sync iterables
+ * within the provided iterable.
  *
  * @param {AsyncIterable|Iterable} iterable - the sequence to flatten
  * @returns {AsyncGenerator} for the flattened sequence
  * @example
- * const input = [0, [1, 2, 3], [[4, 5], [[toAsync([6, 7])], [8, 9], 10]], 11, 12]
+ * const input = [0, [1, 2, 3], [[4, 5], [[chainable([6, 7])], [8, 9], 10]], 11, 12]
  * const a = flattenRecursive(input)
  * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
  */

@@ -30,6 +30,7 @@ const chainableClassInstance = new ChainableClass([0, 1, 2])
   * [filter](#filter)
   * [flatten](#flatten)
   * [flattenRecursive](#flattenrecursive)
+  * [flattenUnordered](#flattenunordered)
   * [map](#map)
   * [mapWith](#mathwith)
   * [nth](#nth)
@@ -125,7 +126,6 @@ If the arrays in iterable are too short, the remaining properties are assigned u
 See example.
 
 -   `propertyNames` **Iterable** a sequence of property names
--   `iterable` **(AsyncIterable | Iterable)** a sequence of arrays (or any iterable objects)
 
 ```javascript
 const objects = await chainable([[0, 1], [2, 3, 'a'], [4]]).arrayToObject(['a', 'b']).toArray()
@@ -140,7 +140,6 @@ Pass the input sequence to the output sequence without change, but execute `fn(i
 item in the sequence. Awaits the result of each function call before yielding the value.
 
 -   `fn` **(AsyncFunction | [Function][92])** function, `fn(item)` is called for each item in the sequence
--   `iterable` **(AsyncIterable | Iterable)** the input sequence
 
 ```javascript
 chainable([1, 2, 3, 4, 5]).callAwait(console.log).run()
@@ -213,8 +212,6 @@ Flattens a sequence of items one level deep. It does not flatten strings, even
 though they are iterable. Can flatten async and sync iterables within the provided
 iterable.
 
--   `iterable` **(AsyncIterable | Iterable)** the iterable sequence to flatten
-
 Returns **ChainableClass** for the flattened sequence
 
 ```javascript
@@ -228,12 +225,31 @@ Flattens a sequence by recursively returning items from each iterable in the seq
 Does not flatten strings even though they are iterable. Can flatten combinations of
 async and sync iterables within the provided iterable.
 
--   `iterable` **(AsyncIterable | Iterable)** the sequence to flatten
-
 ```javascript
 const input = [0, [1, 2, 3], [[4, 5], [[[6, 7]], [8, 9], 10]], 11, 12]
 chainable(input).flattenRecursive().callNoAwait(console.log).run()
 // prints [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+```
+
+Returns **ChainableClass** for the flattened sequence
+
+## flattenUnordered
+
+Flattens a sequence of items one level deep. Unlike flatten, flattenUnordered attempts
+to flatten several iterables at the same time, so the output is not in a predicatable
+order. Async and sync iterables within the provided iterable are supported. Strings
+are not flattened even though they are iterable.
+
+The number of iterables being flattened at the same time is limited by maxPoolSize. When
+this number is reached, flattenUnordered will begin to apply backpressure if it is being
+iterated more slowly than the input iterables can supply data. In other words, no more
+than maxPoolSize Promises will be pending at any given time.
+
+-   `maxPoolSize` **[Number][3]** maximum number of iterables to flatten at same time
+
+```javascript
+const a = await chainable([[1, 2, 3], [4, 5], 6, [7, 8]]).flattenUnordered(5).toArray()
+console.log(a.sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8]
 ```
 
 Returns **ChainableClass** for the flattened sequence
