@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## 1.1.0 (2021-07-05)
+
+
+### Features
+
+* added flattenUnordered transform ([0130bf2](https://github.com/toolbuilder/await-for-it/commit/0130bf2e59ec86c04b4c22a72120477a5c5d90eb))
+
 ### [1.0.0](https://github.com/toolbuilder/await-for-it/tree/1.0.0) (2020-06-05)
 
 ### Bug Fixes
