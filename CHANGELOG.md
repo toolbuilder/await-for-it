@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/toolbuilder/await-for-it/compare/v1.1.0...v1.2.0) (2021-07-24)
+
+
+### Features
+
+* dual package - ES module with CommonJS support ([3b7305e](https://github.com/toolbuilder/await-for-it/commit/3b7305e7ae2c7f44295fe27c421916f012576ec8))
+
 ## 1.1.0 (2021-07-05)
 
 
