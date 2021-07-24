@@ -1,5 +1,5 @@
 import { chainable as sync } from 'iterablefu'
-import { chainable, iteratorFrom, waitToCall } from '../src/await-for-it'
+import { chainable, iteratorFrom, waitToCall } from '../src/await-for-it.js'
 
 /*
   Almost always you want to iterate an async iterable one-at-a-time so that the prior iterator.next() call

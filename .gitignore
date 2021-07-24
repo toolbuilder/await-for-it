@@ -1,7 +1,5 @@
 node_modules
-temp
-umd
+cjs/*.js
 todo.md
 *.tgz
 *.log
-published

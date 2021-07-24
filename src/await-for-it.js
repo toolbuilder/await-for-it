@@ -1,4 +1,4 @@
-export { makeFactory } from '@toolbuilder/make-factory/src/factory.js'
+export { makeFactory } from '@toolbuilder/make-factory'
 export { makeChainableFactory, makeChainableClass } from './makechainable.js'
 export { isAsyncIterable, isSyncIterable, isFunction } from './is.js'
 export { chainable, ChainableClass } from './chainable.js'
@@ -7,12 +7,6 @@ export { Queue, QueueDone, QueueFull } from './queue.js'
 export { callWithTimeout, wait, waitToCall } from './timeouts.js'
 export { iteratorFrom } from './iteratorfrom.js'
 
-import * as generators from './generators.js'
-import * as transforms from './transforms.js'
-import * as reducers from './reducers.js'
-
-export {
-  generators,
-  transforms,
-  reducers
-}
+export * as generators from './generators.js'
+export * as transforms from './transforms.js'
+export * as reducers from './reducers.js'

@@ -24,49 +24,58 @@
     "url": "https://github.com/toolbuilder/await-for-it.git"
   },
   "license": "MIT",
-  "main": "src/index.js",
+  "type": "module",
+  "exports": {
+    "./src/": {
+      "require": "./cjs/",
+      "default": "./src/"
+    },
+    ".": {
+      "require": "./cjs/await-for-it.js",
+      "default": "./src/await-for-it.js"
+    }
+  },
+  "main": "cjs/await-for-it.js",
   "module": "src/await-for-it.js",
   "files": [
+    "cjs",
     "src"
   ],
   "scripts": {
-    "check": "run-s check:*",
+    "build": "rollup -c rollup.config.cjs.js",
+    "check": "run-s build check:*",
     "check:packagejson": "npmPkgJsonLint .",
-    "check:packfile": "rollup --config node:@toolbuilder/rollup-config-pkgtest",
+    "check:packfile": "rollup -c rollup.config.test.js",
     "check:src": "eslint src test",
     "check:test": "run-s test",
     "check:uncommitted": "uncommitted",
     "prerelease": "run-s check",
     "release": "standard-version",
-    "test": "tape -r esm \"test/*test.js\""
+    "test": "esm-tape-runner \"test/**/*test.js\""
   },
   "eslintConfig": {
     "extends": "@toolbuilder/eslint-config"
   },
   "dependencies": {
-    "@toolbuilder/isnumber": "^0.1.3",
-    "@toolbuilder/make-factory": "^0.1.1",
-    "@toolbuilder/ring-buffer": "^1.1.2",
-    "@toolbuilder/semaphore": "^0.1.3",
-    "esm": "^3.2.25",
-    "iterablefu": "^0.4.2"
+    "@toolbuilder/isnumber": "^0.1.4",
+    "@toolbuilder/make-factory": "^0.1.2",
+    "@toolbuilder/ring-buffer": "^1.2.0",
+    "@toolbuilder/semaphore": "^0.1.4",
+    "iterablefu": "^0.4.3"
   },
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^8.4.0",
+    "@small-tech/esm-tape-runner": "^1.0.3",
     "@toolbuilder/eslint-config": "^0.1.4",
     "@toolbuilder/package-json-lint-config": "^0.1.0",
-    "@toolbuilder/rollup-config-pkgtest": "^0.1.2",
-    "eslint": "^7.11.0",
-    "npm-package-json-lint": "^5.1.0",
+    "@toolbuilder/rollup-plugin-test-tools": "^0.1.2",
+    "eslint": "^7.31.0",
+    "npm-package-json-lint": "^5.2.2",
     "npm-run-all": "^4.1.5",
-    "rollup": "^2.32.1",
-    "rollup-plugin-terser": "^6.1.0",
-    "standard-version": "^8.0.2",
+    "rollup": "^2.53.3",
+    "standard-version": "^9.3.1",
     "tap-nirvana": "^1.1.0",
-    "tape": "^5.0.1",
-    "tape-run": "^7.0.0",
     "uncommitted": "^1.0.0",
-    "zora": "^4.0.0"
+    "zora": "^4.1.0"
   },
   "npmpackagejsonlint": {
     "extends": "@toolbuilder/package-json-lint-config"

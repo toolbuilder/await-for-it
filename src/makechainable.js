@@ -1,4 +1,4 @@
-import { makeFactory } from '@toolbuilder/make-factory/src/factory.js'
+import { makeFactory } from '@toolbuilder/make-factory'
 
 /**
  * Dynamically create a ChainableClass. This differs from makeChainableFactory only in that the class can't be

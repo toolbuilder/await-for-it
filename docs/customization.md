@@ -55,7 +55,6 @@ console.log(a) // prints [0, 1, 4, 9]
 
 Perhaps you are tree shaking and need to minimize the amount of code pulled in to your bundle. In that case, use the [makeChainableFactory](./makechainable.md) method to generate your own version of [chainable](./chainable.md). You can use your own methods and methods from `Await-For-It` with `makeChainableFactory`.
 
-
 This section walks through an example that adds a few simple methods to those already provided by `Await-For-It`.
 You can also reduce the number of methods the same way.
 
@@ -70,10 +69,10 @@ import { makeChainableFactory, generators, transforms, reducers } from '@toolbui
 You can also import specific functions directly. However, you're taking a bit of a risk that future releases will move these functions.
 
 ```javascript
-import { makeChainableFactory } from 'await-for-it/src/makechainable'
-import { zip, zipAll } from 'await-for-it/src/generators'
-import { pluck, nth } from 'await-for-it/src/transforms'
-import { forEach } from 'await-for-it/src/reducers'
+import { makeChainableFactory } from '@toolbuilder/await-for-it/src/makechainable.js'
+import { zip, zipAll } from '@toolbuilder/await-for-it/src/generators.js'
+import { pluck, nth } from '@toolbuilder/await-for-it/src/transforms.js'
+import { forEach } from '@toolbuilder/await-for-it/src/reducers.js'
 ```
 
 ### Generators

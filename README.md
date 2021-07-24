@@ -65,6 +65,10 @@ The chainable API is dynamically created from the functional API when `Await-For
 
 The documentation is in progress. Sometimes the functional API examples show chainable API use. Sometimes it is the other way around. I will continue improving - especially in areas where you provide feedback.
 
+### Customization
+
+`Await-For-It` works with your generators and iterables. It is also possible to add or remove methods from `Await-For-It` to suit your needs. See [customization](docs/customization.md).
+
 ## Examples
 
 Here is a quick set of [examples](docs/examples.md)
@@ -103,3 +107,23 @@ Node streams are now async iterables, so this isn't an either/or decision. The [
 `Promise` chains work just fine if you don't need to control the number of active tasks, or need to run the tasks sequentially.
 
 `for await` loops are perfect when you don't need to relax that 'one-at-a-time' behavior. But when you refactor a bunch of nested loops they'll look a lot like the functional or chainable API of `Await-For-It`.
+
+## Contributing
+
+Contributions are welcome. Please create a pull request.
+
+* I use [pnpm](https://pnpm.js.org/) instead of npm.
+* Run the unit tests with `pnpm test`
+* Package verification requires [pnpm](https://pnpm.io/) to be installed globally.
+  * `npm install -g pnpm`
+  * `pnpm install`
+  * `pnpm run check:packfile` to test against Node ES and CommonJS projects, as well as Electron.
+  * `pnpm run check` to validate the package is ready for commit
+
+## Issues
+
+This project uses Github issues.
+
+## License
+
+MIT

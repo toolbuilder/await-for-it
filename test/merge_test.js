@@ -1,7 +1,7 @@
 import { chainable as sync } from 'iterablefu'
 import { test } from 'zora'
-import { chainable, generators } from '../src/await-for-it'
-import { runTest } from './toofast'
+import { chainable, generators } from '../src/await-for-it.js'
+import { runTest } from './toofast.js'
 
 const toLongAsync = (period, iterable) => chainable(iterable).throttle(period, 0)
 

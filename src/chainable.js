@@ -1,4 +1,4 @@
-import { makeFactory } from '@toolbuilder/make-factory/src/factory.js'
+import { makeFactory } from '@toolbuilder/make-factory'
 import { makeChainableClass } from './makechainable.js'
 import * as generators from './generators.js'
 import * as transforms from './transforms.js'

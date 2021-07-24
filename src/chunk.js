@@ -1,6 +1,6 @@
 import { isAsyncIterable, isSyncIterable } from './is.js'
 import { iteratorFrom } from './iteratorfrom.js'
-import { isFiniteNumber } from '@toolbuilder/isnumber/src/isnumber.js'
+import { isFiniteNumber } from '@toolbuilder/isnumber'
 import { waitToCall } from './timeouts.js'
 import { RingBuffer } from '@toolbuilder/ring-buffer'
 

@@ -1,4 +1,4 @@
-import { chainable, Queue, Poll } from '../src/await-for-it'
+import { chainable, Queue, Poll } from '../src/await-for-it.js'
 
 let pollValue = 0
 const poll = new Poll(() => pollValue++, 50, 50)

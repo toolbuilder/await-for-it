@@ -1,5 +1,5 @@
 import { test } from 'zora'
-import { callWithTimeout, wait, waitToCall } from '../src/await-for-it'
+import { callWithTimeout, wait, waitToCall } from '../src/await-for-it.js'
 
 const msgResolvedBeforeTimeout = 'Resolved Before Timeout'
 const msgRejectedBeforeTimeout = 'Rejected Before Timeout'

@@ -44,10 +44,11 @@ queue.exception(new YourError(someData))
 
 The queue is waiting for you to push values into it, and has no idea when you are done pushing data. You **must call done()** to finish the iterator in order for 'finally' methods to be called.
 
-Since `Queue.push(x)` is synchronous, you can easily fill up the queue's buffer before downstream code can process the data. You can control how Queue deals with buffered data by supplying your own buffer. Currently, there are three ready made options.
+Since `Queue.push(x)` is synchronous, you can easily fill up the queue's buffer before downstream code can process the data. You can control how Queue deals with buffered data by supplying your own buffer. There are a few ready made options.
 
-* [RingBuffer](https://github.com/toolbuilder/ring-buffer) - RingBuffer drops the oldest data when the capacity is reached. This is a good way of getting rid of older unprocessed mouse events. Because it allocates memory up front, it should only be used for smaller capacities.
-* [DynamicRingBuffer](https://github.com/toolbuilder/dynamic-ring-buffer) - Also drops the oldest data when capacity is reached. However, you can specify very large capacities because DynamicRingBuffer allocates and releases chunks of memory as needed. In practice, if you specify a very large capacity, the `DynamicRingBuffer` will act like a regular buffer, and never drop data.
+* [RingBuffer](https://github.com/toolbuilder/ring-buffer) - `RingBuffer` drops the oldest data when the capacity is reached. This is a good way of getting rid of older unprocessed mouse events. Because it allocates memory up front, it should only be used for smaller capacities.
+* [DynamicRingBuffer](https://github.com/toolbuilder/dynamic-ring-buffer) - Also drops the oldest data when capacity is reached. However, you can specify very large capacities because DynamicRingBuffer allocates and releases chunks of memory as needed. In practice, if you specify a very large capacity, the `DynamicRingBuffer` will act like an `Array`, and never drop data.
+* [PriorityBuffer](https://github.com/toolbuilder/priority-buffer) - `PriorityBuffer` implements a simplistic fixed length priority queue. Your comparator function is used for prioritization.
 * `Array` - An empty `Array` is the default. `Array` never drops data. However, it works the garbage collector harder than `DynamicRingBuffer` because it is not optimized for operations that add or remove values to the front of the buffer.
 
 To provide your own buffer, you must implement three methods. Those methods need to match the signature (but not the behavior) of `Array`.

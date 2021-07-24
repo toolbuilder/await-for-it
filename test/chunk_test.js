@@ -1,7 +1,7 @@
 import { chainable as sync } from 'iterablefu'
 import { test } from 'zora'
-import { chainable, transforms } from '../src/await-for-it'
-import { randomlySlowIterator, runTest } from './toofast'
+import { chainable, transforms } from '../src/await-for-it.js'
+import { randomlySlowIterator, runTest } from './toofast.js'
 
 const fastSlowFast = async function * () {
   let i = 0

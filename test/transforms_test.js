@@ -1,6 +1,6 @@
 import { test } from 'zora'
 import { generators } from 'iterablefu'
-import { chainable, wait } from '../src/await-for-it'
+import { chainable, wait } from '../src/await-for-it.js'
 
 const randomInt = (maxInt) => Math.floor(Math.random() * Math.floor(maxInt))
 

@@ -1,7 +1,7 @@
 import { chainable as sync } from 'iterablefu'
 import { test } from 'zora'
-import { chainable, transforms } from '../src/await-for-it'
-import { runTest, waitRandomlyToCall } from './toofast'
+import { chainable, transforms } from '../src/await-for-it.js'
+import { runTest, waitRandomlyToCall } from './toofast.js'
 
 const makeSlowAsyncFunction = (score) => {
   const delay = 100

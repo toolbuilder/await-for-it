@@ -1,6 +1,6 @@
 import { test } from 'zora'
 import { generators } from 'iterablefu'
-import { chainable } from '../src/await-for-it'
+import { chainable } from '../src/await-for-it.js'
 
 const iterableOne = ['able', 'better', 'chainable', 'dictionary', 'enhanced', 'forbidden']
 const iterableRef = [['able', 1], ['better', 2], ['chainable', 3], ['dictionary', 4], ['enhanced', 5]]

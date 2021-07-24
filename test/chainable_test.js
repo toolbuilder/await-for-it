@@ -1,4 +1,4 @@
-import { chainable } from '../src/await-for-it'
+import { chainable } from '../src/await-for-it.js'
 import { test as tape } from 'zora'
 
 tape('chainable: finally', async test => {

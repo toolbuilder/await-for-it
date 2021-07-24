@@ -1,0 +1,4 @@
+{
+  "type": "commonjs",
+  "description": "The build places generated CommonJS files in this directory. Required before pack process."
+}

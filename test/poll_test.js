@@ -1,6 +1,6 @@
 import { chainable as sync, generators } from 'iterablefu'
 import { test } from 'zora'
-import { chainable, iteratorFrom, Poll } from '../src/await-for-it'
+import { chainable, iteratorFrom, Poll } from '../src/await-for-it.js'
 
 const allowableJitter = 15
 const waitTimeGood = (n, reference) => (n > reference - allowableJitter) && (n < reference + allowableJitter)
