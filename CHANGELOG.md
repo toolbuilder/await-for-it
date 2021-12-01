@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/toolbuilder/await-for-it/compare/v1.2.0...v1.3.0) (2021-12-01)
+
+
+### Features
+
+* added Python like range generator ([9759b51](https://github.com/toolbuilder/await-for-it/commit/9759b516b09edb019bbfde4b9006eeccff39b1f5))
+
 ## [1.2.0](https://github.com/toolbuilder/await-for-it/compare/v1.1.0...v1.2.0) (2021-07-24)
 
 
