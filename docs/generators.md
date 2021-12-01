@@ -8,6 +8,7 @@ The concept of 'generator' is a bit overloaded in JavaScript. There is the gener
 
 -   [from][1]
 -   [merge][3]
+-   [range][4]
 -   [zip][5]
 -   [zipAll][8]
 
@@ -33,6 +34,42 @@ the iterating code.
 -   `iterables` **...(AsyncIterable | Iterable)**
 
 Returns **AsyncGenerator** merged iterables as async iterable
+
+## range
+
+Creates a sequence of numbers similar to the Python range function. This can be useful for unit tests.
+
+### Parameters
+
+ -   `args` **...(Integer)** args as shown in examples
+
+### Examples
+
+```javascript
+let output
+
+// zero arguments produces an empty sequence
+output = await toArray(range())
+console.log(output) // prints []
+
+// one Number produces a sequence that starts with zero
+// the number specifies how many elements are in the sequence
+output = await toArray(range(5))
+console.log(output) // prints [0, 1, 2, 3, 4]
+
+// two Numbers produces a sequence starting from the first number
+// the second number specifies how many elements are in the sequence
+output = await toArray(range(2, 5))
+console.log(output) // prints [2, 3, 4, 5, 6]
+
+// three numbers produces a sequence starting from the first number
+// the second number specifies how many elements are in the sequence
+// the third number specifies the increment - in this case add three to the previous value
+output = await toArray(range(2, 5, 3)
+console.log(output)  // prints [2, 5, 8, 11, 14]
+```
+
+Returns **AsyncIterable** that provides the defined sequence of Numbers
 
 ## zip
 
@@ -85,7 +122,7 @@ Returns **AsyncGenerator** merged iterables as async iterable
 
 [3]: #merge
 
-[4]: #parameters-1
+[4]: #range
 
 [5]: #zip
 

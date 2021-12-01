@@ -1,6 +1,6 @@
 # ChainableClass
 
-The `ChainableClass` provides a chainable async iterable with lots of chaining methods. Typically, you would create instances using the [chainable](./chainable.md) constructor function/class.
+The `ChainableClass` provides a chainable async iterable with lots of chaining methods. Typically, you would create instances using the [chainable](./chainable.md) constructor.
 
 Constructing a `ChainableClass` like this:
 
@@ -19,6 +19,7 @@ const chainableClassInstance = new ChainableClass([0, 1, 2])
 * Static constructors
   * [from](#from)
   * [merge](#merge)
+  * [range](#range)
   * [zip](#zip)
   * [zipAll](#zipAll)
 * Transforms - modify the contents of an iterable stream
@@ -70,6 +71,38 @@ the iterating code.
 -   `iterables` **...(AsyncIterable | Iterable)**
 
 Returns **ChainableClass** instance that will merge the iterables
+
+## range
+
+Call `chainable.range(...args)` to create a sequence of numbers. This can be useful for unit tests. The parameters match the Python range function.
+
+ -   `args` **...(Integer)** args as shown in examples
+
+Returns a **ChainableClass** that provides the sequence of Numbers specified
+
+```javascript
+let output
+
+// zero arguments produces an empty sequence
+output = await chainable.range().toArray()
+console.log(output) // prints []
+
+// one Number produces a sequence that starts with zero
+// the number specifies how many elements are in the sequence
+output = await chainable.range(5).toArray()
+console.log(output) // prints [0, 1, 2, 3, 4]
+
+// two Numbers produces a sequence starting from the first number
+// the second number specifies how many elements are in the sequence
+output = await chainable.range(2, 5).toArray()
+console.log(output) // prints [2, 3, 4, 5, 6]
+
+// three numbers produces a sequence starting from the first number
+// the second number specifies how many elements are in the sequence
+// the third number specifies the increment - in this case add three to the previous value
+output = await chainable.range(2, 5, 3).toArray()
+console.log(output)  // prints [2, 5, 8, 11, 14]
+```
 
 ## zip
 

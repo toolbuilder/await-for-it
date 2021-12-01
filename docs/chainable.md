@@ -2,11 +2,12 @@
 
 The `chainable` import is a factory function/class for creating chainable async iterables. It provides a function call and several static methods.
 
-All methods return a [ChainableClass](./ChainableClass.md) instance.
+All methods return a [ChainableClass](./ChainableClass.md) instance which provides transforms (e.g. map, filter), and reducers (e.g. forEach, toArray).
 
   * [Function Call][2]
   * [from][3]
   * [merge][4]
+  * [range][7]
   * [zip][5]
   * [zipAll][6]
 
@@ -34,6 +35,41 @@ Returns a [ChainableClass](./ChainableClass.md) that is a chainable version of t
 ```javascript
 import { chainable } from 'await-for-it'
 chainable.from([0, 1, 3, 4]).map(x => 2 * x).run()
+```
+
+## range
+
+Call `chainable.range(...args)` to generate a sequence of `Numbers`. This can be useful for unit tests. The parameters match the Python range function.
+
+ -   `args` **...(Integer)** args as shown in examples
+
+Returns a [ChainableClass](./ChainableClass.md) that provides the sequence of Numbers specified
+
+Backpressure is provided by the iterating code. Iteration can be stopped by stopping
+the iterating code.
+
+```javascript
+let output
+
+// zero arguments produces an empty sequence
+output = await chainable.range().toArray()
+console.log(output) // prints []
+
+// one Number produces a sequence that starts with zero
+// the number specifies how many elements are in the sequence
+output = await chainable.range(5).toArray()
+console.log(output) // prints [0, 1, 2, 3, 4]
+
+// two Numbers produces a sequence starting from the first number
+// the second number specifies how many elements are in the sequence
+output = await chainable.range(2, 5).toArray()
+console.log(output) // prints [2, 3, 4, 5, 6]
+
+// three numbers produces a sequence starting from the first number
+// the second number specifies how many elements are in the sequence
+// the third number specifies the increment - in this case add three to the previous value
+output = await chainable.range(2, 5, 3).toArray()
+console.log(output)  // prints [2, 5, 8, 11, 14]
 ```
 
 ## merge
@@ -107,3 +143,4 @@ console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c'], [undefined, 'd']]
 [4]: #merge
 [5]: #zip
 [6]: #zipAll
+[7]: #range
