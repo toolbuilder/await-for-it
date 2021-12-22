@@ -33,6 +33,10 @@
     ".": {
       "require": "./cjs/await-for-it.js",
       "default": "./src/await-for-it.js"
+    },
+    "./src/*": {
+      "require": "./cjs/*",
+      "default": "./src/*"
     }
   },
   "main": "cjs/await-for-it.js",
@@ -56,6 +60,9 @@
   "eslintConfig": {
     "extends": "@toolbuilder/eslint-config"
   },
+  "npmpackagejsonlint": {
+    "extends": "@toolbuilder/package-json-lint-config"
+  },
   "dependencies": {
     "@toolbuilder/isnumber": "^0.1.4",
     "@toolbuilder/make-factory": "^0.1.2",
@@ -76,8 +83,5 @@
     "tap-nirvana": "^1.1.0",
     "uncommitted": "^1.0.0",
     "zora": "^5.0.1"
-  },
-  "npmpackagejsonlint": {
-    "extends": "@toolbuilder/package-json-lint-config"
   }
 }
