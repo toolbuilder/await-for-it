@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.1](https://github.com/toolbuilder/await-for-it/compare/v1.3.0...v1.3.1) (2021-12-23)
+
+
+### Bug Fixes
+
+* resolved Node.js deprecation warning [DEP0148] Use of deprecated folder mapping ./src/ ([d76a1f3](https://github.com/toolbuilder/await-for-it/commit/d76a1f35d6702b28d295125a3eab875fa84d5ab0))
+
 ## [1.3.0](https://github.com/toolbuilder/await-for-it/compare/v1.2.0...v1.3.0) (2021-12-01)
 
 
