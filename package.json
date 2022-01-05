@@ -26,10 +26,6 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    "./src/": {
-      "require": "./cjs/",
-      "default": "./src/"
-    },
     ".": {
       "require": "./cjs/await-for-it.js",
       "default": "./src/await-for-it.js"
