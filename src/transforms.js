@@ -102,7 +102,7 @@ export const diff = async function * (fn, iterable) {
  * Keeps item from input sequence when fn(item) returns truthy. Remove items from input sequence when
  * fn(item) returns !truthy.
  *
- * @param {Function} fn - synchronous fn(item) returns truthy when item should be removed
+ * @param {AsyncFunction|Function} fn - fn(item) returns truthy when item should be removed
  * @param {AsyncIterable|Iterable} iterable - the sequence to filter
  * @return {AsyncGenerator} for the filtered sequence
  * @example
@@ -112,7 +112,7 @@ export const diff = async function * (fn, iterable) {
  */
 export const filter = async function * (fn, iterable) {
   for await (const value of iterable) {
-    if (fn(value) === true) {
+    if (await fn(value) === true) {
       yield value
     }
   }
@@ -238,7 +238,7 @@ export const pluck = (propertyName, iterable) => {
 /**
  * Reject items when fn(item) returns truthy.
  *
- * @param {Function} fn - synchronous fn(item) returns truthy when item should be removed from output sequence
+ * @param {AsyncFunction|Function} fn - fn(item) returns truthy when item should be removed from output sequence
  * @param {AsyncIterable|Iterable} iterable - input sequence
  * @returns {AsyncGenerator} for the non-rejected items
  * @example
@@ -247,7 +247,7 @@ export const pluck = (propertyName, iterable) => {
  * console.log(await toArray(a)) // prints [1, 3, 5, 7, 9]
  */
 export const reject = (fn, iterable) => {
-  return filter(x => fn(x) !== true, iterable)
+  return filter(async x => await fn(x) !== true, iterable)
 }
 
 /**

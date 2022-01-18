@@ -129,6 +129,7 @@ test('diff', async assert => {
 
 test('filter', async assert => {
   const isEvenNumber = x => x % 2 === 0
+  const isEvenNumberAsync = async x => x % 2 === 0
 
   const tests = [
     // format: [testName, inputIterable, input parameter array, expectedOutput]
@@ -143,6 +144,12 @@ test('filter', async assert => {
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
       [x => true],
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    ],
+    [
+      'works with async filter function',
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      [isEvenNumberAsync],
+      [0, 2, 4, 6, 8]
     ]
   ]
   await chainable(tests).forEach(makeTestRunner('filter', assert))
@@ -228,6 +235,7 @@ test('pluck', async assert => {
 
 test('reject', async assert => {
   const isEvenNumber = x => x % 2 === 0
+  const isEvenNumberAsync = async x => x % 2 === 0
 
   const tests = [
     // format: [testName, inputIterable, input parameter array, expectedOutput]
@@ -235,6 +243,12 @@ test('reject', async assert => {
       'removes elements when function returns truthy',
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
       [isEvenNumber],
+      [1, 3, 5, 7, 9]
+    ],
+    [
+      'works with async functions',
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      [isEvenNumberAsync],
       [1, 3, 5, 7, 9]
     ]
   ]
