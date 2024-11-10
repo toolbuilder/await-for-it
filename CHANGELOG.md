@@ -1,6 +1,18 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
+
+## [1.4.0](https://github.com/toolbuilder/await-for-it/compare/v1.3.1...v1.4.0) (2024-11-10)
+
+
+### Features
+
+* filter and reject can now use async functions ([7d41335](https://github.com/toolbuilder/await-for-it/commit/7d413356a4355ec27fbe881e7d7c1b5526c95fcc))
+
+
+### Bug Fixes
+
+* cleanup package.json exports from resolving Node.js deprecation warning [DEP0148] ([abf921d](https://github.com/toolbuilder/await-for-it/commit/abf921d9861c40bb4e0d884cf36e805c0488daaf))
 
 ### [1.3.1](https://github.com/toolbuilder/await-for-it/compare/v1.3.0...v1.3.1) (2021-12-23)
 
