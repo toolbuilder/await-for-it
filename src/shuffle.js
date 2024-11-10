@@ -1,9 +1,9 @@
 // Directly copied from https://git.coolaj86.com/coolaj86/knuth-shuffle.js/src/branch/master/index.js
 // in order to get pure ES module. The npm package is knuth-shuffle.
 export const shuffle = (array) => {
-  var currentIndex = array.length
-  var temporaryValue
-  var randomIndex
+  let currentIndex = array.length
+  let temporaryValue
+  let randomIndex
 
   // While there remain elements to shuffle...
   while (currentIndex !== 0) {
