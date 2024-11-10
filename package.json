@@ -42,41 +42,38 @@
     "src"
   ],
   "scripts": {
-    "build": "rollup -c rollup.config.cjs.js",
+    "build": "run-s build:*",
+    "build:cjs": "rollup -c rollup.config.cjs.js",
     "check": "run-s build check:*",
     "check:packagejson": "npmPkgJsonLint .",
     "check:packfile": "rollup -c rollup.config.test.js",
-    "check:src": "eslint src test",
+    "check:src": "standard src test",
     "check:test": "run-s test",
     "check:uncommitted": "uncommitted",
     "prerelease": "run-s check",
-    "release": "standard-version",
-    "test": "esm-tape-runner \"test/**/*test.js\""
-  },
-  "eslintConfig": {
-    "extends": "@toolbuilder/eslint-config"
+    "release": "commit-and-tag-version",
+    "test": "pta --reporter tap \"test/**/*test.js\""
   },
   "npmpackagejsonlint": {
     "extends": "@toolbuilder/package-json-lint-config"
   },
   "dependencies": {
-    "@toolbuilder/isnumber": "^0.1.4",
-    "@toolbuilder/make-factory": "^0.1.3",
-    "@toolbuilder/ring-buffer": "^1.2.1",
-    "@toolbuilder/semaphore": "^0.1.4",
-    "iterablefu": "^0.4.4"
+    "@toolbuilder/isnumber": "^0.1.7",
+    "@toolbuilder/make-factory": "^0.1.5",
+    "@toolbuilder/ring-buffer": "^1.2.3",
+    "@toolbuilder/semaphore": "^0.1.7",
+    "iterablefu": "^0.4.5"
   },
   "devDependencies": {
-    "@small-tech/esm-tape-runner": "^1.0.3",
-    "@toolbuilder/eslint-config": "^0.1.5",
-    "@toolbuilder/package-json-lint-config": "^0.1.0",
-    "@toolbuilder/rollup-plugin-test-tools": "^0.1.4",
-    "eslint": "^8.6.0",
-    "npm-package-json-lint": "^5.4.2",
-    "npm-run-all": "^4.1.5",
-    "rollup": "^2.63.0",
-    "standard-version": "^9.3.2",
+    "@toolbuilder/package-json-lint-config": "^0.1.1",
+    "@toolbuilder/rollup-plugin-test-tools": "^1.1.0",
+    "commit-and-tag-version": "^12.5.0",
+    "npm-package-json-lint": "^8.0.0",
+    "npm-run-all2": "^7.0.1",
+    "pta": "1.2.0",
+    "rollup": "^4.24.4",
+    "standard": "^17.1.2",
     "uncommitted": "^1.0.0",
-    "zora": "^5.0.2"
+    "zora": "5.0.3"
   }
 }
