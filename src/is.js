@@ -21,7 +21,7 @@ export const isString = (item) => typeof item === 'string' || item instanceof St
  * @param {any} item - value to test
  * @returns {item is Iterable<T>} - true if item is a synchronous iterable
  */
-export const isSyncIterable = (item) => Boolean(item && typeof item[Symbol.iterator] === 'function')
+export const isSyncIterable = (item) => typeof item?.[Symbol.iterator] === 'function'
 
 /**
  * Test if an item supports asynchronous iteration.
