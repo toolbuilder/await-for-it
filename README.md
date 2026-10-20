@@ -112,14 +112,6 @@ Node streams are now async iterables, so this isn't an either/or decision. The [
 
 Contributions are welcome. Please create a pull request.
 
-* I use [pnpm](https://pnpm.js.org/) instead of npm.
-* Run the unit tests with `pnpm test`
-* Package verification requires [pnpm](https://pnpm.io/) to be installed globally.
-  * `npm install -g pnpm`
-  * `pnpm install`
-  * `pnpm run check:packfile` to test against Node ES and CommonJS projects, as well as Electron.
-  * `pnpm run check` to validate the package is ready for commit
-
 ## Issues
 
 This project uses Github issues.

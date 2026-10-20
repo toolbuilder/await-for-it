@@ -2,6 +2,11 @@ import { concatenate } from 'iterablefu/src/generators.js'
 import { isFunction } from './is.js'
 import { iteratorFrom } from './iteratorfrom.js'
 
+/**
+ * @template [T=any]
+ * @typedef {T extends (...args: any[]) => infer R ? Awaited<R> : Awaited<T>} PoolResult
+ */
+
 // Alternative to wrapping a single promise in an Array to get an iterable
 const valueToIterator = function * (value) {
   yield value
@@ -26,18 +31,21 @@ const valueToIterator = function * (value) {
  *
  * The iterating code provides backpressure, and can stop function calls by stopping iteration.
  *
- * @param {Number} maxPoolSize - maximum number of pending promises at any given time
- * @param {AsyncIterable|Iterable} iterable - input iterable, should yield functions for pool
+ * @type {<T = any>(maxPoolSize: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<PoolResult<T>, void, unknown>}
+ * @param {number} maxPoolSize - maximum number of pending promises at any given time
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - input iterable, should yield functions for pool
  * to work as intended.
- * @returns {AsyncGenerator} - a generator that provides the output values as they occur
+ * @returns {AsyncGenerator<any, void, unknown>} - a generator that provides the output values as they occur
  * @throws - if iterable throws, or if any functions yielded by iterable throws, or if any
  * Promise in the pool rejects, the exception will be caught and rethrown by pool, so that the
  * iterating code can handle it. Once an exception is thrown, the iterator is done.
  */
 export const pool = async function * (maxPoolSize, iterable) {
   let idSequence = 31 // generates unique keys for promisePool, no reason it has to start with 31
+  /** @type {Map<number, Promise<{ done?: boolean, value?: any, id: number }>>} */
   const promisePool = new Map() // key is id, value is a promise for the function result
   const iterator = iteratorFrom(iterable)
+  /** @type {Promise<{ done?: boolean, value?: any, id?: number }> | null} */
   let nextPromise = null // promise getting next value from iterator
 
   const getNextValue = async () => {
@@ -49,7 +57,7 @@ export const pool = async function * (maxPoolSize, iterable) {
         : Promise.resolve(value).then(value => ({ value, id }))
       promisePool.set(id, promise)
     }
-    return { done }
+    return /** @type {{ done?: boolean, value?: any, id?: number }} */ ({ done })
   }
 
   // Pool should only ask for one value at a time from iterator. When running promise.race, the

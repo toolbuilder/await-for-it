@@ -9,8 +9,10 @@ import { iteratorFrom } from './iteratorfrom.js'
  *
  * Backpressure is provided by the iterating code. Iteration can be stopped by stopping
  * the iterating code.
- * @param  {...Iterable|...AsyncIterable} iterables - any number of sync or async iterables to be merged
- * @returns {AsyncGenerator} - merged iterables as async iterable
+ *
+ * @type {<T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => AsyncGenerator<T extends [] ? any : T[number] extends Iterable<infer U> | AsyncIterable<infer U> ? Awaited<U> : any, void, unknown>}
+ * @param  {...(Iterable<any> | AsyncIterable<any>)} iterables - any number of sync or async iterables to be merged
+ * @returns {AsyncGenerator<any, void, unknown>} - merged iterables as async iterable
  */
 export const merge = async function * (...iterables) {
   // use Promise.resolve in case iterator is NOT async

@@ -2,6 +2,8 @@ import { wait } from './timeouts.js'
 
 /**
  * Periodically calls a function and provides the resolved values as an iterator.
+ *
+ * @template [T=any]
  */
 export class Poll {
   /**
@@ -10,11 +12,10 @@ export class Poll {
    * this, when the iterating code stops, calls to asyncFunction will also stop. However, you
    * should call the `done` method so that any `finally` expressions can run.
    *
-   * @param {Function|AsyncFunction} fn - synchronous or async function that takes no parameters
-   * @param {Number} period - call fn every period milliseconds
-   * @param {Number} initialWait - make first function call immediately if zero, otherwise wait
+   * @param {() => T | PromiseLike<T>} fn - synchronous or async function that takes no parameters
+   * @param {number} period - call fn every period milliseconds
+   * @param {number} [initialWait=0] - make first function call immediately if zero, otherwise wait
    * `initialWait` millisceonds before making first call. Defaults to zero.
-   * @returns {AsyncGenerator} - provides the stream of poll results
    * @example
    * // iteration potentially faster than polling period:
    * const poller = poll(async () => '42', 720)
@@ -35,9 +36,13 @@ export class Poll {
    * }
    */
   constructor (fn, period, initialWait = 0) {
+    /** @type {() => T | PromiseLike<T>} */
     this.fn = fn
+    /** @type {number} */
     this.period = period
+    /** @type {number} */
     this.initialWait = initialWait
+    /** @type {boolean} */
     this.isDone = false
   }
 
@@ -46,6 +51,9 @@ export class Poll {
    */
   done () { this.isDone = true }
 
+  /**
+   * @returns {AsyncGenerator<Awaited<T>, void, unknown>} - provides the stream of poll results
+   */
   async * [Symbol.asyncIterator] () {
     if (this.initialWait !== 0) {
       await wait(this.initialWait)

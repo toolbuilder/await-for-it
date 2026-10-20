@@ -1,5 +1,12 @@
 // Directly copied from https://git.coolaj86.com/coolaj86/knuth-shuffle.js/src/branch/master/index.js
 // in order to get pure ES module. The npm package is knuth-shuffle.
+/**
+ * Shuffle an array in place using the Knuth shuffle algorithm.
+ *
+ * @type {<T = any>(array: T[]) => T[]}
+ * @param {Array<any>} array - array to shuffle
+ * @returns {Array<any>} - the shuffled array
+ */
 export const shuffle = (array) => {
   let currentIndex = array.length
   let temporaryValue

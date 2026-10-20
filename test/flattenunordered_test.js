@@ -1,9 +1,10 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { chainable as sync } from 'iterablefu'
-import { test } from 'zora'
 import { chainable, transforms } from '../src/await-for-it.js'
 import { randomlySlowIterator, runTest } from './toofast.js'
 
-test('empty iterable', async assert => {
+test('empty iterable', async () => {
   const actual = []
   for await (const value of transforms.flattenUnordered(10, [])) { // eslint-disable-line
     actual.push(value)
@@ -12,25 +13,25 @@ test('empty iterable', async assert => {
   assert.deepEqual(actual, [], 'empty iterable is not iterated')
 })
 
-test('strings are not flattened even though iterable', async assert => {
+test('strings are not flattened even though iterable', async () => {
   const input = ['alpha', 'beta', 'gamma']
   const actual = await chainable(input).flattenUnordered(10).toArray()
   assert.deepEqual(actual, input, 'strings are not flattened')
 })
 
-test('non-iterables are passed as-is', async assert => {
+test('non-iterables are passed as-is', async () => {
   const input = [1, 2, {}]
   const actual = await chainable(input).flattenUnordered(10).toArray()
   assert.deepEqual(actual, input, 'non-iterables passed as-is')
 })
 
-test('sync iterables are flattened', async assert => {
+test('sync iterables are flattened', async () => {
   const input = [[1, 2, 3], [4, 5], 6, [7, 8]]
   const actual = await chainable(input).flattenUnordered(10).toArray()
   assert.deepEqual(actual.sort(), [1, 2, 3, 4, 5, 6, 7, 8], 'sync iterables were flattened')
 })
 
-test('async iterables are flattened and merged', async assert => {
+test('async iterables are flattened and merged', async () => {
   const input = [
     chainable([1, 2, 3]).throttle(50, 100), // slow it down so guaranteed out of order
     chainable([4, 5]),
@@ -43,7 +44,7 @@ test('async iterables are flattened and merged', async assert => {
   assert.deepEqual(actual.sort(), expected, 'async iterables were completely iterated')
 })
 
-test('flattening is not recursive', async assert => {
+test('flattening is not recursive', async () => {
   const input = [[1, 2, [3, 4]], [5], 6, [7, 8]]
   const actual = await chainable(input).flattenUnordered(10).toArray()
   assert.deepEqual(actual.sort(), [1, 2, [3, 4], 5, 6, 7, 8], 'sync iterables were flattened')
@@ -51,7 +52,7 @@ test('flattening is not recursive', async assert => {
 
 class TestError extends Error {}
 
-test('flattenUnordered: passes iterable exceptions to iterator', async assert => {
+test('flattenUnordered: passes iterable exceptions to iterator', async () => {
   const theError = new TestError('REJECT')
   const throwingIterable = async function * () {
     yield 1
@@ -62,14 +63,14 @@ test('flattenUnordered: passes iterable exceptions to iterator', async assert =>
   await chainable(throwingIterable())
     .flattenUnordered(10)
     .catch(error => {
-      assert.is(error, theError, 'flattenUnordered rethrows the error from throwingIterable')
+      assert.equal(error, theError, 'flattenUnordered rethrows the error from throwingIterable')
       caughtException = true
     })
     .runAwait()
   assert.ok(caughtException, 'flattenUnordered threw exception')
 })
 
-test('flattenUnordered: rejected promises from iterable are passed to iterator', async assert => {
+test('flattenUnordered: rejected promises from iterable are passed to iterator', async () => {
   const theError = new TestError('REJECT')
   const throwingIterable = async function * () {
     yield 1
@@ -80,14 +81,14 @@ test('flattenUnordered: rejected promises from iterable are passed to iterator',
   await chainable(throwingIterable())
     .flattenUnordered(10)
     .catch(error => {
-      assert.is(error, theError, 'flattenUnordered rethrows the error from rejected promise')
+      assert.equal(error, theError, 'flattenUnordered rethrows the error from rejected promise')
       caughtException = true
     })
     .toArray()
   assert.ok(caughtException, 'flattenUnordered threw exception')
 })
 
-test('flattenUnordered: iterator called faster than one-at-a-time', async assert => {
+test('flattenUnordered: iterator called faster than one-at-a-time', async () => {
   const values = 50
   const makeDataSource = () => sync.range(values).toArray()
   const slowIterable = randomlySlowIterator(5, 5, makeDataSource())

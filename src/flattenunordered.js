@@ -15,9 +15,10 @@ const shouldIterate = (value) => !isString(value) && (isSyncIterable(value) || i
  * iterated more slowly than the input iterables can supply data. In other words, no more
  * than maxPoolSize Promises will be pending at any given time.
  *
- * @param {Number} maxPoolSize - maximum number of iterables that can be flattened at the same time.
- * @param {AsyncIterable|Iterable} iterable - the iterable sequence to flatten
- * @returns {AsyncGenerator} for the flattened sequence
+ * @type {(maxPoolSize: number, inputIterable: AsyncIterable<any> | Iterable<any>) => AsyncGenerator<any, void, unknown>}
+ * @param {number} maxPoolSize - maximum number of iterables that can be flattened at the same time.
+ * @param {AsyncIterable<any> | Iterable<any>} inputIterable - the iterable sequence to flatten
+ * @returns {AsyncGenerator<any, void, unknown>} for the flattened sequence
  * @example
  * const array = await chainable([[1, 2, 3], [4, 5], 6, [7, 8]]).flattenUnordered(5).toArray()
  * console.log(array.sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8].
@@ -34,6 +35,7 @@ export const flattenUnordered = async function * (maxPoolSize, inputIterable) {
 
   // state for iterating over inputInterable
   const inputIteratorId = 30
+  /** @type {any} */
   const inputIteratorState = {}
   inputIteratorState.iterator = iteratorFrom(inputIterable)
   inputIteratorState.promise = nextPromise(inputIteratorId, inputIteratorState.iterator)

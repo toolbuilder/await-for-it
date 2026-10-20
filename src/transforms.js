@@ -7,7 +7,13 @@ export { chunk } from './chunk.js'
 export { flattenUnordered } from './flattenunordered.js'
 
 // Helper for arrayToObject. Matches property names to iterable values.
+/**
+ * @param {Iterable<PropertyKey>} propertyNames
+ * @param {Iterable<any>} iterableValues
+ * @returns {Record<string, any>}
+ */
 const zipObject = (propertyNames, iterableValues) => {
+  /** @type {Record<PropertyKey, any>} */
   const outputObject = {}
   const pairs = zipAll(propertyNames, iterableValues)
   // Unfortunately, Object.fromEntries creates keys for undefined
@@ -19,22 +25,23 @@ const zipObject = (propertyNames, iterableValues) => {
 }
 
 /**
-* Converts a sequence of Arrays to a sequence of Objects by assigning the property names
-* to each array element in turn. The input sequence doesn't have to provide arrays, it can
-* provide any iterable object.
-*
-* If the arrays in iterable are too long, extra values are ignored.
-*
-* If the arrays in iterable are too short, the remaining properties are assigned undefined.
-* See example.
-*
-* @param {Iterable} propertyNames - a sequence of property names
-* @param {AsyncIterable|Iterable} iterable - a sequence of arrays (or any iterable objects)
-* @return {AsyncGenerator} for the sequence of created Objects
-* @example
-* const objects = await toArray(arrayToObject(['a', 'b'], [[0, 1], [2, 3, 'a'], [4]]))
-* // objects is [{'a': 0, 'b': 1 }, {'a': 2, 'b': 3 }, {'a': 4, 'b': undefined }]
-*/
+ * Converts a sequence of Arrays to a sequence of Objects by assigning the property names
+ * to each array element in turn. The input sequence doesn't have to provide arrays, it can
+ * provide any iterable object.
+ *
+ * If the arrays in iterable are too long, extra values are ignored.
+ *
+ * If the arrays in iterable are too short, the remaining properties are assigned undefined.
+ * See example.
+ *
+ * @type {(propertyNames: Iterable<PropertyKey>, iterable: AsyncIterable<Iterable<any>> | Iterable<Iterable<any>>) => AsyncGenerator<Record<string, any>, void, unknown>}
+ * @param {Iterable<PropertyKey>} propertyNames - a sequence of property names
+ * @param {AsyncIterable<Iterable<any>> | Iterable<Iterable<any>>} iterable - a sequence of arrays (or any iterable objects)
+ * @returns {AsyncGenerator<Record<string, any>, void, unknown>} for the sequence of created Objects
+ * @example
+ * const objects = await toArray(arrayToObject(['a', 'b'], [[0, 1], [2, 3, 'a'], [4]]))
+ * // objects is [{'a': 0, 'b': 1 }, {'a': 2, 'b': 3 }, {'a': 4, 'b': undefined }]
+ */
 export const arrayToObject = function (propertyNames, iterable) {
   return map(iterableValues => zipObject(propertyNames, iterableValues), iterable)
 }
@@ -43,9 +50,10 @@ export const arrayToObject = function (propertyNames, iterable) {
  * Pass the input sequence to the output sequence without change, but execute `fn(item)` for each
  * item in the sequence. Awaits the result of each function call before yielding the value.
  *
- * @param {AsyncFunction|Function} fn - function, `fn(item)` is called for each item in the sequence
- * @param {AsyncIterable|Iterable} iterable - the input sequence
- * @returns {AsyncGenerator} that is equivalent to the input iterable
+ * @type {<T = any>(fn: (item: Awaited<T>) => any, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
+ * @param {(item: any) => any} fn - function, `fn(item)` is called for each item in the sequence
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the input sequence
+ * @returns {AsyncGenerator<any, void, unknown>} that is equivalent to the input iterable
  * @example
  * const a = callAwait(console.log, [1, 2, 3, 4, 5])
  * [...a] // iterates over `a` and prints each value on a separate line
@@ -61,9 +69,10 @@ export const callAwait = async function * (fn, iterable) {
  * Pass the input sequence to the output sequence without change, but execute `fn(item)` for each
  * item in the sequence. Will not await the result before yielding the value.
  *
- * @param {AsyncFunction|Function} fn - synchronous function, `fn(item)` is called for each item in the sequence
- * @param {AsyncIterable|Iterable} iterable - the input sequence
- * @returns {AsyncGenerator} that is equivalent to the input iterable
+ * @type {<T = any>(fn: (item: Awaited<T>) => any, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
+ * @param {(item: any) => any} fn - synchronous function, `fn(item)` is called for each item in the sequence
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the input sequence
+ * @returns {AsyncGenerator<any, void, unknown>} that is equivalent to the input iterable
  * @example
  * const a = callNoAwait(console.log, [1, 2, 3, 4, 5]) // logs each value
  */
@@ -78,9 +87,10 @@ export const callNoAwait = async function * (fn, iterable) {
  * Execute fn(previous, current) and yields the result for each pair.
  * Would be useful for calculating time differences between timestamps.
  *
- * @param {AsyncFunction|Function} fn - fn(previous, current), yielding return value
- * @param {AsyncIterable|Iterable} iterable - the input iterable
- * @returns {AsyncGenerator} - if input has two or more items, output sequence
+ * @type {<T = any, R = any>(fn: (previous: Awaited<T>, current: Awaited<T>) => R, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<R>, void, unknown>}
+ * @param {(previous: any, current: any) => any} fn - fn(previous, current), yielding return value
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the input iterable
+ * @returns {AsyncGenerator<any, void, unknown>} - if input has two or more items, output sequence
  * is one shorter than input sequence. Otherwise, no items are output.
  * @example
  * const a = diff((n, m) => m - n, [0, 1, 2, 3, 4])
@@ -102,9 +112,10 @@ export const diff = async function * (fn, iterable) {
  * Keeps item from input sequence when fn(item) returns truthy. Remove items from input sequence when
  * fn(item) returns !truthy.
  *
- * @param {AsyncFunction|Function} fn - fn(item) returns truthy when item should be removed
- * @param {AsyncIterable|Iterable} iterable - the sequence to filter
- * @return {AsyncGenerator} for the filtered sequence
+ * @type {<T = any>(fn: (item: Awaited<T>) => any, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
+ * @param {(item: any) => any} fn - fn(item) returns truthy when item should be kept
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the sequence to filter
+ * @returns {AsyncGenerator<any, void, unknown>} for the filtered sequence
  * @example
  * const isEvenNumber = x => x % 2 === 0
  * const a = filter(isEvenNumber, [0, 1, 2, 3, 4, 5, 6])
@@ -127,8 +138,9 @@ const shouldIterate = (value) => !isString(value) && (isSyncIterable(value) || i
  * Flatten does not flatten strings, even though they are iterable. It can flatten async and
  * sync iterables within the provided iterable.
  *
- * @param {AsyncIterable|Iterable} iterable - the iterable sequence to flatten
- * @returns {AsyncGenerator} for the flattened sequence
+ * @type {(iterable: AsyncIterable<any> | Iterable<any>) => AsyncGenerator<any, void, unknown>}
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the iterable sequence to flatten
+ * @returns {AsyncGenerator<any, void, unknown>} for the flattened sequence
  * @example
  * const a = flatten([[0, 1], [2, 3], chainable([4, 5]), [6]])
  * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4, 5, 6]
@@ -149,8 +161,9 @@ export const flatten = async function * (iterable) {
  * even though they are iterable. Can flatten combinations of async and sync iterables
  * within the provided iterable.
  *
- * @param {AsyncIterable|Iterable} iterable - the sequence to flatten
- * @returns {AsyncGenerator} for the flattened sequence
+ * @type {(iterable: AsyncIterable<any> | Iterable<any>) => AsyncGenerator<any, void, unknown>}
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the sequence to flatten
+ * @returns {AsyncGenerator<any, void, unknown>} for the flattened sequence
  * @example
  * const input = [0, [1, 2, 3], [[4, 5], [[chainable([6, 7])], [8, 9], 10]], 11, 12]
  * const a = flattenRecursive(input)
@@ -169,9 +182,10 @@ export const flattenRecursive = async function * (iterable) {
 /**
  * Generates a sequence of items by calling fn(item) for each item of the input iterable.
  *
- * @param {AsyncFunction|Function} fn - fn(item) returns the output item
- * @param {AsyncIterable|Iterable} iterable - the sequence to map
- * @returns {AsyncGenerator} for the mapped sequence
+ * @type {<T = any, R = any>(fn: (item: Awaited<T>) => R, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<R>, void, unknown>}
+ * @param {(item: any) => any} fn - fn(item) returns the output item
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the sequence to map
+ * @returns {AsyncGenerator<any, void, unknown>} for the mapped sequence
  * @example
  * const a = map(x => 2 * x, [0, 1, 2, 3])
  * console.log(await toArray(a)) // prints [0, 2, 4, 6]
@@ -187,10 +201,11 @@ export const map = async function * (fn, iterable) {
  *
  * This method exists solely so that ChainableIterable supports chaining for an arbitrary generator function.
  *
- * @param {AsyncGeneratorFunction} generatorFunction - a function that returns an async iterable object,
+ * @type {<T = any, R = any>(generatorFunction: (iterable: AsyncIterable<T> | Iterable<T>) => AsyncIterable<R> | Iterable<R>, iterable: AsyncIterable<T> | Iterable<T>) => AsyncIterable<R> | Iterable<R>}
+ * @param {(iterable: AsyncIterable<any> | Iterable<any>) => AsyncIterable<any> | Iterable<any>} generatorFunction - a function that returns an async iterable object,
  * and takes an async iterable as a parameter.
- * @param {AsyncIterable|Iterable} iterable - the input sequence
- * @returns {AsyncGenerator} for the mapped sequence
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the input sequence
+ * @returns {AsyncIterable<any> | Iterable<any>} for the mapped sequence
  * @example
  * const fn = async function * (iterable) {
  *   for await (let x of iterable) {
@@ -207,10 +222,11 @@ export const mapWith = function (generatorFunction, iterable) {
 /**
  * Given a sequence of Arrays, output the nth element of each array as a sequence.
  *
- * @param {Number} index - the index of the Array to output. Negative index values
+ * @type {<T = any>(index: number, iterable: AsyncIterable<readonly T[]> | Iterable<readonly T[]>) => AsyncGenerator<Awaited<T>, void, unknown>}
+ * @param {number} index - the index of the Array to output. Negative index values
  * are ok. The index of the last element is -1.
- * @param {AsyncIterable|Iterable} iterable - the iterable to process
- * @returns {AsyncGenerator} for the nth elements
+ * @param {AsyncIterable<readonly any[]> | Iterable<readonly any[]>} iterable - the iterable to process
+ * @returns {AsyncGenerator<any, void, unknown>} for the nth elements
  * @example
  * const input = [[0, 1], [2, 3], [4, 5]]
  * const a = nth(1, input)
@@ -223,9 +239,10 @@ export const nth = (index, iterable) => {
 /**
  * Given a sequence of Objects, output the specified property of each Object as a sequence.
  *
- * @param {string} propertyname - the property to extract from each Object
- * @param {AsyncIterable|Iterable} iterable - the input sequence of Objects
- * @returns {AsyncGenerator} for the plucked items
+ * @type {<T extends Record<PropertyKey, any> = Record<PropertyKey, any>, K extends keyof T = keyof T>(propertyName: K, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T[K]>, void, unknown>}
+ * @param {PropertyKey} propertyName - the property to extract from each Object
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the input sequence of Objects
+ * @returns {AsyncGenerator<any, void, unknown>} for the plucked items
  * @example
  * const input = [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}, {'a': 5, 'b': 6}]
  * const a = pluck('a', input)
@@ -238,9 +255,10 @@ export const pluck = (propertyName, iterable) => {
 /**
  * Reject items when fn(item) returns truthy.
  *
- * @param {AsyncFunction|Function} fn - fn(item) returns truthy when item should be removed from output sequence
- * @param {AsyncIterable|Iterable} iterable - input sequence
- * @returns {AsyncGenerator} for the non-rejected items
+ * @type {<T = any>(fn: (item: Awaited<T>) => any, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
+ * @param {(item: any) => any} fn - fn(item) returns truthy when item should be removed from output sequence
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - input sequence
+ * @returns {AsyncGenerator<any, void, unknown>} for the non-rejected items
  * @example
  * const isEvenNumber = x => x % 2 === 0
  * const a = reject(isEvenNumber, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
@@ -253,9 +271,10 @@ export const reject = (fn, iterable) => {
 /**
  * Provide the first n values of iterator. Useful to truncate infinite sequences.
  *
- * @param {Number} n - number of items to take
- * @param {AsyncIterable|Iterable} iterable - provides the first n values
- * @returns {AsyncGenerator} - provides the first n values
+ * @type {<T = any>(n: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
+ * @param {number} n - number of items to take
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - provides the first n values
+ * @returns {AsyncGenerator<any, void, unknown>} - provides the first n values
  * @example
  * const a = take(2, [0, 1, 2, 3, 4])
  * console.log(await toArray(a)) // prints [0, 1]
@@ -271,24 +290,25 @@ export const take = async function * (n, iterable) {
 /**
  * Throttle an async iterator to a maximum iteration speed.
  *
- * @param {Number} period - milliseconds to wait between yielding each value
- * @param {Number} initialWait - milliseconds before yielding first value
- * @param {AsyncIterable|Iterable} iterable - the async iterable to throttle
- * @returns {AsyncGenerator} - the throttled sequence of values
+ * @type {<T = any>(period: number, initialWait: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
+ * @param {number} period - milliseconds to wait between yielding each value
+ * @param {number} initialWait - milliseconds before yielding first value
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the async iterable to throttle
+ * @returns {AsyncGenerator<any, void, unknown>} - the throttled sequence of values
  * @example
  * const a = throttle(100, 0, [0, 1, 2, 3, 4])
  * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4] with 100ms wait after each element
  */
 export const throttle = async function * (period, initialWait, iterable) {
   if (initialWait !== 0) {
-    await new Promise(resolve => setTimeout(() => resolve(), initialWait))
+    await /** @type {Promise<void>} */ (new Promise(resolve => setTimeout(() => resolve(), initialWait)))
   }
   for await (const value of iterable) {
     const startTime = Date.now()
     yield value
     const yieldDuration = Date.now() - startTime
     if (yieldDuration < period) {
-      await new Promise(resolve => setTimeout(() => resolve(), period - yieldDuration))
+      await /** @type {Promise<void>} */ (new Promise(resolve => setTimeout(() => resolve(), period - yieldDuration)))
     }
   }
 }

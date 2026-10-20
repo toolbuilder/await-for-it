@@ -1,11 +1,12 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { chainable as sync, generators } from 'iterablefu'
-import { test } from 'zora'
 import { chainable, iteratorFrom, Poll } from '../src/await-for-it.js'
 
 const allowableJitter = 15
 const waitTimeGood = (n, reference) => (n > reference - allowableJitter) && (n < reference + allowableJitter)
 
-test('poll: function results are output in order', async assert => {
+test('poll: function results are output in order', async () => {
   let count = 0
   const pollingPeriod = 50
   const pollCount = 5
@@ -17,7 +18,7 @@ test('poll: function results are output in order', async assert => {
   assert.deepEqual(output, [...generators.range(5)], 'function results are output in order')
 })
 
-test('poll: slow iteration controls polling period', async assert => {
+test('poll: slow iteration controls polling period', async () => {
   const iterationPeriod = 100
   const pollingPeriod = 50
   const durationCount = 5
@@ -30,10 +31,10 @@ test('poll: slow iteration controls polling period', async assert => {
     .filter(duration => duration > (iterationPeriod - allowableJitter))
     .toArray()
   poll.done()
-  assert.equals(output.length, durationCount, 'iteration period controls polling rate')
+  assert.equal(output.length, durationCount, 'iteration period controls polling rate')
 })
 
-test('poll: poller controls polling period with fast iteration', async assert => {
+test('poll: poller controls polling period with fast iteration', async () => {
   const pollingPeriod = 50
   const durationCount = 5
   const poll = new Poll(() => Date.now(), pollingPeriod, 0)
@@ -46,7 +47,7 @@ test('poll: poller controls polling period with fast iteration', async assert =>
   assert.equal(output.length, durationCount, 'slower polling rate controls faster iterators')
 })
 
-test('poll: slow async function controls polling period', async assert => {
+test('poll: slow async function controls polling period', async () => {
   const pollingPeriod = 50
   const durationCount = 5
   const fn = () => new Promise(resolve => setTimeout(() => resolve(Date.now()), 2 * pollingPeriod))
@@ -60,7 +61,7 @@ test('poll: slow async function controls polling period', async assert => {
   assert.equal(output.length, durationCount, 'slow async function controls polling rate')
 })
 
-test('poll: can wait before first call', async assert => {
+test('poll: can wait before first call', async () => {
   const waitTime = 100
   const startTime = Date.now()
   const poll = new Poll(async () => Date.now(), waitTime, waitTime)
@@ -70,7 +71,7 @@ test('poll: can wait before first call', async assert => {
   assert.ok(waitTimeGood(timeToFirstCall, waitTime), 'polling waited to start')
 })
 
-test('poll works with synchronous functions', async assert => {
+test('poll works with synchronous functions', async () => {
   let count = 0
   const syncFunction = () => count++
   const waitTime = 100
@@ -79,17 +80,17 @@ test('poll works with synchronous functions', async assert => {
   assert.deepEqual(output, [0, 1, 2, 3, 4], 'poll called synchronous function correctly')
 })
 
-test('poll: exception thrown by function propagates to iterator', async assert => {
+test('poll: exception thrown by function propagates to iterator', async () => {
   const theError = new Error('poll exception')
   const fn = () => new Promise((resolve, reject) => setTimeout(() => reject(theError), 50))
   const poll = new Poll(fn, 50)
   await chainable(poll)
-    .catch(error => assert.is(error, theError, 'caught the thrown exception'))
+    .catch(error => assert.equal(error, theError, 'caught the thrown exception'))
     .finally(() => poll.done())
     .toArray()
 })
 
-test('poll: calling done stops iteration', async assert => {
+test('poll: calling done stops iteration', async () => {
   let count = 0
   let finallyCalled = false
   const pollingPeriod = 50
@@ -103,7 +104,7 @@ test('poll: calling done stops iteration', async assert => {
   poll.done()
 })
 
-test('poll: iterator called faster than one-at-a-time', async assert => {
+test('poll: iterator called faster than one-at-a-time', async () => {
   const values = 50
   let count = 0
   const poller = new Poll(() => count++, 5)

@@ -1,10 +1,12 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { Semaphore } from '@toolbuilder/semaphore'
 import { ChainableIterable } from 'iterablefu'
-import { test } from 'zora'
 import { chainable, Poll, waitToCall } from '../src/await-for-it.js'
 
-test('forEach', async assert => {
+test('forEach', async () => {
   const input = [0, 1, 2, 3, 4]
+  /** @type {Array<[number, number]>} */
   const accumulator = []
   await chainable(input).forEach((x, i) => accumulator.push([x, i]))
   const matchingLength = ChainableIterable
@@ -20,10 +22,13 @@ test('forEach', async assert => {
   assert.deepEqual(output, input, 'forEach processed each value in order')
 })
 
-test('publish', async assert => {
+test('publish', async () => {
   const input = [0, 1, 2, 3, 4]
+  /** @type {number[]} */
   const output1 = []
+  /** @type {number[]} */
   const output2 = []
+  /** @type {number[]} */
   const output3 = []
 
   const semaphore = new Semaphore()
@@ -47,7 +52,7 @@ test('publish', async assert => {
   semaphore.release()
 })
 
-test('reduce', async assert => {
+test('reduce', async () => {
   const input = [0, 1, 2, 3, 4]
   const fn = (a, v) => waitToCall(20 * Math.random(), () => { a.push(v); return a })
   const asyncFnOutput = await chainable(input).reduce(fn, [])
@@ -57,31 +62,33 @@ test('reduce', async assert => {
   assert.deepEqual(syncFnOutput, input, 'sync function called on each value in order')
 })
 
-test('run', async assert => {
+test('run', async () => {
   const allowableJitter = 20
-  let startTime
-  let stopTime
+  let startTime = 0
+  let stopTime = 0
+  /** @type {number[]} */
   const output = []
   const poll = new Poll(() => Date.now(), 10, 50)
   const controller = chainable(poll).callNoAwait(x => output.push(x)).run()
   controller.stop()
-  assert.notOk(controller.running, 'controller not running after stop')
+  assert.ok(!controller.running, 'controller not running after stop')
   await waitToCall(50, () => { controller.start(); startTime = Date.now() })
   assert.ok(controller.running, 'controller running after start')
   await waitToCall(100, () => { controller.stop(); stopTime = Date.now() })
-  assert.notOk(controller.running, 'controller not running after second stop')
+  assert.ok(!controller.running, 'controller not running after second stop')
   const waitTimeGood = (n) => (n > startTime - allowableJitter) && (n < stopTime + allowableJitter)
   const checks = await chainable(output).filter(timestamp => waitTimeGood(timestamp)).toArray()
   assert.equal(output.length, checks.length, 'start/stop was controlled iteration within tolerance')
 })
 
-test('runAwait', async assert => {
+test('runAwait', async () => {
+  /** @type {number[]} */
   const output = []
   await chainable([0, 1, 2, 3, 4]).callNoAwait(x => output.push(x)).runAwait()
   assert.deepEqual(output, [0, 1, 2, 3, 4], 'runAwait called everything in order') // and obviously it waited
 })
 
-test('toArray', async assert => {
+test('toArray', async () => {
   const input = [0, 1, 2, 3, 4]
   const output = await chainable(input).toArray()
   assert.deepEqual(output, [0, 1, 2, 3, 4], 'toArray processed each value in order')

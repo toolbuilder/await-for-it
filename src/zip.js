@@ -1,9 +1,31 @@
 import { iteratorFrom } from './iteratorfrom.js'
 
-const zipIsDone = nextResults => nextResults.reduce((done, nextResult) => done || nextResult.done, false)
-const zipAllIsDone = nextResults => nextResults.reduce((done, nextResult) => done && nextResult.done, true)
+/**
+ * @typedef {(nextResults: Array<IteratorResult<any>>) => boolean} ZipTerminator
+ */
 
-// Common implementation for zip and zipAll
+/**
+ * Test if any of the iterator results indicate that iteration is done.
+ *
+ * @type {ZipTerminator}
+ */
+const zipIsDone = nextResults => nextResults.reduce((done, nextResult) => done || Boolean(nextResult.done), false)
+
+/**
+ * Test if all of the iterator results indcate that iteration is done.
+ *
+ * @type {ZipTerminator}
+ */
+const zipAllIsDone = nextResults => nextResults.reduce((done, nextResult) => done && Boolean(nextResult.done), true)
+
+/**
+ * Common implementation for zip and zipAll. The parameter of variation is a function that determines
+ * when the zip process is complete - either zipIsDone or zipAllIsDone.
+ *
+ * @param {ZipTerminator} isDone - either zipIsDone or zipAllIsDone
+ * @param {Array<Iterable<any> | AsyncIterable<any>>} iterables - any number of sync or async iterables to be zipped
+ * @returns {AsyncGenerator<any[], void, unknown>} - each element of the AsyncGenerator is an Array containing the zip results.
+ */
 const zipIt = async function * (isDone, iterables) {
   const iterators = iterables.map(iterable => iteratorFrom(iterable))
   let nextResults = await Promise.all(iterators.map(i => i.next()))
@@ -22,8 +44,9 @@ const zipIt = async function * (isDone, iterables) {
  * Use zipAll if you want all iterables to be consumed. Use merge if you want to consume iterables as fast as possible, and
  * don't need the elements paired.
  *
- * @param  {...Iterable|...AsyncIterable} iterables - any number of sync or async iterables to be zipped
- * @returns {AsyncGenerator} - merged iterables as async iterable
+ * @type {(...iterables: (Iterable<any> | AsyncIterable<any>)[]) => AsyncGenerator<any[], void, unknown>}
+ * @param  {...(Iterable<any> | AsyncIterable<any>)} iterables - any number of sync or async iterables to be zipped
+ * @returns {AsyncGenerator<any[], void, unknown>} - merged iterables as async iterable
  * @example
  * const a = [0, 1, 2]
  * const b = ['a', 'b', 'c', 'd'] // this array is longer than a
@@ -43,8 +66,9 @@ export const zip = (...iterables) => zipIt(zipIsDone, iterables)
  * Use zip if you want iteration to stop when any iterable is consumed. Use merge if you want to consume iterables as
  * fast as possible, and don't need the elements paired.
  *
- * @param  {...Iterable|...AsyncIterable} iterables - any number of sync or async iterables to be zipped
- * @returns {AsyncGenerator} - merged iterables as async iterable
+ * @type {(...iterables: (Iterable<any> | AsyncIterable<any>)[]) => AsyncGenerator<any[], void, unknown>}
+ * @param  {...(Iterable<any> | AsyncIterable<any>)} iterables - any number of sync or async iterables to be zipped
+ * @returns {AsyncGenerator<any[], void, unknown>} - merged iterables as async iterable
  * @example
  * const a = [0, 1, 2]
  * const b = ['a', 'b', 'c', 'd'] // this array is longer than a

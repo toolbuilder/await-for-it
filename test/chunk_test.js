@@ -1,5 +1,6 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { chainable as sync } from 'iterablefu'
-import { test } from 'zora'
 import { chainable, transforms } from '../src/await-for-it.js'
 import { randomlySlowIterator, runTest } from './toofast.js'
 
@@ -16,7 +17,7 @@ const fastSlowFast = async function * () {
   }
 }
 
-test('chunk', async assert => {
+test('chunk', async () => {
   let output = await chainable([0, 1, 2, 3, 4, 5, 6, 7, 8]).chunk(3, 100).toArray()
   assert.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6, 7, 8]], 'can generate all full length chunks')
 
@@ -33,7 +34,7 @@ test('chunk', async assert => {
 
   let caughtException = false
   await chainable([0, 1, 2])
-    .chunk(3, [])
+    .chunk(3, /** @type {any} */ ([]))
     .catch(error => {
       caughtException = true
       assert.ok(error instanceof RangeError, 'throws range error with incorrect parameter')
@@ -45,7 +46,7 @@ test('chunk', async assert => {
 
 class TestError extends Error {}
 
-test('chunk: passes iterable exceptions to iterator', async assert => {
+test('chunk: passes iterable exceptions to iterator', async () => {
   const theError = new TestError('REJECT')
   const throwingIterable = async function * () {
     yield 1
@@ -56,14 +57,14 @@ test('chunk: passes iterable exceptions to iterator', async assert => {
   await chainable(throwingIterable())
     .chunk(3, 100)
     .catch(error => {
-      assert.is(error, theError, 'chunk rethrows the error from throwingIterable')
+      assert.equal(error, theError, 'chunk rethrows the error from throwingIterable')
       caughtException = true
     })
     .runAwait()
   assert.ok(caughtException, 'chunk threw exception')
 })
 
-test('chunk: rejected promises from iterable are passed to iterator', async assert => {
+test('chunk: rejected promises from iterable are passed to iterator', async () => {
   const theError = new TestError('REJECT')
   const throwingIterable = async function * () {
     yield 1
@@ -76,14 +77,14 @@ test('chunk: rejected promises from iterable are passed to iterator', async asse
   await chainable(throwingIterable())
     .chunk(3, 100)
     .catch(error => {
-      assert.is(error, theError, 'chunk rethrows the error from rejected promise')
+      assert.equal(error, theError, 'chunk rethrows the error from rejected promise')
       caughtException = true
     })
     .toArray()
   assert.ok(caughtException, 'chunk threw exception')
 })
 
-test('chunk: iterator called faster than one-at-a-time', async assert => {
+test('chunk: iterator called faster than one-at-a-time', async () => {
   // chunk timeout is slower than throttle to make sure chunk is filled each time
   const values = 50
   const makeDataSource = () => sync.range(values).toArray()

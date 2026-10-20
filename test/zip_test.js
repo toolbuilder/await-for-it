@@ -1,20 +1,22 @@
-import { test } from 'zora'
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { generators } from 'iterablefu'
 import { chainable } from '../src/await-for-it.js'
 
 const iterableOne = ['able', 'better', 'chainable', 'dictionary', 'enhanced', 'forbidden']
 const iterableRef = [['able', 1], ['better', 2], ['chainable', 3], ['dictionary', 4], ['enhanced', 5]]
 
-const runTest = async ([iterable, expected, message], assert) => {
+const runTest = async ([iterable, expected, message]) => {
   const actual = await chainable(iterable).toArray()
   assert.deepEqual(actual, expected, message)
 }
 
-const testRunner = (testCases, assert) => {
-  return chainable(testCases).forEach(testCase => runTest(testCase, assert))
+const testRunner = (testCases) => {
+  return chainable(testCases).forEach(testCase => runTest(testCase))
 }
 
-test('zip', async assert => {
+test('zip', async () => {
+  /** @type {any[]} */
   const testCases = [
     [
       chainable.zip(iterableOne.slice(0, 5), generators.range(1, 5)),
@@ -39,10 +41,11 @@ test('zip', async assert => {
       'handles mix of async and synchronous iterables'
     ]
   ]
-  await testRunner(testCases, assert)
+  await testRunner(testCases)
 })
 
-test('zipAll', async assert => {
+test('zipAll', async () => {
+  /** @type {any[]} */
   const testCases = [
     [
       chainable.zipAll(iterableOne.slice(0, 5), generators.range(1, 5)),
@@ -51,7 +54,7 @@ test('zipAll', async assert => {
     ],
     [
       chainable.zipAll(iterableOne, generators.range(1, 5)),
-      iterableRef.concat([['forbidden', undefined]]),
+      iterableRef.concat([['forbidden', /** @type {any} */ (undefined)]]),
       'keeps going until longest iterable is exhausted, missing values are undefined'
     ],
     [
@@ -67,5 +70,5 @@ test('zipAll', async assert => {
       'handles mix of async and synchronous iterables'
     ]
   ]
-  await testRunner(testCases, assert)
+  await testRunner(testCases)
 })

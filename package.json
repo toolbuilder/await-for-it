@@ -21,59 +21,44 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/toolbuilder/await-for-it.git"
+    "url": "git+https://github.com/toolbuilder/await-for-it.git"
   },
   "license": "MIT",
   "type": "module",
+  "main": "./src/await-for-it.js",
+  "types": "./src/await-for-it.d.ts",
   "exports": {
     ".": {
-      "require": "./cjs/await-for-it.js",
+      "types": "./src/await-for-it.d.ts",
       "default": "./src/await-for-it.js"
     },
-    "./src/*": {
-      "require": "./cjs/*",
-      "default": "./src/*"
+    "./src/*.js": {
+      "types": "./src/*.d.ts",
+      "default": "./src/*.js"
     }
   },
-  "main": "cjs/await-for-it.js",
-  "module": "src/await-for-it.js",
   "files": [
-    "cjs",
     "src"
   ],
+  "sideEffects": false,
   "scripts": {
-    "build": "run-s build:*",
-    "build:cjs": "rollup -c rollup.config.cjs.js",
-    "check": "run-s build check:*",
-    "check:packagejson": "npmPkgJsonLint .",
-    "check:packfile": "rollup -c rollup.config.test.js",
-    "check:src": "standard src test",
-    "check:test": "run-s test",
-    "check:uncommitted": "uncommitted",
-    "prerelease": "run-s check",
-    "release": "commit-and-tag-version",
-    "test": "pta --reporter tap \"test/**/*test.js\""
-  },
-  "npmpackagejsonlint": {
-    "extends": "@toolbuilder/package-json-lint-config"
+    "build": "tsc -p tsconfig.build.json",
+    "check:types": "tsc",
+    "test": "node --test 'test/**/*test.js'",
+    "check": "pnpm run check:types && pnpm run build && pnpm test",
+    "validate:package": "npx -y publint && npx -y @arethetypeswrong/cli --pack . --profile esm-only",
+    "release": "changelogen --release --no-github"
   },
   "dependencies": {
-    "@toolbuilder/isnumber": "^0.1.7",
-    "@toolbuilder/make-factory": "^0.1.5",
-    "@toolbuilder/ring-buffer": "^1.2.3",
-    "@toolbuilder/semaphore": "^0.1.7",
-    "iterablefu": "^0.4.5"
+    "@toolbuilder/isnumber": "^1.0.0",
+    "@toolbuilder/make-factory": "^1.0.0",
+    "@toolbuilder/ring-buffer": "^2.0.0",
+    "@toolbuilder/semaphore": "^1.0.0",
+    "iterablefu": "^1.0.0"
   },
   "devDependencies": {
-    "@toolbuilder/package-json-lint-config": "^0.1.1",
-    "@toolbuilder/rollup-plugin-test-tools": "^1.1.0",
-    "commit-and-tag-version": "^12.5.0",
-    "npm-package-json-lint": "^8.0.0",
-    "npm-run-all2": "^7.0.1",
-    "pta": "1.2.0",
-    "rollup": "^4.24.4",
-    "standard": "^17.1.2",
-    "uncommitted": "^1.0.0",
-    "zora": "5.0.3"
+    "@types/node": "^26.6.5",
+    "changelogen": "^0.6.2",
+    "typescript": "^7.0.2"
   }
 }

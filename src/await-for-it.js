@@ -1,3 +1,22 @@
+/**
+ * @template [T=any]
+ * @typedef {import('./queue.js').QueueBuffer<T>} QueueBuffer
+ */
+
+/**
+ * @template [T=any]
+ * @typedef {import('./chainable.js').ChainableIterable<T>} ChainableIterable
+ */
+
+/**
+ * @template [T=any]
+ * @typedef {import('./reducers.js').PublishController<T>} PublishController
+ */
+
+/**
+ * @typedef {import('./reducers.js').RunController} RunController
+ */
+
 export { makeFactory } from '@toolbuilder/make-factory'
 export { makeChainableFactory, makeChainableClass } from './makechainable.js'
 export { isAsyncIterable, isSyncIterable, isFunction } from './is.js'

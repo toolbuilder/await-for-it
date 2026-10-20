@@ -1,12 +1,14 @@
-import { test } from 'zora'
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { chainable } from '../src/await-for-it.js'
 
-test('from', async assert => {
+test('from', async () => {
   const output = await chainable.from([0, 1, 2, 3, 4]).toArray()
   assert.deepEqual(output, [0, 1, 2, 3, 4], 'output matches input iterable')
 })
 
-test('range', async assert => {
+test('range', async () => {
+  /** @type {Array<[string, number[], number[], number[]]>} */
   const testData = [
     // Generating tests from data:
     // shortArgList and fullArgList should produce equivalent output

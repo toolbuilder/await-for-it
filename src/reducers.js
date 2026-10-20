@@ -2,13 +2,35 @@ import { Semaphore } from '@toolbuilder/semaphore'
 import { iteratorFrom } from './iteratorfrom.js'
 
 /**
+ * Controller returned by `run` to start, stop, and check iteration status.
+ *
+ * @typedef {object} RunController
+ * @property {() => void} stop - pause iteration
+ * @property {() => void} start - resume iteration
+ * @property {boolean} running - true if iteration is currently running
+ */
+
+/**
+ * Controller returned by `publish` to manage subscribers and control iteration.
+ *
+ * @template [T=any]
+ * @typedef {object} PublishController
+ * @property {() => void} stop - pause iteration and publishing
+ * @property {() => void} start - resume iteration and publishing
+ * @property {boolean} running - true if currently running
+ * @property {(subscriber: (value: T) => any) => number} subscribe - register a subscriber function and return its subscription key
+ * @property {(key: number) => void} unsubscribe - remove a subscriber by its subscription key
+ */
+
+/**
  * Executes function fn(item, index) for each item in the iterable sequence provided. Each function
  * call must resolve before the function is called again.
  *
- * @param {AsyncFunction|Function} fn - a function(item, index), where item is the current item in the sequence, and index
+ * @type {<T = any>(fn: (item: Awaited<T>, index: number) => any, iterable: AsyncIterable<T> | Iterable<T>) => Promise<void>}
+ * @param {(item: any, index: number) => any} fn - a function(item, index), where item is the current item in the sequence, and index
  * is the index of the current item.
- * @param {Iterable} iterable - the sequence of items to call fn(item, index) with.
- * @returns {undefined}
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the sequence of items to call fn(item, index) with.
+ * @returns {Promise<void>}
  * @example
  * const fn = (item, index) => console.log(`item - ${item}, index - ${index}`)
  * forEach(fn, [1, 2, 3]) // prints the following...
@@ -30,8 +52,9 @@ export const forEach = async (fn, iterable) => {
  * Functions are passed the each value from the iterable. Only values provided
  * after subscribing are provided. Any return value is ignored.
  *
- * @param {AsyncIterable|Iterable} iterable that provides the values
- * @returns {Object} - Returns an object with subscribe and unsubscribe
+ * @type {<T = any>(iterable: AsyncIterable<T> | Iterable<T>) => PublishController<Awaited<T>>}
+ * @param {AsyncIterable<any> | Iterable<any>} iterable that provides the values
+ * @returns {PublishController<any>} - Returns an object with subscribe and unsubscribe
  * methods. The subscribe method accepts a function and returns an unsubscribe
  * key. The unsubscribe method accepts an unsubscribe key, to remove the function.
  * Also has start, stop, and running just like the run function.
@@ -67,20 +90,21 @@ export const publish = (iterable) => {
  * The reduce() method executes a reducer function on each element of
  * the input iterable, resulting in a single output value.
  *
- * @param {AsyncFunction|Function} fn - fn(accumulator, item) that returns (or resolves to)
+ * @type {<T = any, R = any>(fn: (accumulator: R extends never[] ? any[] : Awaited<R>, item: Awaited<T>) => (R extends never[] ? any[] : Awaited<R>) | PromiseLike<R extends never[] ? any[] : Awaited<R>>, accumulator: R, iterable: AsyncIterable<T> | Iterable<T>) => Promise<R extends never[] ? any[] : Awaited<R>>}
+ * @param {(accumulator: any, item: any) => any} fn - fn(accumulator, item) that returns (or resolves to)
  * the new accumulator value.
  * @param {any} accumulator - the initial accumulator value
- * @param {Iterable} iterable - the sequence to execute fn over.
- * @returns {any} - the final accumulator value
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the sequence to execute fn over.
+ * @returns {Promise<any>} - the final accumulator value
  * @example
  * const add = (a, b) => a + b
  * const sum = reduce(add, 0, [0, 1, 2, 3, 4]) // sum === 10
  */
 export const reduce = async (fn, accumulator, iterable) => {
   for await (const value of iterable) {
-    accumulator = await Promise.resolve(fn(accumulator, value))
+    accumulator = /** @type {any} */ (await Promise.resolve(fn(/** @type {any} */ (accumulator), value)))
   }
-  return accumulator
+  return /** @type {any} */ (accumulator)
 }
 
 /**
@@ -88,8 +112,9 @@ export const reduce = async (fn, accumulator, iterable) => {
  * starting a thread, and the returned controller allows you to
  * start and stop iteration.
  *
- * @param {AsyncIterable|Iterable} iterable - input iterable
- * @returns {Object} - Has a start() method to start iteration, although
+ * @type {(iterable: AsyncIterable<any> | Iterable<any>) => RunController}
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - input iterable
+ * @returns {RunController} - Has a start() method to start iteration, although
  * it is already started when controllable returns. Has a stop method to
  * stop iteration. Has a running attribute to check if iteration is running.
  * @example
@@ -118,7 +143,9 @@ export const run = (iterable) => {
  * Iterates over iterable asynchronously. It is sort of like starting
  * a thread. Unlike `run(iterable)`, there is no control over iteration.
  *
- * @param {AsyncIterable|Iterable} iterable - iterable to iterate over
+ * @type {(iterable: AsyncIterable<any> | Iterable<any>) => Promise<void>}
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - iterable to iterate over
+ * @returns {Promise<void>}
  * @example
  * await runAwait([0, 1, 2, 3, 4])
  */
@@ -137,8 +164,9 @@ export const runAwait = async (iterable) => {
 /**
  * Creates an  Array from the items in iterable.
  *
- * @param {AsyncIterable|Iterable} iterable - the iterable to create the array from
- * @returns {Array} - the array
+ * @type {<T = any>(iterable: AsyncIterable<T> | Iterable<T>) => Promise<Awaited<T>[]>}
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the iterable to create the array from
+ * @returns {Promise<Array<any>>} - the array
  * @example
  * const a = await toArray([0, 1, 2, 3, 4]) // a is [0, 1, 2, 3, 4]
  */

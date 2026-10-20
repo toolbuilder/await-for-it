@@ -1,8 +1,9 @@
 /**
  * This function exists solely so that the generated ChainableIterable class has a static constructor.
  *
- * @param {AsyncIterable|Iterable} iterable - input iterable
- * @returns {AsyncIterable|Iterable} - the input iterable
+ * @type {<T = any>(iterable: AsyncIterable<T> | Iterable<T>) => AsyncIterable<T> | Iterable<T>}
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - input iterable
+ * @returns {AsyncIterable<any> | Iterable<any>} - the input iterable
  */
 export const from = (iterable) => {
   return iterable
@@ -14,8 +15,9 @@ export { zip, zipAll } from './zip.js'
 /**
  * Creates a sequence of numbers similar to the Python range. See the example.
  *
- * @param  {...integer} args per the example
- * @returns {Generator} that represents the range
+ * @type {(...args: number[]) => Generator<number, void, unknown>}
+ * @param  {...number} args per the example
+ * @returns {Generator<number, void, unknown>} that represents the range
  * @example
  *
  * let output
@@ -56,6 +58,6 @@ export const range = (...args) => {
     case 2:
       return rangeGenerator(args[0], args[1], 1)
     default:
-      return rangeGenerator(...args)
+      return rangeGenerator(args[0], args[1], args[2])
   }
 }

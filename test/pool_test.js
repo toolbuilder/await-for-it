@@ -1,5 +1,6 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { chainable as sync } from 'iterablefu'
-import { test } from 'zora'
 import { chainable, transforms } from '../src/await-for-it.js'
 import { runTest, waitRandomlyToCall } from './toofast.js'
 
@@ -19,7 +20,7 @@ const makeFastAsyncFunction = (score) => {
   return () => { score.calls++; score.resolves++; return Promise.resolve(promiseCount) }
 }
 
-test('pool: slow iteration, fast asyncFunction, fast asyncIterable', async assert => {
+test('pool: slow iteration, fast asyncFunction, fast asyncIterable', async () => {
   const input = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   const maxPoolSize = 5
   let poolSize = 0
@@ -36,7 +37,7 @@ test('pool: slow iteration, fast asyncFunction, fast asyncIterable', async asser
   assert.deepEqual(output.sort(), input, 'return value of all asyncFunctions is returned')
 })
 
-test('pool: fast iteration, fast asyncIterable, slow asyncFunction', async assert => {
+test('pool: fast iteration, fast asyncIterable, slow asyncFunction', async () => {
   const input = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   let poolSize = 0
   const maxPoolSize = 5
@@ -53,7 +54,7 @@ test('pool: fast iteration, fast asyncIterable, slow asyncFunction', async asser
   assert.deepEqual(output.sort(), input, 'return value of all asyncFunctions is returned')
 })
 
-test('pool: fast iteration, slow asyncIterable, fast asyncFunction', async assert => {
+test('pool: fast iteration, slow asyncIterable, fast asyncFunction', async () => {
   const input = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   const tracker = { poolSize: 0, maxPoolSize: 5, promises: 0, calls: 0, resolves: 0 }
   const asyncIterable = chainable(input).map(() => makeFastAsyncFunction(tracker)).throttle(100, 0)
@@ -68,7 +69,7 @@ test('pool: fast iteration, slow asyncIterable, fast asyncFunction', async asser
   assert.deepEqual(output.sort(), input, 'return value of all asyncFunctions is returned')
 })
 
-test('pool: fast iteration, fast SYNC iterable, fast asyncFunction', async assert => {
+test('pool: fast iteration, fast SYNC iterable, fast asyncFunction', async () => {
   const input = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
   const tracker = { poolSize: 0, maxPoolSize: 5, promises: 0, calls: 0, resolves: 0 }
   const syncIterable = input.map(() => makeFastAsyncFunction(tracker))
@@ -83,7 +84,7 @@ test('pool: fast iteration, fast SYNC iterable, fast asyncFunction', async asser
   assert.deepEqual(output.sort(), input, 'return value of all asyncFunctions is returned')
 })
 
-test('pool: input iterable can provide async functions, sync functions, Promises, and other values', async assert => {
+test('pool: input iterable can provide async functions, sync functions, Promises, and other values', async () => {
   const iterable = [0, Promise.resolve(1), chainable([2, 3]), [4, 5], '6', async () => 7, () => 8, { toString: () => 9 }]
   const output = await chainable(iterable).pool(5).flatten().map(x => parseInt(x)).toArray()
   assert.deepEqual(output, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'all values processed correctly')
@@ -91,7 +92,7 @@ test('pool: input iterable can provide async functions, sync functions, Promises
 
 class TestError extends Error {}
 
-test('pool: asyncIterable exceptions propagates to iterator', async assert => {
+test('pool: asyncIterable exceptions propagates to iterator', async () => {
   const theError = new TestError('No more iterating for you!')
   const poolsize = 5
   const tracker = { promises: 0, calls: 0, resolves: 0 }
@@ -106,13 +107,13 @@ test('pool: asyncIterable exceptions propagates to iterator', async assert => {
     .pool(poolsize)
     .catch(e => {
       caughtException = true
-      assert.is(e, theError, 'thrown error was caught directly')
+      assert.equal(e, theError, 'thrown error was caught directly')
     })
     .runAwait()
   assert.ok(caughtException, 'exception was caught')
 })
 
-test('pool: async function rejection propagates to iterator', async assert => {
+test('pool: async function rejection propagates to iterator', async () => {
   const theError = new TestError('REJECTED')
   const poolsize = 5
   const tracker = { promises: 0, calls: 0, resolves: 0 }
@@ -127,13 +128,13 @@ test('pool: async function rejection propagates to iterator', async assert => {
     .pool(poolsize)
     .catch(e => {
       caughtException = true
-      assert.is(e, theError, 'the thrown error was caught directly')
+      assert.equal(e, theError, 'the thrown error was caught directly')
     })
     .toArray()
   assert.ok(caughtException, 'exception was caught')
 })
 
-test('pool: sync function throw propagates to iterator', async assert => {
+test('pool: sync function throw propagates to iterator', async () => {
   const theError = new TestError('sync function throws!')
   const poolsize = 5
   const tracker = { promises: 0, calls: 0, resolves: 0 }
@@ -148,13 +149,13 @@ test('pool: sync function throw propagates to iterator', async assert => {
     .pool(poolsize)
     .catch(e => {
       caughtException = true
-      assert.is(e, theError, 'the thrown error was caught directly')
+      assert.equal(e, theError, 'the thrown error was caught directly')
     })
     .toArray()
   assert.ok(caughtException, 'exception was caught')
 })
 
-test('pool: values from async functions are yielded when resolved', async assert => {
+test('pool: values from async functions are yielded when resolved', async () => {
   const randomInt = (maxInt) => Math.floor(Math.random() * Math.floor(maxInt))
   const makeVariableAsyncFunction = (tracker) => {
     const delay = randomInt(500)
@@ -181,7 +182,7 @@ test('pool: values from async functions are yielded when resolved', async assert
   assert.deepEqual(output.sort(), input, 'return value of all async functions is returned')
 })
 
-test('pool: iterator called faster than one-at-a-time', async assert => {
+test('pool: iterator called faster than one-at-a-time', async () => {
   const values = 20
   const slowFunctions = sync.range(values).map(value => () => waitRandomlyToCall(5, 5, () => value))
   const iterable = transforms.pool(3, slowFunctions)

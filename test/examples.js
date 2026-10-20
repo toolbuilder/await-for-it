@@ -1,4 +1,5 @@
-import { test } from 'zora'
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { chainable, Poll } from '../src/await-for-it.js'
 
 // Event handler events into async iterable
@@ -13,7 +14,7 @@ import { chainable, Poll } from '../src/await-for-it.js'
 
 // history queue? Maybe persistent?
 
-test('polling with functions', async assert => {
+test('polling with functions', async () => {
   // count stands in as some useful application state you want to poll
   let count = 0
   const fn = () => count++ // function can be async or synchronous

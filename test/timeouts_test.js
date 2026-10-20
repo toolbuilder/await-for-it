@@ -1,4 +1,5 @@
-import { test } from 'zora'
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { callWithTimeout, wait, waitToCall } from '../src/await-for-it.js'
 
 const msgResolvedBeforeTimeout = 'Resolved Before Timeout'
@@ -22,7 +23,7 @@ const rejectOnTimeout = () => {
   return (resolve, reject) => reject(msgRejectedAfterTimeout)
 }
 
-test('callWithTimeout', async assert => {
+test('callWithTimeout', async () => {
   const beforeTimeout = 50
   const timeout = 100
   const afterTimeout = 150
@@ -46,7 +47,7 @@ test('callWithTimeout', async assert => {
 const allowableJitter = 10
 const approximately = (n, ref) => (n > ref - allowableJitter) && (n < ref + allowableJitter)
 
-test('wait', async assert => {
+test('wait', async () => {
   const waitTime = 50
   const startTime = Date.now()
   await wait(waitTime)
@@ -55,7 +56,7 @@ test('wait', async assert => {
   assert.ok(approximately(waited, waitTime), 'wait waited the proper amount of time')
 })
 
-test('waitToCall', async assert => {
+test('waitToCall', async () => {
   const fn = () => Date.now()
   const waitTime = 50
   const startTime = Date.now()

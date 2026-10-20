@@ -12,10 +12,11 @@ import { RingBuffer } from '@toolbuilder/ring-buffer'
  * Backpressure is provided by the iterator when a chunk is yielded. Stopping the
  * iterator will stop chunking and the input iterable.
  *
- * @param {Number} n - size of arrays
- * @param {Number} timeout - number of milliseconds before yielding chunk if not full
- * @param {AsyncIterable|Iterable} iterable - the iterable to chunk
- * @returns {AsyncGenerator} - provides each chunk in order
+ * @type {<T = any>(n: number, timeout: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>[], void, unknown>}
+ * @param {number} n - size of arrays
+ * @param {number} timeout - number of milliseconds before yielding chunk if not full
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the iterable to chunk
+ * @returns {AsyncGenerator<any[], void, unknown>} - provides each chunk in order
  */
 export const chunk = async function * (n, timeout, iterable) {
   // I've called this method incorrectly often enough to throw in some checks
@@ -25,9 +26,11 @@ export const chunk = async function * (n, timeout, iterable) {
 
   const buffer = new RingBuffer(n + 1) // '+1' isn't necessary, but just in case testing missed something...
   const iterator = iteratorFrom(iterable)
+  /** @type {Promise<{ done?: boolean, timedOut?: boolean }> | null} */
   let nextValuePromise = null // iterator.next()
 
   const shiftUpTo = count => {
+    /** @type {any[]} */
     const chunk = []
     const toShift = Math.min(buffer.length, count)
     for (let i = 0; i < toShift; ++i) {
@@ -38,7 +41,7 @@ export const chunk = async function * (n, timeout, iterable) {
 
   const pushValue = ({ value, done }) => {
     if (!done) buffer.push(value)
-    return { done }
+    return /** @type {{ done?: boolean, timedOut?: boolean }} */ ({ done })
   }
 
   const pushNextValue = () => Promise.resolve(iterator.next()).then(pushValue)
@@ -57,7 +60,7 @@ export const chunk = async function * (n, timeout, iterable) {
     let { done } = await getNextValuePromise()
     if (!done && buffer.length < n) {
       let timedOut
-      const chunkTimeout = waitToCall(timeout, () => ({ timedOut: true }))
+      const chunkTimeout = waitToCall(timeout, () => /** @type {{ done?: boolean, timedOut?: boolean }} */ ({ timedOut: true }))
       do {
         ({ done, timedOut } = await Promise.race([getNextValuePromise(), chunkTimeout]))
       } while (!done && !timedOut && buffer.length < n)
