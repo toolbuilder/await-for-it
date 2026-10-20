@@ -225,3 +225,103 @@ test('flattenUnordered: iterator called faster than one-at-a-time', async () => 
   const actual = await runTest(iterable, values)
   assert.deepEqual(actual.sort((a, b) => a - b), expected, 'all values yielded from flattened iterables')
 })
+
+test('flattenUnordered: closes active child iterators and input iterator on early break', async () => {
+  let child1Cleaned = false
+  let child2Cleaned = false
+  let inputCleaned = false
+
+  const child1 = async function * () {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 20))
+      yield 1
+      yield 2
+    } finally {
+      child1Cleaned = true
+    }
+  }
+
+  const child2 = async function * () {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 20))
+      yield 10
+      yield 20
+    } finally {
+      child2Cleaned = true
+    }
+  }
+
+  const input = async function * () {
+    try {
+      yield child1()
+      yield child2()
+    } finally {
+      inputCleaned = true
+    }
+  }
+
+  const values = []
+  for await (const val of chainable(input()).flattenUnordered(5)) {
+    values.push(val)
+    break // early termination
+  }
+
+  assert.equal(values.length, 1, 'yielded first item before break')
+  assert.ok(child1Cleaned, 'child1 had return() called via finally')
+  assert.ok(child2Cleaned, 'child2 had return() called via finally')
+  assert.ok(inputCleaned, 'input iterable had return() called via finally')
+})
+
+test('flattenUnordered: closes remaining active child iterators when one child throws', async () => {
+  let child2Cleaned = false
+  const theError = new TestError('BOOM')
+
+  const child1 = async function * () {
+    yield 1
+    throw theError
+  }
+
+  const child2 = async function * () {
+    try {
+      yield 10
+      yield 20
+    } finally {
+      child2Cleaned = true
+    }
+  }
+
+  let caught = false
+  await chainable([child1(), child2()])
+    .flattenUnordered(5)
+    .catch(err => {
+      caught = true
+      assert.equal(err, theError)
+    })
+    .runAwait()
+
+  assert.ok(caught, 'caught thrown child error')
+  assert.ok(child2Cleaned, 'remaining active child was cleaned up after peer threw error')
+})
+
+test('flattenUnordered: caller .return(value) cleans up and preserves return value', async () => {
+  let childCleaned = false
+
+  const child = async function * () {
+    try {
+      yield 1
+      yield 2
+    } finally {
+      childCleaned = true
+    }
+  }
+
+  const gen = transforms.flattenUnordered(5, [child()])
+  const first = await gen.next()
+  assert.equal(first.value, 1)
+  assert.equal(first.done, false)
+
+  const ret = await gen.return()
+  assert.equal(ret.value, undefined)
+  assert.equal(ret.done, true)
+  assert.ok(childCleaned, 'child was cleaned up on manual .return() call')
+})
