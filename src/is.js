@@ -20,7 +20,16 @@ export const isFunction = (object) => typeof object === 'function' && !isClass(o
  * @param {any} item - value to test
  * @returns {item is string | globalThis.String} - true if item is a string
  */
-export const isString = (item) => typeof item === 'string' || item instanceof String
+export const isString = (item) => {
+  if (typeof item === 'string') return true
+  if (typeof item !== 'object' || item === null) return false
+  try {
+    String.prototype.valueOf.call(item)
+    return true
+  } catch {
+    return false
+  }
+}
 
 /**
  * Test if an item supports synchronous iteration.
@@ -60,7 +69,7 @@ export const shouldIterate = (value) => {
   if (spreadable !== undefined) return Boolean(spreadable)
 
   if (
-    value instanceof String ||
+    isString(value) ||
     ArrayBuffer.isView(value) ||
     value instanceof Map ||
     (typeof URLSearchParams !== 'undefined' && value instanceof URLSearchParams) ||

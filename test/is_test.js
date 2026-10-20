@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isFunction, isSyncIterable } from '../src/is.js'
+import vm from 'node:vm'
+import { isFunction, isString, isSyncIterable } from '../src/is.js'
 
 test('isSyncIterable: recognizes synchronous iterables', () => {
   assert.equal(isSyncIterable([]), true, 'Array is sync iterable')
@@ -62,5 +63,36 @@ test('isFunction: rejects ES6 classes and non-functions', () => {
   assert.equal(isFunction({}), false, 'plain object is not a function')
   assert.equal(isFunction([]), false, 'array is not a function')
 })
+
+test('isString: recognizes primitive and boxed strings across realms', () => {
+  assert.equal(isString('hello'), true, 'primitive string is recognized')
+  assert.equal(isString(''), true, 'empty primitive string is recognized')
+  assert.equal(isString(new String('hello')), true, 'boxed string object is recognized')
+  assert.equal(isString(new String('')), true, 'empty boxed string object is recognized')
+
+  const crossRealmString = vm.runInNewContext("new String('hello from realm')")
+  const crossRealmEmptyString = vm.runInNewContext("new String('')")
+  assert.equal(isString(crossRealmString), true, 'cross-realm boxed string is recognized')
+  assert.equal(isString(crossRealmEmptyString), true, 'cross-realm empty boxed string is recognized')
+})
+
+test('isString: rejects non-strings and spoofed objects', () => {
+  assert.equal(isString({ [Symbol.toStringTag]: 'String' }), false, 'rejects spoofed Symbol.toStringTag')
+  assert.equal(isString({ valueOf: () => 'fake string' }), false, 'rejects custom valueOf')
+  assert.equal(isString(new Number(123)), false, 'rejects boxed Number')
+  assert.equal(isString(new Boolean(true)), false, 'rejects boxed Boolean')
+
+  assert.equal(isString(null), false, 'rejects null')
+  assert.equal(isString(undefined), false, 'rejects undefined')
+  assert.equal(isString(0), false, 'rejects number 0')
+  assert.equal(isString(123), false, 'rejects number 123')
+  assert.equal(isString(false), false, 'rejects boolean false')
+  assert.equal(isString(true), false, 'rejects boolean true')
+  assert.equal(isString(Symbol('str')), false, 'rejects symbol')
+  assert.equal(isString({}), false, 'rejects plain object')
+  assert.equal(isString([]), false, 'rejects array')
+  assert.equal(isString(() => {}), false, 'rejects function')
+})
+
 
 
