@@ -112,11 +112,116 @@ test('flattenUnordered: rejected promises from iterable are passed to iterator',
   assert.ok(caughtException, 'flattenUnordered threw exception')
 })
 
+test('flattenUnordered: nested iterable exception is propagated to iterator', async () => {
+  const theError = new TestError('CHILD_ERROR')
+  const throwingChild = async function * () {
+    yield 10
+    yield 20
+    throw theError
+  }
+  const input = [[1, 2], throwingChild(), [3, 4]]
+  let caughtException = false
+  await chainable(input)
+    .flattenUnordered(5)
+    .catch(error => {
+      assert.equal(error, theError, 'flattenUnordered rethrows the error from nested iterable')
+      caughtException = true
+    })
+    .runAwait()
+  assert.ok(caughtException, 'flattenUnordered caught child exception')
+})
+
+test('flattenUnordered: rejected promises from nested iterable are passed to iterator', async () => {
+  const theError = new TestError('CHILD_REJECT')
+  const throwingChild = async function * () {
+    yield 10
+    yield new Promise((resolve, reject) => setTimeout(() => reject(theError), 100))
+    yield 20
+  }
+  const input = [[1, 2], throwingChild(), [3, 4]]
+  let caughtException = false
+  await chainable(input)
+    .flattenUnordered(5)
+    .catch(error => {
+      assert.equal(error, theError, 'flattenUnordered rethrows the error from nested rejected promise')
+      caughtException = true
+    })
+    .toArray()
+  assert.ok(caughtException, 'flattenUnordered caught child rejected promise')
+})
+
+test('flattenUnordered: respects maxPoolSize concurrency limit', async () => {
+  let activeCount = 0
+  let maxObservedActive = 0
+  const maxPoolSize = 3
+
+  const makeChild = (id) => async function * () {
+    activeCount++
+    maxObservedActive = Math.max(maxObservedActive, activeCount)
+    for (let i = 0; i < 3; i++) {
+      await new Promise(resolve => setTimeout(resolve, 20))
+      yield `${id}-${i}`
+    }
+    activeCount--
+  }
+
+  const input = Array.from({ length: 9 }, (_, i) => makeChild(i)())
+  const actual = await chainable(input).flattenUnordered(maxPoolSize).toArray()
+  assert.equal(actual.length, 27, 'all items were yielded')
+  assert.ok(maxObservedActive <= maxPoolSize, `active iterables (${maxObservedActive}) did not exceed maxPoolSize (${maxPoolSize})`)
+})
+
+test('flattenUnordered: maxPoolSize = 1 flattens sequentially', async () => {
+  let activeCount = 0
+  let maxObservedActive = 0
+
+  const makeChild = (id) => async function * () {
+    activeCount++
+    maxObservedActive = Math.max(maxObservedActive, activeCount)
+    for (let i = 0; i < 3; i++) {
+      await new Promise(resolve => setTimeout(resolve, 10))
+      yield id * 10 + i
+    }
+    activeCount--
+  }
+
+  const input = Array.from({ length: 4 }, (_, i) => makeChild(i)())
+  const actual = await chainable(input).flattenUnordered(1).toArray()
+  assert.equal(actual.length, 12, 'all items yielded')
+  assert.equal(maxObservedActive, 1, 'never flattened more than 1 iterable at a time')
+  assert.deepEqual(actual, [0, 1, 2, 10, 11, 12, 20, 21, 22, 30, 31, 32], 'with pool size 1, iterables are flattened in sequence')
+})
+
+test('flattenUnordered: handles empty child iterables mixed with non-empty', async () => {
+  const input = [[], [1, 2], [], [3], [], [4, 5], []]
+  const actual = await chainable(input).flattenUnordered(3).toArray()
+  assert.deepEqual(actual.sort(), [1, 2, 3, 4, 5], 'empty child iterables are skipped without issue')
+})
+
+test('flattenUnordered: throws RangeError for invalid maxPoolSize', async () => {
+  const invalidSizes = [0, -1, 1.5, NaN, undefined, null, '3']
+
+  for (const maxPoolSize of invalidSizes) {
+    let caughtException = false
+    await chainable([[1, 2]])
+      // @ts-ignore
+      .flattenUnordered(maxPoolSize)
+      .catch(error => {
+        caughtException = true
+        assert.ok(error instanceof RangeError, `throws RangeError for maxPoolSize: ${maxPoolSize}`)
+      })
+      .runAwait()
+    assert.ok(caughtException, `caught RangeError for maxPoolSize: ${maxPoolSize}`)
+  }
+})
+
 test('flattenUnordered: iterator called faster than one-at-a-time', async () => {
   const values = 50
-  const makeDataSource = () => sync.range(values).toArray()
-  const slowIterable = randomlySlowIterator(5, 5, makeDataSource())
+  const expected = sync.range(values).toArray()
+  // Group into chunks of 5 so inputIterable actually provides child iterables to flatten
+  const nestedData = sync(expected).chunk(5).toArray()
+  const slowIterable = randomlySlowIterator(5, 5, nestedData)
   const iterable = transforms.flattenUnordered(3, slowIterable)
   const actual = await runTest(iterable, values)
-  assert.deepEqual(sync(actual).flatten().toArray(), makeDataSource(), 'all values yielded and provided in order')
+  assert.deepEqual(actual.sort((a, b) => a - b), expected, 'all values yielded from flattened iterables')
 })

@@ -4,7 +4,7 @@ import { shuffle } from './shuffle.js'
 
 /**
  * Flattens a sequence of items one level deep. Unlike flatten, flattenUnordered attempts
- * to flatten several iterables at the same time, so the output is not in a predicatable
+ * to flatten several iterables at the same time, so the output is not in a predictable
  * order. Async and sync iterables within the provided iterable are supported. Does not
  * flatten strings, TypedArrays/Buffers, Maps, or other built-in record/value types even
  * though they are iterable. Supports explicit opt-in or opt-out via `Symbol.isConcatSpreadable`.
@@ -23,6 +23,10 @@ import { shuffle } from './shuffle.js'
  * console.log(array.sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8].
  */
 export const flattenUnordered = async function * (maxPoolSize, inputIterable) {
+  if (!Number.isInteger(maxPoolSize) || maxPoolSize < 1) {
+    throw new RangeError(`flattenUnordered parameter 'maxPoolSize' must be an integer >= 1: ${maxPoolSize}`)
+  }
+
   // get Promise for iterator.next(), then augment with id to find associated iterator in pool
   const nextPromise = (id, iterator) => {
     // use Promise.resolve in case iterator is NOT async
@@ -32,7 +36,7 @@ export const flattenUnordered = async function * (maxPoolSize, inputIterable) {
 
   let idSequence = 31 // generates unique keys for promisePool, no reason it has to start with 31
 
-  // state for iterating over inputInterable
+  // state for iterating over inputIterable
   const inputIteratorId = 30
   /** @type {any} */
   const inputIteratorState = {}
@@ -57,7 +61,7 @@ export const flattenUnordered = async function * (maxPoolSize, inputIterable) {
     // of `promises` does not change, a fast iterable near the front could prevent an
     // iterable at the back from advancing. In testing, I don't see this, but to be
     // safe, we'll shuffle the promises with a tested algorithm so you don't see weirdness.
-    const { value, done, id } = await Promise.race(shuffle([...promises]))
+    const { value, done, id } = await Promise.race(shuffle(promises))
     if (done) {
       iteratorPool.delete(id) // iteration done, so remove iterator from pool
       if (id === inputIteratorId) inputIteratorState.done = true
@@ -71,7 +75,7 @@ export const flattenUnordered = async function * (maxPoolSize, inputIterable) {
         } else {
           yield value
         }
-      } else { // we have a result from an iteratable we are flattening
+      } else { // we have a result from an iterable we are flattening
         yield value // yield before asking for next value to apply backpressure to iteration
         const winner = iteratorPool.get(id)
         winner.promise = nextPromise(id, winner.iterator)
