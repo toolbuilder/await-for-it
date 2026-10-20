@@ -19,6 +19,30 @@ test('strings are not flattened even though iterable', async () => {
   assert.deepEqual(actual, input, 'strings are not flattened')
 })
 
+test('TypedArrays and Maps are not flattened even though iterable', async () => {
+  const bytes = new Uint8Array([1, 2, 3])
+  const map = new Map([['a', 1]])
+  const input = [bytes, map]
+  const actual = await chainable(input).flattenUnordered(10).toArray()
+  assert.deepEqual(actual, [bytes, map], 'TypedArray and Map are not flattened')
+})
+
+test('flattenUnordered respects Symbol.isConcatSpreadable', async () => {
+  const nonSpreadable = [1, 2]
+  nonSpreadable[Symbol.isConcatSpreadable] = false
+
+  const spreadableBytes = new Uint8Array([3, 4])
+  // @ts-ignore
+  spreadableBytes[Symbol.isConcatSpreadable] = true
+
+  const input = [nonSpreadable, spreadableBytes]
+  const actual = await chainable(input).flattenUnordered(10).toArray()
+  assert.equal(actual.includes(nonSpreadable), true, 'opt-out preserved array')
+  assert.equal(actual.includes(3), true, 'opt-in flattened byte 3')
+  assert.equal(actual.includes(4), true, 'opt-in flattened byte 4')
+  assert.equal(actual.length, 3, 'yielded 3 items')
+})
+
 test('non-iterables are passed as-is', async () => {
   const input = [1, 2, {}]
   const actual = await chainable(input).flattenUnordered(10).toArray()

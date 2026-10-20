@@ -241,22 +241,30 @@ chainable([0, 1, 2, 3, 4, 5, 6]).filter(isEvenNumber).callNoAwait(console.log).r
 
 ## flatten
 
-Flattens a sequence of items one level deep. It does not flatten strings, even
-though they are iterable. Can flatten async and sync iterables within the provided
-iterable.
+Flattens a sequence of items one level deep. It does not flatten strings, TypedArrays/Buffers,
+Maps, or other built-in record/value types (such as URLSearchParams, Headers, and FormData),
+even though they are iterable. Can flatten async and sync iterables within the provided
+iterable. Explicit opt-in or opt-out is supported via `Symbol.isConcatSpreadable`.
 
 Returns **ChainableClass** for the flattened sequence
 
 ```javascript
 chainable([[0, 1], [2, 3], [4, 5], [6]]).flatten().callNoAwait(console.log).run()
 // prints [0, 1, 2, 3, 4, 5, 6]
+
+// Objects can opt out of flattening:
+const nonSpreadable = [7, 8]
+nonSpreadable[Symbol.isConcatSpreadable] = false
+await chainable([[1, 2], nonSpreadable]).flatten().toArray()
+// returns [1, 2, [7, 8]]
 ```
 
 ## flattenRecursive
 
 Flattens a sequence by recursively returning items from each iterable in the sequence.
-Does not flatten strings even though they are iterable. Can flatten combinations of
-async and sync iterables within the provided iterable.
+Does not flatten strings, TypedArrays/Buffers, Maps, or other built-in record/value types
+even though they are iterable. Can flatten combinations of async and sync iterables
+within the provided iterable. Explicit opt-in or opt-out is supported via `Symbol.isConcatSpreadable`.
 
 ```javascript
 const input = [0, [1, 2, 3], [[4, 5], [[[6, 7]], [8, 9], 10]], 11, 12]
@@ -269,9 +277,10 @@ Returns **ChainableClass** for the flattened sequence
 ## flattenUnordered
 
 Flattens a sequence of items one level deep. Unlike flatten, flattenUnordered attempts
-to flatten several iterables at the same time, so the output is not in a predicatable
-order. Async and sync iterables within the provided iterable are supported. Strings
-are not flattened even though they are iterable.
+to flatten several iterables at the same time, so the output is not in a predictable
+order. Async and sync iterables within the provided iterable are supported. Does not
+flatten strings, TypedArrays/Buffers, Maps, or other built-in record/value types even
+though they are iterable. Explicit opt-in or opt-out is supported via `Symbol.isConcatSpreadable`.
 
 The number of iterables being flattened at the same time is limited by maxPoolSize. When
 this number is reached, flattenUnordered will begin to apply backpressure if it is being

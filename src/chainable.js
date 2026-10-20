@@ -12,9 +12,9 @@
  * @property {(n: number, timeout: number) => ChainableIterable<T[]>} chunk Chunks every n items (or on timeout) into an array in output sequence.
  * @property {<R = any>(fn: (previous: T, current: T) => R) => ChainableIterable<Awaited<R>>} diff Executes fn(previous, current) and yields the result for each adjacent pair.
  * @property {(fn: (item: T) => any) => ChainableIterable<T>} filter Keeps item from sequence when fn(item) returns truthy.
- * @property {() => ChainableIterable<any>} flatten Flattens sequence one level deep (does not flatten strings).
- * @property {() => ChainableIterable<any>} flattenRecursive Recursively flattens sequence (does not flatten strings).
- * @property {(maxPoolSize: number) => ChainableIterable<any>} flattenUnordered Flattens up to maxPoolSize iterables concurrently.
+ * @property {() => ChainableIterable<any>} flatten Flattens sequence one level deep (does not flatten strings, TypedArrays/Buffers, Maps, etc.).
+ * @property {() => ChainableIterable<any>} flattenRecursive Recursively flattens sequence (does not flatten strings, TypedArrays/Buffers, Maps, etc.).
+ * @property {(maxPoolSize: number) => ChainableIterable<any>} flattenUnordered Flattens up to maxPoolSize iterables concurrently (does not flatten strings, TypedArrays/Buffers, Maps, etc.).
  * @property {<R = any>(fn: (item: T) => R) => ChainableIterable<Awaited<R>>} map Generates each output value using provided function fn(item).
  * @property {<R = any>(generatorFunction: (iterable: AsyncIterable<T> | Iterable<T>) => AsyncIterable<R> | Iterable<R>) => ChainableIterable<Awaited<R>>} mapWith Maps sequence using an arbitrary generator function that takes an iterable.
  * @property {(index: number) => ChainableIterable<T extends readonly (infer U)[] ? Awaited<U> : any>} nth Outputs the nth element of each array in the sequence.

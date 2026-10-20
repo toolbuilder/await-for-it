@@ -19,7 +19,7 @@
 
 export { makeFactory } from '@toolbuilder/make-factory'
 export { makeChainableFactory, makeChainableClass } from './makechainable.js'
-export { isAsyncIterable, isSyncIterable, isFunction } from './is.js'
+export { isAsyncIterable, isSyncIterable, isFunction, isString, shouldIterate } from './is.js'
 export { chainable, ChainableClass } from './chainable.js'
 export { Poll } from './poll.js'
 export { Queue, QueueDone, QueueFull } from './queue.js'

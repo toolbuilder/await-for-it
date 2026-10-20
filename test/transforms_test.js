@@ -162,6 +162,13 @@ test('filter', async () => {
 })
 
 test('flatten: synchronous iterables', async () => {
+  const nonSpreadableArray = [1, 2]
+  nonSpreadableArray[Symbol.isConcatSpreadable] = false
+
+  const spreadableUint8 = new Uint8Array([7, 8])
+  // @ts-ignore
+  spreadableUint8[Symbol.isConcatSpreadable] = true
+
   /** @type {any[]} */
   const tests = [
     // format: [testName, inputIterable, inputParameters, expectedOutput]
@@ -176,6 +183,36 @@ test('flatten: synchronous iterables', async () => {
       ['Chainable', 'Iterable', 'Sequence', 'Generator', 'Transform'],
       [],
       ['Chainable', 'Iterable', 'Sequence', 'Generator', 'Transform']
+    ],
+    [
+      'does not flatten TypedArray or Buffer',
+      [new Uint8Array([1, 2, 3])],
+      [],
+      [new Uint8Array([1, 2, 3])]
+    ],
+    [
+      'does not flatten Map',
+      [new Map([['a', 1], ['b', 2]])],
+      [],
+      [new Map([['a', 1], ['b', 2]])]
+    ],
+    [
+      'does not flatten URLSearchParams',
+      [new URLSearchParams('a=1&b=2')],
+      [],
+      [new URLSearchParams('a=1&b=2')]
+    ],
+    [
+      'respects Symbol.isConcatSpreadable = false to opt out',
+      [[0], nonSpreadableArray, [3]],
+      [],
+      [0, nonSpreadableArray, 3]
+    ],
+    [
+      'respects Symbol.isConcatSpreadable = true to opt in',
+      [[0], spreadableUint8, [9]],
+      [],
+      [0, 7, 8, 9]
     ]
   ]
   await chainable(tests).forEach(makeTestRunner('flatten'))
@@ -188,6 +225,9 @@ test('flatten: async iterables', async () => {
 })
 
 test('flattenRecursive', async () => {
+  const nonSpreadable = [[3, 4]]
+  nonSpreadable[Symbol.isConcatSpreadable] = false
+
   /** @type {any[]} */
   const tests = [
     // format: [testName, inputIterable, inputParameters, expectedOutput]
@@ -202,6 +242,18 @@ test('flattenRecursive', async () => {
       ['Chainable', ['Iterable', chainable(['Sequence', 'Generator'])], String('Transform')],
       [],
       ['Chainable', 'Iterable', 'Sequence', 'Generator', 'Transform']
+    ],
+    [
+      'does not recursively flatten Maps or TypedArrays',
+      [[new Uint8Array([1, 2])], [new Map([['k', 'v']])]],
+      [],
+      [new Uint8Array([1, 2]), new Map([['k', 'v']])]
+    ],
+    [
+      'respects Symbol.isConcatSpreadable = false',
+      [1, [2, nonSpreadable]],
+      [],
+      [1, 2, nonSpreadable]
     ]
   ]
 

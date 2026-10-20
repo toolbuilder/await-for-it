@@ -1,4 +1,4 @@
-import { isString, isAsyncIterable, isSyncIterable } from './is.js'
+import { shouldIterate } from './is.js'
 import { iteratorFrom } from './iteratorfrom.js'
 import { zipAll } from 'iterablefu/src/generators.js'
 
@@ -129,14 +129,12 @@ export const filter = async function * (fn, iterable) {
   }
 }
 
-// Common function for flatten and flattenRecursive to determine if a value should be flattened
-const shouldIterate = (value) => !isString(value) && (isSyncIterable(value) || isAsyncIterable(value))
-
 /**
  * Flattens a sequence of items one level deep. Each iterable is flattened fully before moving
  * to the next. If you want multiple iterables flattened at the same time, see flattenUnordered.
- * Flatten does not flatten strings, even though they are iterable. It can flatten async and
- * sync iterables within the provided iterable.
+ * Does not flatten strings, TypedArrays/Buffers, Maps, or other built-in record/value types
+ * even though they are iterable. Can flatten async and sync iterables within the provided
+ * iterable. Supports explicit opt-in or opt-out via `Symbol.isConcatSpreadable`.
  *
  * @type {(iterable: AsyncIterable<any> | Iterable<any>) => AsyncGenerator<any, void, unknown>}
  * @param {AsyncIterable<any> | Iterable<any>} iterable - the iterable sequence to flatten
@@ -157,9 +155,10 @@ export const flatten = async function * (iterable) {
 
 /**
  * Flattens a sequence by recursively returning items from each iterable in the sequence.
- * Each iterable is flattened fully before moving to the next. Does not flatten strings
- * even though they are iterable. Can flatten combinations of async and sync iterables
- * within the provided iterable.
+ * Each iterable is flattened fully before moving to the next. Does not flatten strings,
+ * TypedArrays/Buffers, Maps, or other built-in record/value types even though they are
+ * iterable. Can flatten combinations of async and sync iterables within the provided
+ * iterable. Supports explicit opt-in or opt-out via `Symbol.isConcatSpreadable`.
  *
  * @type {(iterable: AsyncIterable<any> | Iterable<any>) => AsyncGenerator<any, void, unknown>}
  * @param {AsyncIterable<any> | Iterable<any>} iterable - the sequence to flatten

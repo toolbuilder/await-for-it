@@ -1,14 +1,13 @@
-import { isString, isAsyncIterable, isSyncIterable } from './is.js'
+import { shouldIterate } from './is.js'
 import { iteratorFrom } from './iteratorfrom.js'
 import { shuffle } from './shuffle.js'
-
-const shouldIterate = (value) => !isString(value) && (isSyncIterable(value) || isAsyncIterable(value))
 
 /**
  * Flattens a sequence of items one level deep. Unlike flatten, flattenUnordered attempts
  * to flatten several iterables at the same time, so the output is not in a predicatable
- * order. Async and sync iterables within the provided iterable are supported. Strings
- * are not flattened even though they are iterable.
+ * order. Async and sync iterables within the provided iterable are supported. Does not
+ * flatten strings, TypedArrays/Buffers, Maps, or other built-in record/value types even
+ * though they are iterable. Supports explicit opt-in or opt-out via `Symbol.isConcatSpreadable`.
  *
  * The number of iterables being flattened at the same time is limited by maxPoolSize. When
  * this number is reached, flattenUnordered will begin to apply backpressure if it is being
