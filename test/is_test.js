@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isSyncIterable } from '../src/is.js'
+import { isFunction, isSyncIterable } from '../src/is.js'
 
 test('isSyncIterable: recognizes synchronous iterables', () => {
   assert.equal(isSyncIterable([]), true, 'Array is sync iterable')
@@ -31,4 +31,36 @@ test('isSyncIterable: rejects non-iterables', () => {
   assert.equal(isSyncIterable({ [Symbol.iterator]: null }), false, 'object with null iterator is not sync iterable')
   assert.equal(isSyncIterable({ next: () => ({ done: true }) }), false, 'plain iterator without Symbol.iterator is not sync iterable')
 })
+
+test('isFunction: recognizes callable functions', () => {
+  assert.equal(isFunction(() => {}), true, 'arrow function is a function')
+  assert.equal(isFunction(function() {}), true, 'regular function is a function')
+  assert.equal(isFunction(async () => {}), true, 'async arrow function is a function')
+  assert.equal(isFunction(async function() {}), true, 'async function is a function')
+  assert.equal(isFunction(function* () {}), true, 'generator function is a function')
+  assert.equal(isFunction(async function* () {}), true, 'async generator function is a function')
+  assert.equal(isFunction(Array), true, 'Array constructor is a function')
+  assert.equal(isFunction(Object), true, 'Object constructor is a function')
+  assert.equal(isFunction(Math.max), true, 'built-in function is a function')
+})
+
+test('isFunction: rejects ES6 classes and non-functions', () => {
+  class TestClass {}
+  class SubClass extends TestClass {}
+  assert.equal(isFunction(TestClass), false, 'named ES6 class is rejected')
+  assert.equal(isFunction(class {}), false, 'anonymous ES6 class is rejected')
+  assert.equal(isFunction(SubClass), false, 'subclass is rejected')
+
+  assert.equal(isFunction(null), false, 'null is not a function')
+  assert.equal(isFunction(undefined), false, 'undefined is not a function')
+  assert.equal(isFunction(0), false, 'number 0 is not a function')
+  assert.equal(isFunction(42), false, 'number 42 is not a function')
+  assert.equal(isFunction(''), false, 'empty string is not a function')
+  assert.equal(isFunction('function'), false, 'string is not a function')
+  assert.equal(isFunction(false), false, 'boolean is not a function')
+  assert.equal(isFunction(Symbol('fn')), false, 'symbol is not a function')
+  assert.equal(isFunction({}), false, 'plain object is not a function')
+  assert.equal(isFunction([]), false, 'array is not a function')
+})
+
 

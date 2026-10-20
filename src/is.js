@@ -1,10 +1,18 @@
+const isClass = (fn) => {
+  try {
+    return /^class\b/.test(Function.prototype.toString.call(fn).trimStart())
+  } catch {
+    return false
+  }
+}
+
 /**
- * Test if an object is a function.
+ * Test if an object is a function (excluding ES6 classes).
  *
  * @param {any} object - value to test
  * @returns {object is (...args: any[]) => any} - true if object is a function
  */
-export const isFunction = object => Boolean(object && typeof (object) === 'function')
+export const isFunction = (object) => typeof object === 'function' && !isClass(object)
 
 /**
  * Test if an item is a string.
