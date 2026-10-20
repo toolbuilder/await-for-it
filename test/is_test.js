@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import vm from 'node:vm'
-import { isFunction, isString, isSyncIterable } from '../src/is.js'
+import { isAsyncIterable, isFunction, isString, isSyncIterable } from '../src/is.js'
 
 test('isSyncIterable: recognizes synchronous iterables', () => {
   assert.equal(isSyncIterable([]), true, 'Array is sync iterable')
@@ -93,6 +93,60 @@ test('isString: rejects non-strings and spoofed objects', () => {
   assert.equal(isString([]), false, 'rejects array')
   assert.equal(isString(() => {}), false, 'rejects function')
 })
+
+test('isAsyncIterable: recognizes asynchronous iterables', () => {
+  const asyncGen = (async function* () {
+    yield 1
+  })()
+  assert.equal(isAsyncIterable(asyncGen), true, 'async generator instance is async iterable')
+
+  const customAsyncIterable = {
+    [Symbol.asyncIterator]() {
+      return {
+        async next() {
+          return { done: true, value: undefined }
+        }
+      }
+    }
+  }
+  assert.equal(isAsyncIterable(customAsyncIterable), true, 'custom async iterable is async iterable')
+
+  if (typeof ReadableStream !== 'undefined') {
+    const stream = new ReadableStream()
+    assert.equal(isAsyncIterable(stream), true, 'ReadableStream is async iterable')
+  }
+})
+
+test('isAsyncIterable: rejects non-async-iterables', () => {
+  // Synchronous iterables are not AsyncIterables
+  assert.equal(isAsyncIterable([]), false, 'Array is not async iterable')
+  assert.equal(isAsyncIterable(new Set()), false, 'Set is not async iterable')
+  assert.equal(isAsyncIterable(new Map()), false, 'Map is not async iterable')
+  assert.equal(isAsyncIterable('hello'), false, 'string is not async iterable')
+  assert.equal(isAsyncIterable(''), false, 'empty string is not async iterable')
+  assert.equal(isAsyncIterable((function* () {})()), false, 'sync generator is not async iterable')
+
+  // Iterators without Symbol.asyncIterator
+  assert.equal(isAsyncIterable({ next: async () => ({ done: true }) }), false, 'plain async iterator without Symbol.asyncIterator')
+  assert.equal(isAsyncIterable({ [Symbol.asyncIterator]: null }), false, 'object with null Symbol.asyncIterator')
+  assert.equal(isAsyncIterable({ [Symbol.asyncIterator]: true }), false, 'object with non-function Symbol.asyncIterator')
+
+  // Primitives
+  assert.equal(isAsyncIterable(null), false, 'null is not async iterable')
+  assert.equal(isAsyncIterable(undefined), false, 'undefined is not async iterable')
+  assert.equal(isAsyncIterable(0), false, 'number 0 is not async iterable')
+  assert.equal(isAsyncIterable(42), false, 'number 42 is not async iterable')
+  assert.equal(isAsyncIterable(false), false, 'boolean false is not async iterable')
+  assert.equal(isAsyncIterable(true), false, 'boolean true is not async iterable')
+  assert.equal(isAsyncIterable(Symbol('async')), false, 'symbol is not async iterable')
+
+  // Plain objects and functions
+  assert.equal(isAsyncIterable({}), false, 'plain object is not async iterable')
+  assert.equal(isAsyncIterable(() => {}), false, 'function is not async iterable')
+  assert.equal(isAsyncIterable(async () => {}), false, 'async function is not async iterable')
+  assert.equal(isAsyncIterable(async function* () {}), false, 'async generator function itself is not async iterable')
+})
+
 
 
 
