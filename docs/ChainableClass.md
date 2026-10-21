@@ -74,34 +74,40 @@ Returns **ChainableClass** instance that will merge the iterables
 
 ## range
 
-Call `chainable.range(...args)` to create a sequence of numbers. This can be useful for unit tests. The parameters match the Python range function.
+Call `chainable.range(...args)` to create a sequence of numbers matching Python's `range` function. This can be useful for unit tests.
 
- -   `args` **...(Integer)** args as shown in examples
+ -   `args` **...(number)** arguments matching Python's `range`:
+     -   `range()` produces an empty sequence
+     -   `range(stop)` starts at 0 and increments by 1 up to (not including) `stop`
+     -   `range(start, stop)` starts at `start` and increments by 1 up to (not including) `stop`
+     -   `range(start, stop, step)` starts at `start` and increments by `step` up to (or down to) `stop`
 
-Returns a **ChainableClass** that provides the sequence of Numbers specified
+Returns a **ChainableClass** that provides the sequence of numbers specified. Throws `RangeError` if `step` is 0.
 
 ```javascript
+import { chainable } from '@toolbuilder/await-for-it'
+
 let output
 
 // zero arguments produces an empty sequence
 output = await chainable.range().toArray()
 console.log(output) // prints []
 
-// one Number produces a sequence that starts with zero
-// the number specifies how many elements are in the sequence
+// one argument specifies stop (starts with zero, step 1)
 output = await chainable.range(5).toArray()
 console.log(output) // prints [0, 1, 2, 3, 4]
 
-// two Numbers produces a sequence starting from the first number
-// the second number specifies how many elements are in the sequence
+// two arguments specify start and stop (step 1)
 output = await chainable.range(2, 5).toArray()
-console.log(output) // prints [2, 3, 4, 5, 6]
+console.log(output) // prints [2, 3, 4]
 
-// three numbers produces a sequence starting from the first number
-// the second number specifies how many elements are in the sequence
-// the third number specifies the increment - in this case add three to the previous value
-output = await chainable.range(2, 5, 3).toArray()
-console.log(output)  // prints [2, 5, 8, 11, 14]
+// three arguments specify start, stop, and step
+output = await chainable.range(2, 5, 2).toArray()
+console.log(output) // prints [2, 4]
+
+// negative step counts down
+output = await chainable.range(5, 0, -1).toArray()
+console.log(output) // prints [5, 4, 3, 2, 1]
 ```
 
 ## zip

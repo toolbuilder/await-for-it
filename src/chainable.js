@@ -44,7 +44,7 @@
  * @typedef {object} ChainableStatic
  * @property {<T = any>(iterable: AsyncIterable<T> | Iterable<T>) => ChainableIterable<Awaited<T>>} from Creates a ChainableIterable sequence from the input iterable.
  * @property {<T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => ChainableIterable<T extends [] ? any : T[number] extends Iterable<infer U> | AsyncIterable<infer U> ? Awaited<U> : any>} merge Merges one or more sync or async iterables concurrently.
- * @property {(...args: number[]) => ChainableIterable<number>} range Creates a sequence of numbers (start, length, increment).
+ * @property {(...args: (number | undefined)[]) => ChainableIterable<number>} range Creates a sequence of numbers (start, stop, step) matching Python range.
  * @property {(...iterables: (Iterable<any> | AsyncIterable<any>)[]) => ChainableIterable<any[]>} zip Creates a sequence of arrays the length of the shortest iterable.
  * @property {(...iterables: (Iterable<any> | AsyncIterable<any>)[]) => ChainableIterable<any[]>} zipAll Creates a sequence of arrays the length of the longest iterable.
  */

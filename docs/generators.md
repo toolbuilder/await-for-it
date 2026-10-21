@@ -37,39 +37,38 @@ Returns **AsyncGenerator** merged iterables as async iterable
 
 ## range
 
-Creates a sequence of numbers similar to the Python range function. This can be useful for unit tests.
+Creates a sequence of numbers matching the Python range function. This can be useful for unit tests.
 
 ### Parameters
 
- -   `args` **...(Integer)** args as shown in examples
+ -   `args` **...(number)** arguments matching Python's `range`:
+     -   `range()` produces an empty sequence
+     -   `range(stop)` starts at 0 and increments by 1 up to (not including) `stop`
+     -   `range(start, stop)` starts at `start` and increments by 1 up to (not including) `stop`
+     -   `range(start, stop, step)` starts at `start` and increments by `step` up to (or down to) `stop`
 
 ### Examples
 
 ```javascript
-let output
+import { generators } from '@toolbuilder/await-for-it'
 
 // zero arguments produces an empty sequence
-output = await toArray(range())
-console.log(output) // prints []
+console.log([...generators.range()]) // prints []
 
-// one Number produces a sequence that starts with zero
-// the number specifies how many elements are in the sequence
-output = await toArray(range(5))
-console.log(output) // prints [0, 1, 2, 3, 4]
+// one argument specifies stop (starts with zero, step 1)
+console.log([...generators.range(5)]) // prints [0, 1, 2, 3, 4]
 
-// two Numbers produces a sequence starting from the first number
-// the second number specifies how many elements are in the sequence
-output = await toArray(range(2, 5))
-console.log(output) // prints [2, 3, 4, 5, 6]
+// two arguments specify start and stop (step 1)
+console.log([...generators.range(2, 5)]) // prints [2, 3, 4]
 
-// three numbers produces a sequence starting from the first number
-// the second number specifies how many elements are in the sequence
-// the third number specifies the increment - in this case add three to the previous value
-output = await toArray(range(2, 5, 3))
-console.log(output)  // prints [2, 5, 8, 11, 14]
+// three arguments specify start, stop, and step
+console.log([...generators.range(2, 5, 2)]) // prints [2, 4]
+
+// negative step counts down
+console.log([...generators.range(5, 0, -1)]) // prints [5, 4, 3, 2, 1]
 ```
 
-Returns **AsyncIterable** that provides the defined sequence of Numbers
+Returns **Generator** that provides the defined sequence of numbers
 
 ## zip
 

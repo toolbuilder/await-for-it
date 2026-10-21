@@ -50,7 +50,7 @@
  * @template {keyof G} [K=keyof G]
  * @typedef {K extends 'from' ? <T = any>(iterable: AsyncIterable<T> | Iterable<T>) => CustomChainableIterable<Tr, R, Awaited<T>>
  *   : K extends 'merge' ? <T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => CustomChainableIterable<Tr, R, T extends [] ? any : T[number] extends Iterable<infer U> | AsyncIterable<infer U> ? Awaited<U> : any>
- *   : K extends 'range' ? (...args: number[]) => CustomChainableIterable<Tr, R, number>
+ *   : K extends 'range' ? (...args: (number | undefined)[]) => CustomChainableIterable<Tr, R, number>
  *   : K extends 'zip' | 'zipAll' ? (...iterables: (Iterable<any> | AsyncIterable<any>)[]) => CustomChainableIterable<Tr, R, any[]>
  *   : (...args: Parameters<G[K]>) => CustomChainableIterable<Tr, R, IterableElement<ReturnType<G[K]>>>} GeneratorMethod
  */

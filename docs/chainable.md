@@ -11,7 +11,7 @@ All methods return a [ChainableClass](./ChainableClass.md) instance which provid
   * [zip][5]
   * [zipAll][6]
 
-## Functioncall
+## Function Call
 
 Call `chainable` as a function to create a chainable async iterable from the input iterable.
 
@@ -20,56 +20,66 @@ Call `chainable` as a function to create a chainable async iterable from the inp
 Returns a [ChainableClass](./ChainableClass.md) that is a chainable version of the input iterable.
 
 ```javascript
-import { chainable } from 'await-for-it'
-chainable([0, 1, 3, 4]).map(x => 2 * x).run()
+import { chainable } from '@toolbuilder/await-for-it'
+
+const result = await chainable([0, 1, 2, 3, 4]).map(x => 2 * x).toArray()
+console.log(result) // prints [0, 2, 4, 6, 8]
 ```
 
 ## from
 
-Call `chainable.from(iterable)` to create a chainable async iterable from the input iterable. You can use the [Functioncall][2] to achieve the same thing with less typing. This method exists to support the dynamic class construction method.
+Call `chainable.from(iterable)` to create a chainable async iterable from the input iterable. This static factory method mirrors `Array.from`. You can also use [Function Call][2] as an alias to achieve the same result with less typing.
 
 -   `iterable` **(AsyncIterable | Iterable)** any iterable to make chainable
 
 Returns a [ChainableClass](./ChainableClass.md) that is a chainable version of the input iterable.
 
 ```javascript
-import { chainable } from 'await-for-it'
-chainable.from([0, 1, 3, 4]).map(x => 2 * x).run()
+import { chainable } from '@toolbuilder/await-for-it'
+
+const result = await chainable.from([0, 1, 2, 3, 4]).map(x => 2 * x).toArray()
+console.log(result) // prints [0, 2, 4, 6, 8]
 ```
 
 ## range
 
-Call `chainable.range(...args)` to generate a sequence of `Numbers`. This can be useful for unit tests. The parameters match the Python range function.
+Call `chainable.range(...args)` to generate a sequence of numbers matching Python's `range` function.
 
- -   `args` **...(Integer)** args as shown in examples
+ -   `args` **...number** arguments matching Python's `range`:
+     -   `range()` produces an empty sequence
+     -   `range(stop)` starts at 0 and increments by 1 up to (not including) `stop`
+     -   `range(start, stop)` starts at `start` and increments by 1 up to (not including) `stop`
+     -   `range(start, stop, step)` starts at `start` and increments by `step` up to (or down to) `stop`
 
-Returns a [ChainableClass](./ChainableClass.md) that provides the sequence of Numbers specified
+Returns a [ChainableClass](./ChainableClass.md) that provides the sequence of numbers specified. Throws `RangeError` if `step` is 0.
 
 Backpressure is provided by the iterating code. Iteration can be stopped by stopping
 the iterating code.
 
 ```javascript
+import { chainable } from '@toolbuilder/await-for-it'
+
 let output
 
 // zero arguments produces an empty sequence
 output = await chainable.range().toArray()
 console.log(output) // prints []
 
-// one Number produces a sequence that starts with zero
-// the number specifies how many elements are in the sequence
+// one argument specifies stop (starts with zero, step 1)
 output = await chainable.range(5).toArray()
 console.log(output) // prints [0, 1, 2, 3, 4]
 
-// two Numbers produces a sequence starting from the first number
-// the second number specifies how many elements are in the sequence
+// two arguments specify start and stop (step 1)
 output = await chainable.range(2, 5).toArray()
-console.log(output) // prints [2, 3, 4, 5, 6]
+console.log(output) // prints [2, 3, 4]
 
-// three numbers produces a sequence starting from the first number
-// the second number specifies how many elements are in the sequence
-// the third number specifies the increment - in this case add three to the previous value
-output = await chainable.range(2, 5, 3).toArray()
-console.log(output)  // prints [2, 5, 8, 11, 14]
+// three arguments specify start, stop, and step
+output = await chainable.range(2, 5, 2).toArray()
+console.log(output) // prints [2, 4]
+
+// negative step counts down
+output = await chainable.range(5, 0, -1).toArray()
+console.log(output) // prints [5, 4, 3, 2, 1]
 ```
 
 ## merge
@@ -83,16 +93,14 @@ the iterating code.
 
 -   `iterables` **...(AsyncIterable | Iterable)**
 
-Returns [ChainableClass](./ChainableClass.md) that is a chainable version of the merged iterables.
+Returns a [ChainableClass](./ChainableClass.md) that is a chainable version of the merged iterables.
 
 ```javascript
-import { chainable } from 'await-for-it'
+import { chainable } from '@toolbuilder/await-for-it'
 
-const main = async () => {
-  const array = await chainable.merge([0, 1, 2], [3, 4]).toArray()
-  console.log(array) // prints [0, 1, 2, 3, 4]
-  // NOTE: for async iterator inputs, faster iterators will advance faster
-}
+const array = await chainable.merge([0, 1, 2], [3, 4]).toArray()
+console.log(array) // prints [0, 1, 2, 3, 4]
+// NOTE: for async iterator inputs, faster iterators will advance faster
 ```
 
 ## zip
@@ -102,14 +110,16 @@ element from each of the iterables provided. The second array contains the secon
 iterables provided, and so on. For each array, zip must wait for all iterables to advance. For this reason, zip can be
 no faster than the slowest iterable. Backpressure is provided by the iterating code.
 
-Use zipAll if you want all iterables to be consumed. Use merge if you want to consume iterables as fast as possible, and
+Use [zipAll](#zipall) if you want all iterables to be consumed. Use [merge](#merge) if you want to consume iterables as fast as possible, and
 don't need the elements paired.
 
 -   `iterables` **...(AsyncIterable | Iterable)**
 
-Returns [ChainableClass](./ChainableClass.md) that is a chainable version of the zipped iterables.
+Returns a [ChainableClass](./ChainableClass.md) that is a chainable version of the zipped iterables.
 
 ```javascript
+import { chainable } from '@toolbuilder/await-for-it'
+
 const a = [0, 1, 2]
 const b = ['a', 'b', 'c', 'd'] // this array is longer than a
 const c = await chainable.zip(a, b).toArray()
@@ -124,21 +134,23 @@ iterables provided, and so on. Missing elements from the shorter iterables are s
 zipAll must wait for all active iterables to advance. For this reason, zipAll can be no faster than the slowest iterable.
 Backpressure is provided by the iterating code.
 
-Use zip if you want iteration to stop when any iterable is consumed. Use merge if you want to consume iterables as
+Use [zip](#zip) if you want iteration to stop when any iterable is consumed. Use [merge](#merge) if you want to consume iterables as
 fast as possible, and don't need the elements paired.
 
 -   `iterables` **...(AsyncIterable | Iterable)**
 
-Returns [ChainableClass](./ChainableClass.md) that is a chainable version of the zipped iterables.
+Returns a [ChainableClass](./ChainableClass.md) that is a chainable version of the zipped iterables.
 
 ```javascript
+import { chainable } from '@toolbuilder/await-for-it'
+
 const a = [0, 1, 2]
 const b = ['a', 'b', 'c', 'd'] // this array is longer than a
 const c = await chainable.zipAll(a, b).toArray()
 console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c'], [undefined, 'd']]
 ```
 
-[2]: #functioncall
+[2]: #function-call
 [3]: #from
 [4]: #merge
 [5]: #zip

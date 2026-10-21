@@ -1,5 +1,6 @@
 /**
- * This function exists solely so that the generated ChainableIterable class has a static constructor.
+ * Returns the input iterable unchanged. Used as a static constructor by
+ * ChainableClass to create a ChainableIterable from an existing iterable.
  *
  * @type {<T = any>(iterable: AsyncIterable<T> | Iterable<T>) => AsyncIterable<T> | Iterable<T>}
  * @param {AsyncIterable<any> | Iterable<any>} iterable - input iterable
@@ -13,51 +14,74 @@ export { merge } from './merge.js'
 export { zip, zipAll } from './zip.js'
 
 /**
- * Creates a sequence of numbers similar to the Python range. See the example.
+ * Helper generator yielding numbers matching Python range semantics.
  *
- * @type {(...args: number[]) => Generator<number, void, unknown>}
- * @param  {...number} args per the example
- * @returns {Generator<number, void, unknown>} that represents the range
- * @example
- *
- * let output
- *
- * // zero arguments produces an empty sequence
- * output = await toArray(range())
- * console.log(output) // prints []
- *
- * // one Number produces a sequence that starts with zero
- * // the number specifies how many elements are in the sequence
- * output = await toArray(range(5))
- * console.log(output) // prints [0, 1, 2, 3, 4]
- *
- * // two Numbers produces a sequence starting from the first number
- * // the second number specifies how many elements are in the sequence
- * output = await toArray(range(2, 5))
- * console.log(output) // prints [2, 3, 4, 5, 6]
- *
- * // three numbers produces a sequence starting from the first number
- * // the second number specifies how many elements are in the sequence
- * // the third number specifies the increment - in this case add three to the previous value
- * output = await toArray(range(2, 5, 3))
- * console.log(output)  // prints [2, 5, 8, 11, 14]
+ * @param {number} start - first number in sequence
+ * @param {number} stop - non-inclusive boundary
+ * @param {number} step - non-zero step increment
+ * @returns {Generator<number, void, unknown>}
  */
-export const range = (...args) => {
-  const rangeGenerator = function * (start, length, increment) {
-    let value = start
-    for (let i = 0; i < length; i++) {
+const rangeGenerator = function * (start, stop, step) {
+  if (step > 0) {
+    for (let value = start; value < stop; value += step) {
       yield value
-      value += increment
+    }
+  } else {
+    for (let value = start; value > stop; value += step) {
+      yield value
     }
   }
-  switch (args.length) {
-    case 0:
-      return rangeGenerator(0, 0, 1)
-    case 1:
-      return rangeGenerator(0, args[0], 1)
-    case 2:
-      return rangeGenerator(args[0], args[1], 1)
-    default:
-      return rangeGenerator(args[0], args[1], args[2])
+}
+
+/**
+ * Creates a synchronous sequence of numbers matching the Python range function:
+ * `range(stop)` or `range(start, stop[, step])`.
+ *
+ * @type {(...args: (number | undefined)[]) => Generator<number, void, unknown>}
+ * @param {...(number | undefined)} args - arguments matching Python range:
+ * - `range()` produces an empty sequence
+ * - `range(stop)` starts at 0, steps by 1, ends before `stop`
+ * - `range(start, stop)` starts at `start`, steps by 1, ends before `stop`
+ * - `range(start, stop, step)` starts at `start`, steps by `step`, ends before `stop`
+ * @returns {Generator<number, void, unknown>} generator that represents the range
+ * @throws {RangeError} if step is 0
+ * @example
+ * import { generators } from '@toolbuilder/await-for-it'
+ *
+ * // zero arguments produces an empty sequence
+ * console.log([...generators.range()]) // prints []
+ *
+ * // one argument specifies stop (starts with zero, step 1)
+ * console.log([...generators.range(5)]) // prints [0, 1, 2, 3, 4]
+ *
+ * // two arguments specify start and stop (step 1)
+ * console.log([...generators.range(2, 5)]) // prints [2, 3, 4]
+ *
+ * // three arguments specify start, stop, and step
+ * console.log([...generators.range(2, 5, 2)]) // prints [2, 4]
+ *
+ * // negative step counts down
+ * console.log([...generators.range(5, 0, -1)]) // prints [5, 4, 3, 2, 1]
+ */
+export const range = (...args) => {
+  let start = 0
+  let stop = 0
+  let step = 1
+
+  if (args.length === 1) {
+    stop = args[0] ?? 0
+  } else if (args.length === 2) {
+    start = args[0] ?? 0
+    stop = args[1] ?? 0
+  } else if (args.length >= 3) {
+    start = args[0] ?? 0
+    stop = args[1] ?? 0
+    step = args[2] ?? 1
   }
+
+  if (step === 0) {
+    throw new RangeError('range() step must not be zero')
+  }
+
+  return rangeGenerator(start, stop, step)
 }
