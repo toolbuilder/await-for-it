@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { RingBuffer } from '@toolbuilder/ring-buffer'
 import { Semaphore } from '@toolbuilder/semaphore'
 import { chainable as sync } from 'iterablefu'
-import { chainable, Queue, QueueDone, waitToCall } from '../src/await-for-it.js'
+import { chainable, Queue, QueueDone, QueueFull, waitToCall } from '../src/await-for-it.js'
 import { randomlySlowIterator, runTest } from './toofast.js'
 
 const makeQueueAndPush = (iterable) => {
@@ -196,3 +196,111 @@ test('queue: iterator called faster than one-at-a-time', async () => {
   const actualValues = await runTest(queue, values)
   assert.deepEqual(actualValues, data, 'all values returned in proper order')
 })
+
+test('queue: validates constructor parameters', () => {
+  // @ts-ignore
+  assert.throws(() => new Queue(100), TypeError)
+  // @ts-ignore
+  assert.throws(() => new Queue('not a buffer'), TypeError)
+  // @ts-ignore
+  assert.throws(() => new Queue({}), TypeError)
+  // @ts-ignore
+  assert.throws(() => new Queue({ length: 0, push: () => 1 }), TypeError)
+  // @ts-ignore
+  assert.throws(() => new Queue({ length: 'zero', push: () => 1, shift: () => undefined }), TypeError)
+
+  // Valid constructor inputs
+  assert.doesNotThrow(() => new Queue())
+  assert.doesNotThrow(() => new Queue(null))
+  assert.doesNotThrow(() => new Queue([]))
+  assert.doesNotThrow(() => new Queue(new RingBuffer(5)))
+
+  const nullQueue = new Queue(null)
+  assert.equal(nullQueue.length, 0, 'null defaults to empty array buffer')
+})
+
+test('queue: validates done parameters', () => {
+  const queue = new Queue()
+  // @ts-ignore
+  assert.throws(() => queue.done('false'), TypeError)
+  // @ts-ignore
+  assert.throws(() => queue.done(null), TypeError)
+  // @ts-ignore
+  assert.throws(() => queue.done(1), TypeError)
+
+  assert.doesNotThrow(() => queue.done(true))
+})
+
+test('queue: reject wakes waiting iterator and rejects immediately', async () => {
+  const theError = new Error('the error')
+  const queue = new Queue()
+
+  setTimeout(() => queue.reject(theError), 50)
+
+  await assert.rejects(
+    async () => {
+      for await (const _ of queue) {}
+    },
+    theError
+  )
+})
+
+test('queue: reject propagates falsy exceptions', async () => {
+  const falsyExceptions = ['', 0, false, null, undefined, NaN]
+
+  for (const falsy of falsyExceptions) {
+    const queue = new Queue()
+    setTimeout(() => queue.reject(falsy), 20)
+
+    let caught = false
+    let thrownValue
+    try {
+      for await (const _ of queue) {}
+    } catch (e) {
+      caught = true
+      thrownValue = e
+    }
+
+    assert.ok(caught, `falsy exception was caught: ${String(falsy)}`)
+    if (Number.isNaN(falsy)) {
+      assert.ok(Number.isNaN(thrownValue))
+    } else {
+      assert.equal(thrownValue, falsy)
+    }
+  }
+})
+
+test('queue: reject stops the queue from accepting subsequent pushes', () => {
+  const queue = new Queue()
+  queue.reject(new Error('aborted'))
+
+  assert.throws(
+    () => queue.push(1),
+    QueueDone,
+    'push after reject throws QueueDone'
+  )
+})
+
+test('queue: QueueDone and QueueFull have proper Error names', () => {
+  const doneError = new QueueDone('done')
+  const fullError = new QueueFull('full')
+
+  assert.equal(doneError.name, 'QueueDone')
+  assert.equal(fullError.name, 'QueueFull')
+  assert.ok(doneError instanceof Error)
+  assert.ok(fullError instanceof Error)
+})
+
+test('queue: early break from iteration cleans up waiter properly', async () => {
+  const queue = new Queue()
+  queue.push(1)
+  queue.push(2)
+
+  for await (const value of queue) {
+    if (value === 1) break
+  }
+
+  assert.equal(queue.waiters.length, 0, 'no dangling waiters after break')
+  assert.equal(queue.length, 1, 'remaining items stay in buffer')
+})
+
