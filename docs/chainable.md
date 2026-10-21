@@ -89,7 +89,7 @@ Returns [ChainableClass](./ChainableClass.md) that is a chainable version of the
 import { chainable } from 'await-for-it'
 
 const main = async () => {
-  const array = await chainable([0, 1, 2], [3, 4]).toArray()
+  const array = await chainable.merge([0, 1, 2], [3, 4]).toArray()
   console.log(array) // prints [0, 1, 2, 3, 4]
   // NOTE: for async iterator inputs, faster iterators will advance faster
 }
@@ -121,7 +121,7 @@ console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c']]
 Creates a sequence of arrays the same length as the _longest_ iterable provided. The first array contains the first
 element from each of the iterables provided. The second array contains the second element from each of the
 iterables provided, and so on. Missing elements from the shorter iterables are set to undefined. For each array,
-zip must wait for all iterables to advance. For this reason, zip can be no faster than the slowest iterable.
+zipAll must wait for all active iterables to advance. For this reason, zipAll can be no faster than the slowest iterable.
 Backpressure is provided by the iterating code.
 
 Use zip if you want iteration to stop when any iterable is consumed. Use merge if you want to consume iterables as
@@ -129,7 +129,7 @@ fast as possible, and don't need the elements paired.
 
 -   `iterables` **...(AsyncIterable | Iterable)**
 
-Returns [ChainableClass](./ChainableClass.md) that is a chainable version of the zipped iterables
+Returns [ChainableClass](./ChainableClass.md) that is a chainable version of the zipped iterables.
 
 ```javascript
 const a = [0, 1, 2]
@@ -142,5 +142,5 @@ console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c'], [undefined, 'd']]
 [3]: #from
 [4]: #merge
 [5]: #zip
-[6]: #zipAll
+[6]: #zipall
 [7]: #range

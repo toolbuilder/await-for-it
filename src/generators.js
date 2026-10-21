@@ -39,7 +39,7 @@ export { zip, zipAll } from './zip.js'
  * // three numbers produces a sequence starting from the first number
  * // the second number specifies how many elements are in the sequence
  * // the third number specifies the increment - in this case add three to the previous value
- * output = await toArray(range(2, 5, 3)
+ * output = await toArray(range(2, 5, 3))
  * console.log(output)  // prints [2, 5, 8, 11, 14]
  */
 export const range = (...args) => {

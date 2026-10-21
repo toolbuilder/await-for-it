@@ -65,7 +65,7 @@ console.log(output) // prints [2, 3, 4, 5, 6]
 // three numbers produces a sequence starting from the first number
 // the second number specifies how many elements are in the sequence
 // the third number specifies the increment - in this case add three to the previous value
-output = await toArray(range(2, 5, 3)
+output = await toArray(range(2, 5, 3))
 console.log(output)  // prints [2, 5, 8, 11, 14]
 ```
 
@@ -92,20 +92,22 @@ const c = await toArray(zip(a, b))
 console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c']]
 ```
 
-Returns **AsyncGenerator** merged iterables as async iterable
+Returns **AsyncGenerator** zipped iterables as async iterable
 
 ## zipAll
 
 Creates a sequence of arrays the same length as the _longest_ iterable provided. The first array contains the first
 element from each of the iterables provided. The second array contains the second element from each of the
 iterables provided, and so on. Missing elements from the shorter iterables are set to undefined. For each array,
-zip must wait for all iterables to advance. For this reason, zip can be no faster than the slowest iterable.
+zipAll must wait for all active iterables to advance. For this reason, zipAll can be no faster than the slowest iterable.
 Backpressure is provided by the iterating code.
 
 Use zip if you want iteration to stop when any iterable is consumed. Use merge if you want to consume iterables as
 fast as possible, and don't need the elements paired.
 
 -   `iterables` **...(AsyncIterable | Iterable)**
+
+### Examples
 
 ```javascript
 const a = [0, 1, 2]
@@ -114,7 +116,7 @@ const c = await toArray(zipAll(a, b))
 console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c'], [undefined, 'd']]
 ```
 
-Returns **AsyncGenerator** merged iterables as async iterable
+Returns **AsyncGenerator** zipped iterables as async iterable
 
 [1]: #from
 

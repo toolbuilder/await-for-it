@@ -1,37 +1,82 @@
 import { iteratorFrom } from './iteratorfrom.js'
 
 /**
- * @typedef {(nextResults: Array<IteratorResult<any>>) => boolean} ZipTerminator
+ * Safely calls return() on an iterator if available.
+ *
+ * @param {Iterator<any> | AsyncIterator<any>} iterator
+ * @returns {Promise<void>}
  */
+const closeIterator = async (iterator) => {
+  try {
+    if (typeof iterator?.return === 'function') {
+      await iterator.return()
+    }
+  } catch {}
+}
 
 /**
- * Test if any of the iterator results indicate that iteration is done.
+ * Common implementation for zip and zipAll.
  *
- * @type {ZipTerminator}
- */
-const zipIsDone = nextResults => nextResults.reduce((done, nextResult) => done || Boolean(nextResult.done), false)
-
-/**
- * Test if all of the iterator results indcate that iteration is done.
- *
- * @type {ZipTerminator}
- */
-const zipAllIsDone = nextResults => nextResults.reduce((done, nextResult) => done && Boolean(nextResult.done), true)
-
-/**
- * Common implementation for zip and zipAll. The parameter of variation is a function that determines
- * when the zip process is complete - either zipIsDone or zipAllIsDone.
- *
- * @param {ZipTerminator} isDone - either zipIsDone or zipAllIsDone
+ * @param {boolean} stopOnFirst - true for zip (stops when any iterable ends), false for zipAll (continues until all end)
  * @param {Array<Iterable<any> | AsyncIterable<any>>} iterables - any number of sync or async iterables to be zipped
  * @returns {AsyncGenerator<any[], void, unknown>} - each element of the AsyncGenerator is an Array containing the zip results.
  */
-const zipIt = async function * (isDone, iterables) {
-  const iterators = iterables.map(iterable => iteratorFrom(iterable))
-  let nextResults = await Promise.all(iterators.map(i => i.next()))
-  while (!isDone(nextResults)) {
-    yield nextResults.map(result => (!result.done) ? result.value : undefined)
-    nextResults = await Promise.all(iterators.map(i => i.next()))
+const zipIt = async function * (stopOnFirst, iterables) {
+  if (iterables.length === 0) {
+    return
+  }
+
+  // Obtain iterators; if obtaining any iterator fails, clean up those already created
+  const iterators = []
+  try {
+    for (const iterable of iterables) {
+      iterators.push(iteratorFrom(iterable))
+    }
+  } catch (err) {
+    await Promise.allSettled(iterators.map(closeIterator))
+    throw err
+  }
+
+  // Track completion state per iterator
+  const isDone = new Array(iterators.length).fill(false)
+
+  // Safe next helper that guards against unhandled rejections if sibling rejects first
+  const safeNext = (iterator, index) => {
+    if (isDone[index]) {
+      return Promise.resolve({ done: true, value: undefined })
+    }
+    const promise = Promise.resolve()
+      .then(() => iterator.next())
+      .catch((err) => {
+        isDone[index] = true
+        throw err
+      })
+    promise.catch(() => {}) // prevent unhandledRejection if sibling rejects first
+    return promise
+  }
+
+  try {
+    while (true) {
+      // Advance active iterators concurrently
+      const nextResults = await Promise.all(iterators.map((it, idx) => safeNext(it, idx)))
+
+      for (let i = 0; i < nextResults.length; i++) {
+        if (nextResults[i].done) {
+          isDone[i] = true
+        }
+      }
+
+      const anyDone = isDone.some(Boolean)
+      const allDone = isDone.every(Boolean)
+
+      if (stopOnFirst ? anyDone : allDone) {
+        break
+      }
+
+      yield nextResults.map(result => (!result.done ? result.value : undefined))
+    }
+  } finally {
+    await Promise.allSettled(iterators.map(closeIterator))
   }
 }
 
@@ -46,7 +91,8 @@ const zipIt = async function * (isDone, iterables) {
  *
  * @type {(...iterables: (Iterable<any> | AsyncIterable<any>)[]) => AsyncGenerator<any[], void, unknown>}
  * @param  {...(Iterable<any> | AsyncIterable<any>)} iterables - any number of sync or async iterables to be zipped
- * @returns {AsyncGenerator<any[], void, unknown>} - merged iterables as async iterable
+ * @returns {AsyncGenerator<any[], void, unknown>} - zipped iterables as async iterable
+ * @throws {any} - if any iterable throws an exception or rejects, it will be rethrown
  * @example
  * const a = [0, 1, 2]
  * const b = ['a', 'b', 'c', 'd'] // this array is longer than a
@@ -54,13 +100,13 @@ const zipIt = async function * (isDone, iterables) {
  * console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c']]
  *
  */
-export const zip = (...iterables) => zipIt(zipIsDone, iterables)
+export const zip = (...iterables) => zipIt(true, iterables)
 
 /**
  * Creates a sequence of arrays the same length as the *longest* iterable provided. The first array contains the first
  * element from each of the iterables provided. The second array contains the second element from each of the
  * iterables provided, and so on. Missing elements from the shorter iterables are set to undefined. For each array,
- * zip must wait for all iterables to advance. For this reason, zip can be no faster than the slowest iterable.
+ * zipAll must wait for all active iterables to advance. For this reason, zipAll can be no faster than the slowest iterable.
  * Backpressure is provided by the iterating code.
  *
  * Use zip if you want iteration to stop when any iterable is consumed. Use merge if you want to consume iterables as
@@ -68,7 +114,8 @@ export const zip = (...iterables) => zipIt(zipIsDone, iterables)
  *
  * @type {(...iterables: (Iterable<any> | AsyncIterable<any>)[]) => AsyncGenerator<any[], void, unknown>}
  * @param  {...(Iterable<any> | AsyncIterable<any>)} iterables - any number of sync or async iterables to be zipped
- * @returns {AsyncGenerator<any[], void, unknown>} - merged iterables as async iterable
+ * @returns {AsyncGenerator<any[], void, unknown>} - zipped iterables as async iterable
+ * @throws {any} - if any iterable throws an exception or rejects, it will be rethrown
  * @example
  * const a = [0, 1, 2]
  * const b = ['a', 'b', 'c', 'd'] // this array is longer than a
@@ -76,4 +123,4 @@ export const zip = (...iterables) => zipIt(zipIsDone, iterables)
  * console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c'], [undefined, 'd']]
  *
  */
-export const zipAll = (...iterables) => zipIt(zipAllIsDone, iterables)
+export const zipAll = (...iterables) => zipIt(false, iterables)
