@@ -1,44 +1,102 @@
 # Poll
 
-Periodically calls a function and provides the resolved values as an iterator. Polling will happen no faster than the specified period. If the downstream iterable is processing slowly, the backpressure will slow the polling calls. In fact polling can stop completely if the downstream iterable stops. Poll is a class, because it provides functionality to stop polling from **outside** the class.
+`Poll` periodically calls a function and yields its resolved values as an async iterable stream.
+
+Polling operates at a target cadence of no faster than `period` milliseconds. It is designed around **pull-based backpressure**:
+- **Backpressure**: If downstream iteration pauses or processes slowly, polling slows down or pauses accordingly. No intermediate values are buffered or discarded.
+- **Single-Use**: A `Poll` instance represents a single polling session. Once finished, stopped, or errored, it cannot be restarted.
+- **Fail-Fast**: If `fn` throws a synchronous exception or rejects a Promise, the error immediately propagates out through the iterator and terminates polling permanently. For transient error recovery, wrap the callback in a `try/catch`.
+
+---
 
 ## Constructor
 
--   `fn` **([Function][10] | AsyncFunction)** synchronous or async function that takes no parameters
--   `period` **[Number][11]** call fn every period milliseconds
--   `initialWait` **[Number][11]** make first function call immediately if zero, otherwise wait
-    `initialWait` millisceonds before making first call. Defaults to zero. (optional, default `0`)
+```javascript
+new Poll(fn, period, [initialWait = 0])
+```
 
-## done
+- **`fn`** (`() => T | PromiseLike<T>`): A synchronous or async function taking no arguments. Throws `TypeError` if not a function.
+- **`period`** (`number`): Target interval in milliseconds between poll invocations. Must be a finite number `> 0`. Throws `RangeError` otherwise.
+- **`initialWait`** (`number`, optional, default `0`): Milliseconds to wait before calling `fn` for the first time. Must be a finite number `>= 0`. Throws `RangeError` otherwise.
 
-Stops polling
+---
 
-## Example
+## Methods
+
+### `done()`
+Stops polling gracefully.
+- If an internal delay (`initialWait` or inter-poll sleep) is active, it is aborted immediately.
+- If `fn` is currently executing, it is allowed to settle and yield its value before the generator completes.
+- Subsequent calls to `next()` return `{ done: true }`.
+
+---
+
+## Examples
+
+### 1. Polling Indefinitely Until `done()` is Called
+Without a downstream limit or break condition, `Poll` will poll indefinitely until `poll.done()` is called.
 
 ```javascript
-import { chainable, Poll }  from '@toolbuilder/await-for-it'
+import { chainable, Poll } from '@toolbuilder/await-for-it'
 
-// create a data source - could be events or whatever
-// Polling will happen no faster than every 1000ms, but
-// backpressure from the iterator can slow or stop polling.
 let count = 0
 const poll = new Poll(async () => count++, 1000)
 
-await chainable(poll)
-    .take(5) // stop polling after 5 numbers
-    .finally(() => console.log('done'))
-    .runAwait() // start the polling process
-// After the await, Poll is now stopped because take stopped iterating
-// after 5 values. Backpressure has stopped polling in this case.
+// Stop polling when an external event occurs (or from within a consumer step)
+setTimeout(() => {
+  poll.done() // aborts active wait immediately
+}, 3500)
 
-// Although backpressure has stopped iteration, the poll iterable is not done,
-// and finally won't be called unless you do this at some point - probably in
-// response to an event...
-  poll.done()
+await chainable(poll)
+  .callNoAwait(val => console.log('Poll value:', val))
+  .finally(() => console.log('Polling finished'))
+  .runAwait()
 ```
 
-[10]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function
+### 2. Backpressure: Downstream Processing Pauses Polling
+Because `Poll` is pull-based, polling automatically pauses when downstream iteration pauses or runs slower than `period`.
 
-[11]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number
+```javascript
+import { chainable, Poll } from '@toolbuilder/await-for-it'
 
-[12]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise
+let count = 0
+// Poller wants to run every 100ms
+const poll = new Poll(() => count++, 100)
+
+const controller = chainable(poll)
+  .callNoAwait(x => console.log('Value:', x))
+  .run()
+
+// Pausing the consumer stops calls to fn()
+controller.stop()
+
+// Resuming the consumer restarts polling
+setTimeout(() => {
+  controller.start()
+}, 2000)
+```
+
+### 3. Finite Iteration (`take` or `break`)
+When consumer iteration finishes (e.g. `take(5)` or `break`), iteration completes cleanly and any `finally` handlers run automatically without needing to call `poll.done()`.
+
+```javascript
+import { chainable, Poll } from '@toolbuilder/await-for-it'
+
+const poll = new Poll(async () => fetchMetrics(), 500)
+
+// take(5) completes after 5 items and terminates the generator
+const metrics = await chainable(poll)
+  .take(5)
+  .toArray()
+
+console.log('Collected 5 samples:', metrics)
+```
+
+// take(5) completes after 5 items and terminates the generator
+const metrics = await chainable(poll)
+  .take(5)
+  .toArray()
+
+console.log('Collected 5 samples:', metrics)
+```
+
