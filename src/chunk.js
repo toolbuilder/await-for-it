@@ -1,7 +1,6 @@
 import { isAsyncIterable, isSyncIterable } from './is.js'
 import { iteratorFrom } from './iteratorfrom.js'
 import { isFiniteNumber } from '@toolbuilder/isnumber'
-import { waitToCall } from './timeouts.js'
 import { RingBuffer } from '@toolbuilder/ring-buffer'
 
 /**
@@ -20,14 +19,17 @@ import { RingBuffer } from '@toolbuilder/ring-buffer'
  */
 export const chunk = async function * (n, timeout, iterable) {
   // I've called this method incorrectly often enough to throw in some checks
-  if (!(isFiniteNumber(n) && n > -1)) throw new RangeError(`chunk parameter 'n' must be a positive number: ${n}`)
-  if (!(isFiniteNumber(timeout) && timeout > -1)) throw new RangeError(`chunk parameter 'timeout' must be a positive number: ${timeout}`)
-  if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) throw new RangeError(`chunk parameter 'iterable' must be iterable: ${iterable}`)
+  if (!Number.isInteger(n) || n < 1) throw new RangeError(`chunk parameter 'n' must be an integer >= 1: ${n}`)
+  if (!(isFiniteNumber(timeout) && timeout >= 0)) throw new RangeError(`chunk parameter 'timeout' must be a non-negative number: ${timeout}`)
+  if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) throw new TypeError(`chunk parameter 'iterable' must be iterable: ${iterable}`)
 
-  const buffer = new RingBuffer(n + 1) // '+1' isn't necessary, but just in case testing missed something...
+  const buffer = new RingBuffer(n)
   const iterator = iteratorFrom(iterable)
-  /** @type {Promise<{ done?: boolean, timedOut?: boolean }> | null} */
-  let nextValuePromise = null // iterator.next()
+
+  /** @type {Promise<{ done?: boolean }> | null} */
+  let inFlight = null
+  /** @type {any} */
+  let pendingError = null
 
   const shiftUpTo = count => {
     /** @type {any[]} */
@@ -39,38 +41,80 @@ export const chunk = async function * (n, timeout, iterable) {
     return chunk
   }
 
-  const pushValue = ({ value, done }) => {
-    if (!done) buffer.push(value)
-    return /** @type {{ done?: boolean, timedOut?: boolean }} */ ({ done })
-  }
-
-  const pushNextValue = () => Promise.resolve(iterator.next()).then(pushValue)
-
-  // When pushNextValue() promise is in a Promise.race with timeout, it might not win. To provide
+  // When fetchNext() promise is in a Promise.race with timeout, it might not win. To provide
   // backpressure to the input iterator, and to ensure we catch exceptions, keep the losing promise
-  // around until it resolves before calling next again.
-  const getNextValuePromise = () => {
-    if (!nextValuePromise) {
-      nextValuePromise = pushNextValue().then(result => { nextValuePromise = null; return result })
+  // around until it settles before calling next again.
+  const fetchNext = () => {
+    if (pendingError) {
+      const err = pendingError
+      pendingError = null
+      return Promise.reject(err)
     }
-    return nextValuePromise
+    if (!inFlight) {
+      inFlight = Promise.resolve()
+        .then(() => iterator.next())
+        .then(
+          res => {
+            inFlight = null
+            if (!res.done) {
+              buffer.push(res.value)
+            }
+            return { done: res.done }
+          },
+          err => {
+            inFlight = null
+            pendingError = err
+            throw err
+          }
+        )
+      // Prevent unhandled promise rejection if inFlight settles while waiting on yield
+      inFlight.catch(() => {})
+    }
+    return inFlight
   }
 
-  const fillChunkOrTimeout = async () => {
-    let { done } = await getNextValuePromise()
-    if (!done && buffer.length < n) {
-      let timedOut
-      const chunkTimeout = waitToCall(timeout, () => /** @type {{ done?: boolean, timedOut?: boolean }} */ ({ timedOut: true }))
-      do {
-        ({ done, timedOut } = await Promise.race([getNextValuePromise(), chunkTimeout]))
-      } while (!done && !timedOut && buffer.length < n)
-    }
-    return done
-  }
+  try {
+    let done = false
+    while (!done || buffer.length > 0) {
+      // 1. If buffer is empty, wait for the first item without a timeout (never yields empty chunks)
+      if (buffer.length === 0) {
+        const result = await fetchNext()
+        done = Boolean(result.done)
+        if (done) break
+      }
 
-  let done // can be undefined, true, or false
-  do {
-    done = await fillChunkOrTimeout()
-    if (buffer.length > 0) yield shiftUpTo(n)
-  } while (!done || buffer.length > 0)
+      // 2. If buffer has items but is not full, race next items against the timeout
+      if (!done && buffer.length < n) {
+        /** @type {any} */
+        let timerId
+        let timedOut = false
+        const timerPromise = new Promise(resolve => {
+          timerId = setTimeout(() => {
+            timedOut = true
+            resolve({ timedOut: true })
+          }, timeout)
+        })
+
+        try {
+          while (!done && !timedOut && buffer.length < n) {
+            const result = await Promise.race([fetchNext(), timerPromise])
+            if (result.done) {
+              done = true
+            }
+          }
+        } finally {
+          clearTimeout(timerId)
+        }
+      }
+
+      // 3. Yield full or timed-out partial chunk
+      if (buffer.length > 0) {
+        yield shiftUpTo(n)
+      }
+    }
+  } finally {
+    try {
+      await iterator.return?.()
+    } catch {}
+  }
 }
