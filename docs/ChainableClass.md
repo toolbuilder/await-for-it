@@ -1,6 +1,6 @@
 # ChainableClass
 
-The `ChainableClass` provides a chainable async iterable with lots of chaining methods. Typically, you would create instances using the [chainable](./chainable.md) constructor.
+The `ChainableClass` provides a chainable async iterable with transform, reducer, and error-handling methods. Typically, you create instances using the [chainable](./chainable.md) factory.
 
 Constructing a `ChainableClass` like this:
 
@@ -16,12 +16,14 @@ import { ChainableClass } from '@toolbuilder/await-for-it'
 const chainableClassInstance = new ChainableClass([0, 1, 2])
 ```
 
+> **Note:** Chaining transform or error-handling methods (`map`, `filter`, `catch`, `finally`, etc.) mutates the `ChainableClass` instance in place and returns `this`. Each instance represents a single pipeline rather than creating independent branched copies.
+
 * Static constructors
   * [from](#from)
   * [merge](#merge)
   * [range](#range)
   * [zip](#zip)
-  * [zipAll](#zipAll)
+  * [zipAll](#zipall)
 * Transforms - modify the contents of an iterable stream
   * [arrayToObject](#arraytoobject)
   * [callAwait](#callawait)
@@ -33,14 +35,14 @@ const chainableClassInstance = new ChainableClass([0, 1, 2])
   * [flattenRecursive](#flattenrecursive)
   * [flattenUnordered](#flattenunordered)
   * [map](#map)
-  * [mapWith](#mathwith)
+  * [mapWith](#mapwith)
   * [nth](#nth)
   * [pluck](#pluck)
   * [pool](#pool)
   * [reject](#reject)
   * [take](#take)
   * [throttle](#throttle)
-* Reducers - pump your iterable like a for...await loop
+* Reducers - pump your iterable like a `for await...of` loop
   * [forEach](#foreach)
   * [publish](#publish)
   * [reduce](#reduce)
@@ -55,9 +57,9 @@ const chainableClassInstance = new ChainableClass([0, 1, 2])
 
 Static constructor to create a chainable iterable from an input iterable.
 
--   `iterable` **(AsyncIterable | Iterable)** input iterable
+- `iterable` **(AsyncIterable | Iterable)** input iterable
 
-Returns **ChainableClass** instance that yields the same values as the input iterable
+Returns **ChainableClass** instance that yields the same values as the input iterable.
 
 ## merge
 
@@ -66,21 +68,21 @@ async iterable is advanced as fast as possible, so that slow iterators do not ho
 up faster ones. Equal speed iterables are advanced at roughly the same pace.
 
 Backpressure is provided by the iterating code. Iteration can be stopped by stopping
-the iterating code.
+the iterating code. See [merge](./merge.md) for details on cleanup and exception handling.
 
--   `iterables` **...(AsyncIterable | Iterable)**
+- `iterables` **...(AsyncIterable | Iterable)**
 
-Returns **ChainableClass** instance that will merge the iterables
+Returns **ChainableClass** instance that merges the iterables.
 
 ## range
 
 Call `chainable.range(...args)` to create a sequence of numbers matching Python's `range` function. This can be useful for unit tests.
 
- -   `args` **...(number)** arguments matching Python's `range`:
-     -   `range()` produces an empty sequence
-     -   `range(stop)` starts at 0 and increments by 1 up to (not including) `stop`
-     -   `range(start, stop)` starts at `start` and increments by 1 up to (not including) `stop`
-     -   `range(start, stop, step)` starts at `start` and increments by `step` up to (or down to) `stop`
+- `args` **...(number)** arguments matching Python's `range`:
+  - `range()` produces an empty sequence
+  - `range(stop)` starts at 0 and increments by 1 up to (not including) `stop`
+  - `range(start, stop)` starts at `start` and increments by 1 up to (not including) `stop`
+  - `range(start, stop, step)` starts at `start` and increments by `step` up to (or down to) `stop`
 
 Returns a **ChainableClass** that provides the sequence of numbers specified. Throws `RangeError` if `step` is 0.
 
@@ -114,13 +116,13 @@ console.log(output) // prints [5, 4, 3, 2, 1]
 
 Creates a sequence of arrays the same length as the _shortest_ iterable provided. The first array contains the first
 element from each of the iterables provided. The second array contains the second element from each of the
-iterables provided, and so on. For each array, zip must wait for all iterables to advance. For this reason, zip can be
+iterables provided, and so on. For each array, `zip` must wait for all iterables to advance. For this reason, `zip` can be
 no faster than the slowest iterable. Backpressure is provided by the iterating code.
 
-Use zipAll if you want all iterables to be consumed. Use merge if you want to consume iterables as fast as possible, and
+Use [zipAll](#zipall) if you want all iterables to be consumed. Use [merge](#merge) if you want to consume iterables as fast as possible, and
 don't need the elements paired.
 
--   `iterables` **...(AsyncIterable | Iterable)**
+- `iterables` **...(AsyncIterable | Iterable)**
 
 Returns **ChainableClass** instance that yields the zipped values.
 
@@ -135,14 +137,14 @@ console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c']]
 
 Creates a sequence of arrays the same length as the _longest_ iterable provided. The first array contains the first
 element from each of the iterables provided. The second array contains the second element from each of the
-iterables provided, and so on. Missing elements from the shorter iterables are set to undefined. For each array,
-zip must wait for all iterables to advance. For this reason, zip can be no faster than the slowest iterable.
+iterables provided, and so on. Missing elements from the shorter iterables are set to `undefined`. For each array,
+`zipAll` must wait for all active iterables to advance. For this reason, `zipAll` can be no faster than the slowest iterable.
 Backpressure is provided by the iterating code.
 
-Use zip if you want iteration to stop when any iterable is consumed. Use merge if you want to consume iterables as
+Use [zip](#zip) if you want iteration to stop when any iterable is consumed. Use [merge](#merge) if you want to consume iterables as
 fast as possible, and don't need the elements paired.
 
--   `iterables` **...(AsyncIterable | Iterable)**
+- `iterables` **...(AsyncIterable | Iterable)**
 
 Returns **ChainableClass** instance that yields the zipped values.
 
@@ -156,93 +158,97 @@ console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c'], [undefined, 'd']]
 ## arrayToObject
 
 Converts a sequence of Arrays to a sequence of Objects by assigning the property names
-to each array element in turn. The input sequence doesn't have to provide arrays, it can
+to each array element in turn. The input sequence doesn't have to provide arrays; it can
 provide any iterable object.
 
 If the arrays in iterable are too long, extra values are ignored.
 
-If the arrays in iterable are too short, the remaining properties are assigned undefined.
+If the arrays in iterable are too short, the remaining properties are assigned `undefined`.
 See example.
 
--   `propertyNames` **Iterable** a sequence of property names
+- `propertyNames` **Iterable** a sequence of property names
 
 ```javascript
 const objects = await chainable([[0, 1], [2, 3, 'a'], [4]]).arrayToObject(['a', 'b']).toArray()
-// objects is [{'a': 0, 'b': 1 }, {'a': 2, 'b': 3 }, {'a': 4, 'b': undefined }]
+// objects is [{ a: 0, b: 1 }, { a: 2, b: 3 }, { a: 4, b: undefined }]
 ```
 
-Returns **ChainableClass** for the sequence of created Objects
+Returns **ChainableClass** for the sequence of created Objects.
 
 ## callAwait
 
-Pass the input sequence to the output sequence without change, but execute `fn(item)` for each
+Pass the input sequence to the output sequence without change, executing `fn(item)` for each
 item in the sequence. Awaits the result of each function call before yielding the value.
 
--   `fn` **(AsyncFunction | [Function][92])** function, `fn(item)` is called for each item in the sequence
+- `fn` **(AsyncFunction | [Function][92])** function `fn(item)` called for each item in the sequence
 
 ```javascript
-chainable([1, 2, 3, 4, 5]).callAwait(console.log).run()
-// iterates over `a` and prints each value on a separate line
+await chainable([1, 2, 3, 4, 5]).callAwait(console.log).runAwait()
+// logs each value on a separate line in order
 ```
 
-Returns **ChainableClass** that is equivalent to the input iterable
+Returns **ChainableClass** that yields the same items as the input iterable.
 
 ## callNoAwait
 
-Pass the input sequence to the output sequence without change, but execute `fn(item)` for each
-item in the sequence. Will not await the result before yielding the value.
+Pass the input sequence to the output sequence without change, executing `fn(item)` for each
+item in the sequence without awaiting its return value before yielding the item.
 
--   `fn` **(AsyncFunction | [Function][92])** synchronous function, `fn(item)` is called for each item in the sequence
+- `fn` **(AsyncFunction | [Function][92])** function `fn(item)` called for each item in the sequence (its return value is ignored; async functions must handle their own Promise rejections)
 
 ```javascript
-chainable([1, 2, 3, 4, 5]).callNoAwait(console.log) // logs each value
+await chainable([1, 2, 3, 4, 5]).callNoAwait(console.log).runAwait()
+// logs each value on a separate line
 ```
 
-Returns **ChainableClass** that is equivalent to the input iterable
+Returns **ChainableClass** that yields the same items as the input iterable.
 
 ## chunk
 
-Chunk every n items into an array, and output that array in the output sequence.
+Chunk every `n` items into an array, and output that array in the output sequence.
 Chunks are yielded after `timeout` milliseconds even if not full, so that values
 can be processed in a timely manner. Never yields empty chunks.
 
 Backpressure is provided by the iterator when a chunk is yielded. Stopping the
-iterator will stop chunking and the input iterable.
+iterator will stop chunking and close the input iterable.
 
--   `n` **[Number][93]** size of arrays
--   `timeout` **[Number][93]** number of milliseconds before yielding chunk if not full
+- `n` **[Number][93]** size of arrays (must be an integer `>= 1`; throws `RangeError` otherwise)
+- `timeout` **[Number][93]** milliseconds before yielding a partial chunk if not full (must be a finite number `>= 0`; throws `RangeError` otherwise)
+
+```javascript
+const chunks = await chainable([0, 1, 2, 3, 4]).chunk(2, 100).toArray()
+console.log(chunks) // prints [[0, 1], [2, 3], [4]]
+```
 
 Returns **ChainableClass** that chunks the input iterable.
 
-
 ## diff
 
-Execute fn(previous, current) and yields the result for each pair.
-Would be useful for calculating time differences between timestamps.
+Execute `fn(previous, current)` and yield the result for each adjacent pair.
+Useful for calculating differences between consecutive values (such as timestamps).
 
--   `fn` **(AsyncFunction | [Function][92])** fn(previous, current), yielding return value
+- `fn` **(AsyncFunction | [Function][92])** `fn(previous, current)`, yielding the resolved return value
 
 Returns **ChainableClass**. If input has two or more items, output sequence
 is one shorter than input sequence. Otherwise, no items are output.
 
 ```javascript
-chainable([0, 1, 2, 3, 4]).diff((n, m) => m - n).callNoAwait(console.log).run()
-// prints [1, 1, 1, 1]
+const a = await chainable([0, 1, 2, 3, 4]).diff((n, m) => m - n).toArray()
+console.log(a) // prints [1, 1, 1, 1]
 ```
 
 ## filter
 
-Keeps item from input sequence when fn(item) returns truthy. Remove items from input sequence when
-fn(item) returns !truthy.
+Keeps items from the input sequence when `await fn(item) === true`, and omits all other items.
 
--   `fn` **[Function][92]** synchronous fn(item) returns truthy when item should be removed
+- `fn` **(AsyncFunction | [Function][92])** `fn(item)` returning (or resolving to) `true` when the item should be kept
 
-Returns **ChainableClass** for the filtered sequence
+Returns **ChainableClass** for the filtered sequence.
 
 ```javascript
 const isEvenNumber = x => x % 2 === 0
-chainable([0, 1, 2, 3, 4, 5, 6]).filter(isEvenNumber).callNoAwait(console.log).run()
-// prints even numbers [0, 2, 4, 6]
+const a = await chainable([0, 1, 2, 3, 4, 5, 6]).filter(isEvenNumber).toArray()
+console.log(a) // prints [0, 2, 4, 6]
 ```
 
 ## flatten
@@ -252,17 +258,17 @@ Maps, or other built-in record/value types (such as URLSearchParams, Headers, an
 even though they are iterable. Can flatten async and sync iterables within the provided
 iterable. Explicit opt-in or opt-out is supported via `Symbol.isConcatSpreadable`.
 
-Returns **ChainableClass** for the flattened sequence
+Returns **ChainableClass** for the flattened sequence.
 
 ```javascript
-chainable([[0, 1], [2, 3], [4, 5], [6]]).flatten().callNoAwait(console.log).run()
-// prints [0, 1, 2, 3, 4, 5, 6]
+const a = await chainable([[0, 1], [2, 3], [4, 5], [6]]).flatten().toArray()
+console.log(a) // prints [0, 1, 2, 3, 4, 5, 6]
 
 // Objects can opt out of flattening:
 const nonSpreadable = [7, 8]
 nonSpreadable[Symbol.isConcatSpreadable] = false
-await chainable([[1, 2], nonSpreadable]).flatten().toArray()
-// returns [1, 2, [7, 8]]
+const b = await chainable([[1, 2], nonSpreadable]).flatten().toArray()
+// b is [1, 2, [7, 8]]
 ```
 
 ## flattenRecursive
@@ -274,59 +280,58 @@ within the provided iterable. Explicit opt-in or opt-out is supported via `Symbo
 
 ```javascript
 const input = [0, [1, 2, 3], [[4, 5], [[[6, 7]], [8, 9], 10]], 11, 12]
-chainable(input).flattenRecursive().callNoAwait(console.log).run()
-// prints [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+const a = await chainable(input).flattenRecursive().toArray()
+console.log(a) // prints [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 ```
 
-Returns **ChainableClass** for the flattened sequence
+Returns **ChainableClass** for the flattened sequence.
 
 ## flattenUnordered
 
-Flattens a sequence of items one level deep. Unlike flatten, flattenUnordered attempts
+Flattens a sequence of items one level deep. Unlike [flatten](#flatten), `flattenUnordered` attempts
 to flatten several iterables at the same time, so the output is not in a predictable
 order. Async and sync iterables within the provided iterable are supported. Does not
 flatten strings, TypedArrays/Buffers, Maps, or other built-in record/value types even
 though they are iterable. Explicit opt-in or opt-out is supported via `Symbol.isConcatSpreadable`.
 
-The number of iterables being flattened at the same time is limited by maxPoolSize. When
-this number is reached, flattenUnordered will begin to apply backpressure if it is being
+The number of iterables being flattened at the same time is limited by `maxPoolSize`. When
+this number is reached, `flattenUnordered` will begin to apply backpressure if it is being
 iterated more slowly than the input iterables can supply data. In other words, no more
-than maxPoolSize Promises will be pending at any given time.
+than `maxPoolSize` Promises will be pending at any given time.
 
--   `maxPoolSize` **[Number][3]** maximum number of iterables to flatten at same time
+- `maxPoolSize` **[Number][93]** maximum number of iterables to flatten at the same time (must be an integer `>= 1`; throws `RangeError` otherwise)
 
 ```javascript
 const a = await chainable([[1, 2, 3], [4, 5], 6, [7, 8]]).flattenUnordered(5).toArray()
 console.log(a.sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8]
 ```
 
-Returns **ChainableClass** for the flattened sequence
+Returns **ChainableClass** for the flattened sequence.
 
 ## map
 
-Generates a sequence of items by calling fn(item) for each item of the input iterable.
+Generates a sequence of items by calling `fn(item)` for each item of the input iterable.
 
--   `fn` **(AsyncFunction | [Function][92])** fn(item) returns the output item
+- `fn` **(AsyncFunction | [Function][92])** `fn(item)` returning (or resolving to) the output item
 
 ```javascript
-chainable([0, 1, 2, 3]).map(x => 2 * x).callNoAwait(console.log).run()
-// prints [0, 2, 4, 6]
+const a = await chainable([0, 1, 2, 3]).map(x => 2 * x).toArray()
+console.log(a) // prints [0, 2, 4, 6]
 ```
 
-Returns **ChainableClass** for the mapped sequence
+Returns **ChainableClass** for the mapped sequence.
 
 ## mapWith
 
-Map the input sequence to the output sequence with an async generator that maps one iterator to another.
+Map the input sequence to the output sequence using a custom generator or transform function that takes an iterable and returns an iterable.
 
-This method exists solely so that ChainableClass supports chaining for an arbitrary generator function.
+This method exists so that `ChainableClass` supports chaining for arbitrary generator functions.
 
--   `generatorFunction` **AsyncGeneratorFunction** a function that returns an async iterable object,
-    and takes an async iterable as a parameter.
+- `generatorFunction` **[Function][92]** a function that accepts the current `(AsyncIterable | Iterable)` and returns an `(AsyncIterable | Iterable)`
 
 ```javascript
 const fn = async function * (iterable) {
-  for await (let x of iterable) {
+  for await (const x of iterable) {
     yield x * x
   }
 }
@@ -334,188 +339,214 @@ const a = await chainable([0, 1, 2, 3]).mapWith(fn).toArray()
 console.log(a) // prints [0, 1, 4, 9]
 ```
 
-Returns **ChainableClass** for the mapped sequence
+Returns **ChainableClass** for the mapped sequence.
 
 ## nth
 
-Given a sequence of Arrays, output the nth element of each array as a sequence.
+Given a sequence of Arrays, output the `nth` element of each array as a sequence.
 
--   `index` **[Number][93]** the index of the Array to output. Negative index values
-    are ok. The index of the last element is -1.
+- `index` **[Number][93]** the index of the Array to output. Negative index values
+  are supported; the index of the last element is `-1`.
 
 ```javascript
 const input = [[0, 1], [2, 3], [4, 5]]
-const a = await chainable(input).nth(1, input).toArray()
+const a = await chainable(input).nth(1).toArray()
 console.log(a) // prints [1, 3, 5]
 ```
 
-Returns **ChainableClass** for the nth elements
+Returns **ChainableClass** for the `nth` elements.
 
 ## pluck
 
 Given a sequence of Objects, output the specified property of each Object as a sequence.
 
--   `propertyname` **[string][94]** the property to extract from each Object
+- `propertyName` **([String][94] | [Number][93] | Symbol)** the property key to extract from each Object
 
 ```javascript
-const input = [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}, {'a': 5, 'b': 6}]
-const a = await chainable(input).pluck('a', input).toArray()
+const input = [{ a: 1, b: 2 }, { a: 3, b: 4 }, { a: 5, b: 6 }]
+const a = await chainable(input).pluck('a').toArray()
 console.log(a) // prints [1, 3, 5]
 ```
 
-Returns **ChainableClass** for the plucked items
+Returns **ChainableClass** for the plucked items.
 
 ## pool
 
-Execute functions provided by input iterable. Returns results as they resolve, with
-no more than maxPoolSize promises pending at any time. Results may be out of order with
+Execute functions provided by the input iterable concurrently. Yields resolved results as they complete, with
+no more than `maxPoolSize` promises pending at any time. Results may be out of order with
 respect to the input order.
 
-This is the chainable version of the [pool](./pool.md) async generator. The `iterable` parameter is provided
-by the `ChainableClass` instance. Returns **ChainableClass** that provides the output values as they occur.
+This is the chainable version of the [pool](./pool.md) async generator.
+
+- `maxPoolSize` **[Number][93]** maximum number of pending promises at any given time
+
+```javascript
+import { chainable, waitToCall } from '@toolbuilder/await-for-it'
+
+const tasks = [
+  () => waitToCall(40, () => 'slow'),
+  () => waitToCall(10, () => 'fast')
+]
+const results = await chainable(tasks).pool(2).toArray()
+console.log(results) // prints ['fast', 'slow']
+```
+
+Returns **ChainableClass** that provides the output values as they resolve.
 
 ## reject
 
-Reject items when fn(item) returns truthy.
+Removes items when `await fn(item) === true`, keeping all other items.
 
--   `fn` **[Function][92]** synchronous fn(item) returns truthy when item should be removed from output sequence
+- `fn` **(AsyncFunction | [Function][92])** `fn(item)` returning (or resolving to) `true` when the item should be removed from the output sequence
 
 ```javascript
 const isEvenNumber = x => x % 2 === 0
-const a = chainable([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).reject(isEvenNumber).toArray()
+const a = await chainable([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).reject(isEvenNumber).toArray()
 console.log(a) // prints [1, 3, 5, 7, 9]
 ```
 
-Returns **ChainableClass** for the non-rejected items
+Returns **ChainableClass** for the non-rejected items.
 
 ## take
 
-Provide the first n values of iterator. Useful to truncate infinite sequences.
+Provide the first `n` values of the iterable. Useful to truncate infinite sequences.
 
--   `n` **[Number][93]** number of items to take
+- `n` **[Number][93]** number of items to take
 
 ```javascript
 const a = await chainable([0, 1, 2, 3, 4]).take(2).toArray()
-console.log(await toArray(a)) // prints [0, 1]
+console.log(a) // prints [0, 1]
 ```
 
-Returns **ChainableClass** provides the first n values
+Returns **ChainableClass** providing the first `n` values.
 
 ## throttle
 
-Throttle an async iterator to a maximum iteration speed.
+Throttle an iterable to a maximum iteration speed.
 
--   `period` **[Number][93]** milliseconds to wait between yielding each value
--   `initialWait` **[Number][93]** milliseconds before yielding first value
+- `period` **[Number][93]** milliseconds to wait between yielding each value
+- `initialWait` **[Number][93]** milliseconds before yielding the first value
 
 ```javascript
 const a = await chainable([0, 1, 2, 3, 4]).throttle(100, 0).toArray()
 console.log(a) // prints [0, 1, 2, 3, 4] with 100ms wait after each element
 ```
 
-Returns **ChainableClass** the throttled sequence of values
+Returns **ChainableClass** for the throttled sequence of values.
 
 ## forEach
 
-Executes function fn(item, index) for each item in the iterable sequence provided. Each function
-call must resolve before the function is called again.
+Executes `fn(item, index)` for each item in the sequence. Each function
+call must resolve before `fn` is called again.
 
--   `fn` **(AsyncFunction | [Function][92])** a function(item, index), where item is the current item in the sequence, and index
-    is the index of the current item.
+- `fn` **(AsyncFunction | [Function][92])** `fn(item, index)`, where `item` is the current item in the sequence and `index`
+  is its zero-based index.
 
 ```javascript
 const fn = (item, index) => console.log(`item - ${item}, index - ${index}`)
-await chainable([1, 2, 3]).forEach(fn) // prints the following...
+await chainable([1, 2, 3]).forEach(fn)
 // item - 1, index - 0
 // item - 2, index - 1
 // item - 3, index - 2
 ```
 
-Returns **[undefined][96]**
+Returns **[Promise][95]** resolving to `[undefined][96]` when iteration completes.
 
 ## publish
 
-Publishes values to any subscribing function. Functions can
-be added and removed during iteration.
+Publishes values in the background to any subscribing functions. Subscribers can
+be added and removed before or during iteration.
 
-Functions are passed the each value from the iterable. Only values provided
-after subscribing are provided. Any return value is ignored.
+Functions are passed each value from the iterable. Only values produced
+after subscribing are provided, and unsubscribing during dispatch immediately skips
+uncalled subscribers. Any return value is ignored.
 
-You can also start and stop the publisher if you like.
+You can pause, resume, permanently cancel, or await the publisher via the returned controller:
 
 ```javascript
-import { chainable, wait } from '@toolbuilder/await-for-it'
+import { chainable, waitToCall } from '@toolbuilder/await-for-it'
 
 const publisher = chainable([0, 1, 2, 3]).throttle(50, 50).publish()
 const key = publisher.subscribe(console.log) // prints 0, 1 - then unsubscribed
 if (publisher.running) publisher.stop()
 publisher.start()
-wait(110, publisher.unsubscribe(key)) // console.log is no longer called after 110ms
+waitToCall(110, () => publisher.unsubscribe(key)) // console.log is no longer called after 110ms
+await publisher.finished
 ```
 
-Returns **[Object][91]** Returns an object with subscribe and unsubscribe
-methods. The subscribe method accepts a function and returns an unsubscribe
-key. The unsubscribe method accepts an unsubscribe key, to remove the function.
-Also has start, stop, and running just like the run function.
+Returns **[Object][91] (`PublishController`)** with:
+- `subscribe(subscriber)` — registers a subscriber function (throws `TypeError` if not a function) and returns a subscription key.
+- `unsubscribe(key)` — removes the subscriber with that key.
+- `stop()` / `start()` — pauses or resumes iteration and publishing (no-op once finished).
+- `cancel()` — permanently terminates iteration, clears subscribers, closes the upstream iterator (running any `finally` blocks), sets `running` to `false`, and returns `finished`.
+- `running` (**[Boolean][98]**, read-only) — `true` while active; `false` when paused, cancelled, or finished.
+- `finished` (**[Promise][95]**) — resolves when iteration completes or is cancelled; rejects if an uncaught error escapes the chain or a subscriber throws synchronously. If upstream errors are caught via [catch](#catch), `finished` resolves cleanly. Because subscriber return values are ignored, `async` subscribers must handle their own rejections internally.
 
 ## reduce
 
-The reduce() method executes a reducer function on each element of
-the input iterable, resulting in a single output value.
+Executes a reducer function `fn(accumulator, item, index)` on each element of
+the sequence, resulting in a single output value.
 
--   `fn` **(AsyncFunction | [Function][92])** fn(accumulator, item) that returns (or resolves to)
-    the new accumulator value.
--   `accumulator` **any** the initial accumulator value
+- `fn` **(AsyncFunction | [Function][92])** `fn(accumulator, item, index)` returning (or resolving to)
+  the new accumulator value.
+- `accumulator` **any** the initial accumulator value (or a Promise resolving to it)
 
 ```javascript
 const add = (a, b) => a + b
 const sum = await chainable([0, 1, 2, 3, 4]).reduce(add, 0) // sum === 10
 ```
 
-Returns **any** the final accumulator value
+Returns **[Promise][95]** resolving to the final accumulator value.
 
 ## run
 
-Iterates over an iterable asynchronously. It is sort of like
-starting a thread, and the returned controller allows you to
-start and stop iteration.
+Iterates over the chainable sequence asynchronously in the background, returning a controller
+to pause, resume, cancel, inspect, or await iteration.
 
 ```javascript
-const control = chainable(longRunningIterable).run()
-if (control.running) control.stop()
-control.start()
+const control = chainable(longRunningIterable)
+  .catch(error => handleError(error))
+  .run()
+
+if (control.running) control.stop() // pause
+control.start() // resume
+await control.finished
 ```
 
-Returns **[Object][91]** Has a `start` method to start iteration, although
-it is already started when controllable returns. Has a `stop` method to
-stop iteration. Has a `running` attribute to check if iteration is running.
+Returns **[Object][91] (`RunController`)** with:
+- `stop()` — pauses iteration before pulling the next item (calling `stop()` synchronously right after `run()` prevents even the first pull until `start()`). No-op once finished.
+- `start()` — resumes paused iteration. No-op once finished.
+- `cancel()` — permanently stops iteration, closes the upstream iterator via `return()` (so [finally](#finally) handlers run), sets `running` to `false`, and returns `finished`.
+- `running` (**[Boolean][98]**, read-only) — `true` while active; `false` when paused, cancelled, or finished.
+- `finished` (**[Promise][95]**) — resolves when iteration completes or is cancelled; rejects if an uncaught error escapes the chain. If errors are already handled upstream via [catch](#catch), `control.finished` resolves cleanly without needing another `.catch()`.
 
 ## runAwait
 
-Iterates over iterable asynchronously. It is sort of like starting
-a thread. Unlike `run(iterable)`, there is no control over iteration.
+Drives the sequence asynchronously until completion and returns a Promise that settles when all items are consumed. Unlike [run](#run), there is no pause/resume controller.
 
 ```javascript
-await chainable([0, 1, 2, 3, 4]).runAwait()
+await chainable([0, 1, 2, 3, 4]).callNoAwait(console.log).runAwait()
 ```
+
+Returns **[Promise][95]** resolving to `[undefined][96]` when iteration completes.
 
 ## toArray
 
-Creates an  Array from the items in iterable.
+Creates an Array from the items in the sequence.
 
 ```javascript
 const a = await chainable([0, 1, 2, 3, 4]).toArray() // a is [0, 1, 2, 3, 4]
 ```
 
-Returns **[Array][97]** the array
+Returns **[Promise][95]** resolving to an **[Array][97]** of the items.
 
 ## catch
 
-Catch an exception thrown from within the iterable. Iteration stops, however `finally` methods are called.
+Catch an exception thrown or rejected by upstream steps in the chain. When an error is caught, upstream iteration stops, downstream `finally` methods still run, and downstream consumers see normal completion unless `fn` rethrows.
 
--   `fn` **[Function][92]** fn(error) that handles the error
+- `fn` **[Function][92]** synchronous `fn(error)` error handler (its return value is not awaited)
 
-Returns **ChainableClass** that can be chained further.
+Returns **ChainableClass** (`this`) that can be chained further.
 
 ```javascript
 const a = await chainable(someIterableThatCanThrow).catch(error => handleError(error)).toArray()
@@ -523,29 +554,21 @@ const a = await chainable(someIterableThatCanThrow).catch(error => handleError(e
 
 ## finally
 
-Run a function when iteration completes.
+Run a cleanup function when iteration completes, throws an error, or terminates early (such as via [take](#take), `break` in `for await...of`, or `control.cancel()`).
 
--   `fn` **[Function][92]** fn() that does whatever you want
+- `fn` **[Function][92]** synchronous `fn()` cleanup callback (its return value is not awaited)
 
-Returns **ChainableClass** that can be chained further.
+Returns **ChainableClass** (`this`) that can be chained further.
 
 ```javascript
 const a = await chainable([1, 2, 3]).finally(() => doSomething()).toArray()
 ```
 
-
 [91]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object
-
 [92]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function
-
 [93]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number
-
 [94]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String
-
 [95]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise
-
 [96]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/undefined
-
 [97]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array
-
 [98]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean

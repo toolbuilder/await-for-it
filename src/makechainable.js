@@ -36,7 +36,7 @@
  * @template {keyof R} [K=keyof R]
  * @typedef {K extends 'forEach' ? (fn: (item: T, index: number) => any) => Promise<void>
  *   : K extends 'publish' ? () => import('./reducers.js').PublishController<T>
- *   : K extends 'reduce' ? <U = any>(fn: (accumulator: U extends never[] ? any[] : Awaited<U>, item: T) => (U extends never[] ? any[] : Awaited<U>) | PromiseLike<U extends never[] ? any[] : Awaited<U>>, accumulator: U) => Promise<U extends never[] ? any[] : Awaited<U>>
+ *   : K extends 'reduce' ? <U = any>(fn: (accumulator: U extends never[] ? any[] : Awaited<U>, item: T, index: number) => (U extends never[] ? any[] : Awaited<U>) | PromiseLike<U extends never[] ? any[] : Awaited<U>>, accumulator: U) => Promise<U extends never[] ? any[] : Awaited<U>>
  *   : K extends 'run' ? () => import('./reducers.js').RunController
  *   : K extends 'runAwait' ? () => Promise<void>
  *   : K extends 'toArray' ? () => Promise<T[]>

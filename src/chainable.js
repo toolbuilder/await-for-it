@@ -25,8 +25,8 @@
  * @property {(period: number, initialWait: number) => ChainableIterable<T>} throttle Throttles sequence to a maximum iteration speed.
  * @property {(fn: (item: T, index: number) => any) => Promise<void>} forEach Executes fn(item, index) for each item in sequence.
  * @property {() => import('./reducers.js').PublishController<T>} publish Publishes values from sequence to subscribing functions.
- * @property {<R = any>(fn: (accumulator: R extends never[] ? any[] : Awaited<R>, item: T) => (R extends never[] ? any[] : Awaited<R>) | PromiseLike<R extends never[] ? any[] : Awaited<R>>, accumulator: R) => Promise<R extends never[] ? any[] : Awaited<R>>} reduce Executes reducer function on each element, resulting in a single value.
- * @property {() => import('./reducers.js').RunController} run Starts iterating sequence asynchronously and returns a start/stop controller.
+ * @property {<R = any>(fn: (accumulator: R extends never[] ? any[] : Awaited<R>, item: T, index: number) => (R extends never[] ? any[] : Awaited<R>) | PromiseLike<R extends never[] ? any[] : Awaited<R>>, accumulator: R) => Promise<R extends never[] ? any[] : Awaited<R>>} reduce Executes reducer function on each element, resulting in a single value.
+ * @property {() => import('./reducers.js').RunController} run Starts iterating sequence asynchronously and returns a controller.
  * @property {() => Promise<void>} runAwait Iterates over sequence asynchronously until completion.
  * @property {() => Promise<T[]>} toArray Converts sequence to an Array.
  */

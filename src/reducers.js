@@ -1,44 +1,196 @@
-import { Semaphore } from '@toolbuilder/semaphore'
-import { iteratorFrom } from './iteratorfrom.js'
+import { isAsyncIterable, isFunction, isSyncIterable } from './is.js'
 
 /**
- * Controller returned by `run` to start, stop, and check iteration status.
+ * Safely format an arbitrary value for error messages.
+ *
+ * @param {any} value
+ * @returns {string}
+ */
+const formatValue = (value) => {
+  try {
+    return String(value)
+  } catch {
+    return Object.prototype.toString.call(value)
+  }
+}
+
+/**
+ * Validate that a parameter is a function (excluding ES6 classes).
+ *
+ * @param {string} caller
+ * @param {string} paramName
+ * @param {any} fn
+ */
+const assertFunction = (caller, paramName, fn) => {
+  if (!isFunction(fn)) {
+    throw new TypeError(`${caller} parameter '${paramName}' must be a function: ${formatValue(fn)}`)
+  }
+}
+
+/**
+ * Validate that a parameter is a sync or async iterable.
+ *
+ * @param {string} caller
+ * @param {any} iterable
+ */
+const assertIterable = (caller, iterable) => {
+  if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) {
+    throw new TypeError(`${caller} parameter 'iterable' must be iterable: ${formatValue(iterable)}`)
+  }
+}
+
+/**
+ * Wrap any sync or async iterable using native `for await...of` semantics
+ * (preferring `[Symbol.asyncIterator]`, unwrapping Promises in sync iterables,
+ * and forwarding `.return()` cleanup).
+ *
+ * @template T
+ * @param {AsyncIterable<T> | Iterable<T>} iterable
+ * @returns {AsyncGenerator<Awaited<T>, void, unknown>}
+ */
+const toAsyncGenerator = async function * (iterable) {
+  for await (const value of iterable) {
+    yield value
+  }
+}
+
+/**
+ * Shared background iteration runner and controller state for `run` and `publish`.
+ *
+ * @param {AsyncIterable<any> | Iterable<any>} iterable
+ * @param {((value: any, isCancelled: () => boolean) => void) | null} onValue
+ * @param {(() => void) | null} onCleanup
+ * @returns {RunController}
+ */
+const createRunnerController = (iterable, onValue, onCleanup) => {
+  let paused = false
+  let isDone = false
+  let isCancelled = false
+  /** @type {(() => void) | null} */
+  let resume = null
+
+  const wake = () => {
+    if (resume !== null) {
+      const r = resume
+      resume = null
+      r()
+    }
+  }
+
+  const waitUntilRunning = async () => {
+    while (paused && !isCancelled) {
+      await /** @type {Promise<void>} */ (new Promise(resolve => { resume = resolve }))
+    }
+  }
+
+  const runner = async () => {
+    /** @type {AsyncGenerator<any, void, unknown> | null} */
+    let iterator = null
+    try {
+      // Defer initial pull by one microtask so synchronous stop(), cancel(), or subscribe()
+      // calls right after run()/publish() take effect before pulling the first item.
+      await Promise.resolve()
+      if (paused && !isCancelled) await waitUntilRunning()
+      if (isCancelled) return
+
+      iterator = toAsyncGenerator(iterable)
+      while (!isCancelled) {
+        if (paused && !isCancelled) await waitUntilRunning()
+        if (isCancelled) break
+
+        const { value, done } = await iterator.next()
+        if (done || isCancelled) break
+
+        if (onValue !== null) {
+          if (paused && !isCancelled) await waitUntilRunning()
+          if (isCancelled) break
+          onValue(value, () => isCancelled)
+        }
+      }
+    } finally {
+      isDone = true
+      paused = false
+      wake()
+      if (onCleanup !== null) onCleanup()
+      if (iterator !== null) {
+        await iterator.return(undefined)
+      }
+    }
+  }
+
+  const finished = runner()
+
+  return {
+    stop: () => {
+      if (!isDone) paused = true
+    },
+    start: () => {
+      if (!isDone && paused) {
+        paused = false
+        wake()
+      }
+    },
+    cancel: () => {
+      if (!isDone) {
+        isCancelled = true
+        isDone = true
+        paused = false
+        wake()
+      }
+      return finished
+    },
+    get running () {
+      return !isDone && !paused
+    },
+    finished
+  }
+}
+
+/**
+ * Controller returned by `run` to pause, resume, cancel, and observe background iteration.
  *
  * @typedef {object} RunController
- * @property {() => void} stop - pause iteration
- * @property {() => void} start - resume iteration
- * @property {boolean} running - true if iteration is currently running
+ * @property {() => void} stop Pause iteration before pulling the next item. No-op once finished.
+ * @property {() => void} start Resume paused iteration. No-op once finished.
+ * @property {() => Promise<void>} cancel Permanently stop iteration, close the upstream iterator, and return `finished`.
+ * @property {boolean} running True while iteration is active (neither paused nor finished).
+ * @property {Promise<void>} finished Resolves when iteration completes or is cancelled; rejects if an unhandled error escapes the iterable.
  */
 
 /**
- * Controller returned by `publish` to manage subscribers and control iteration.
+ * Controller returned by `publish` to manage subscribers and control background iteration.
  *
  * @template [T=any]
  * @typedef {object} PublishController
- * @property {() => void} stop - pause iteration and publishing
- * @property {() => void} start - resume iteration and publishing
- * @property {boolean} running - true if currently running
- * @property {(subscriber: (value: T) => any) => number} subscribe - register a subscriber function and return its subscription key
- * @property {(key: number) => void} unsubscribe - remove a subscriber by its subscription key
+ * @property {() => void} stop Pause iteration and publishing. No-op once finished.
+ * @property {() => void} start Resume paused iteration and publishing. No-op once finished.
+ * @property {() => Promise<void>} cancel Permanently stop iteration, clear subscribers, close the upstream iterator, and return `finished`.
+ * @property {boolean} running True while iteration is active (neither paused nor finished).
+ * @property {Promise<void>} finished Resolves when iteration completes or is cancelled; rejects if an unhandled error escapes the iterable or a subscriber throws synchronously.
+ * @property {(subscriber: (value: T) => any) => number} subscribe Register a subscriber function and return its subscription key.
+ * @property {(key: number) => void} unsubscribe Remove a subscriber by its subscription key.
  */
 
 /**
- * Executes function fn(item, index) for each item in the iterable sequence provided. Each function
+ * Executes function `fn(item, index)` for each item in the iterable sequence provided. Each function
  * call must resolve before the function is called again.
  *
  * @type {<T = any>(fn: (item: Awaited<T>, index: number) => any, iterable: AsyncIterable<T> | Iterable<T>) => Promise<void>}
  * @param {(item: any, index: number) => any} fn - a function(item, index), where item is the current item in the sequence, and index
- * is the index of the current item.
+ * is the zero-based index of the current item.
  * @param {AsyncIterable<any> | Iterable<any>} iterable - the sequence of items to call fn(item, index) with.
  * @returns {Promise<void>}
+ * @throws {TypeError} rejects with TypeError if fn is not a function or iterable is not iterable
  * @example
  * const fn = (item, index) => console.log(`item - ${item}, index - ${index}`)
- * forEach(fn, [1, 2, 3]) // prints the following...
+ * await forEach(fn, [1, 2, 3]) // prints the following...
  * // item - 1, index - 0
  * // item - 2, index - 1
  * // item - 3, index - 2
  */
 export const forEach = async (fn, iterable) => {
+  assertFunction('forEach', 'fn', fn)
+  assertIterable('forEach', iterable)
   let index = 0
   for await (const value of iterable) {
     await fn(value, index++)
@@ -49,125 +201,152 @@ export const forEach = async (fn, iterable) => {
  * Publishes values from iterable to any subscribing function. Functions can
  * be added and removed during iteration.
  *
- * Functions are passed the each value from the iterable. Only values provided
- * after subscribing are provided. Any return value is ignored.
+ * Functions are passed each value from the iterable. Only values produced
+ * after subscribing are provided. Any return value is ignored (so async
+ * subscribers must handle their own rejections). Synchronous exceptions thrown
+ * by a subscriber abort iteration, close the upstream iterable, and reject `finished`.
  *
  * @type {<T = any>(iterable: AsyncIterable<T> | Iterable<T>) => PublishController<Awaited<T>>}
- * @param {AsyncIterable<any> | Iterable<any>} iterable that provides the values
- * @returns {PublishController<any>} - Returns an object with subscribe and unsubscribe
- * methods. The subscribe method accepts a function and returns an unsubscribe
- * key. The unsubscribe method accepts an unsubscribe key, to remove the function.
- * Also has start, stop, and running just like the run function.
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - iterable that provides the values
+ * @returns {PublishController<any>} controller with subscribe, unsubscribe, start, stop, cancel, running, and finished
+ * @throws {TypeError} throws synchronously if iterable is not iterable, or when subscribe is called with a non-function
  * @example
- * const publisher = chainable([0, 1, 2, 3]).throttle(50, 50).publish()
+ * const publisher = publish(throttle(50, 50, [0, 1, 2, 3]))
  * const key = publisher.subscribe(console.log) // prints 0, 1 - then unsubscribed
- * wait(110, publisher.unsubscribe(key)) // console.log is no longer called after 110ms
+ * waitToCall(110, () => publisher.unsubscribe(key)) // console.log is no longer called after 110ms
+ * await publisher.finished
  */
 export const publish = (iterable) => {
-  const semaphore = new Semaphore(1)
+  assertIterable('publish', iterable)
   let sequence = 0
+  /** @type {Map<number, (value: any) => any>} */
   const subscribers = new Map()
-  const runner = async () => {
-    for await (const value of iterable) {
-      if (!semaphore.acquireSync()) await semaphore.acquire() // stopped
-      semaphore.release()
-      for (const subscriber of subscribers.values()) {
-        subscriber(value)
+  let completed = false
+
+  const base = createRunnerController(
+    iterable,
+    (value, isCancelled) => {
+      const keys = [...subscribers.keys()]
+      for (const key of keys) {
+        if (isCancelled()) break
+        const subscriber = subscribers.get(key)
+        if (subscriber !== undefined) {
+          subscriber(value)
+        }
       }
+    },
+    () => {
+      completed = true
+      subscribers.clear()
+    }
+  )
+
+  return {
+    stop: base.stop,
+    start: base.start,
+    cancel: () => {
+      completed = true
+      subscribers.clear()
+      return base.cancel()
+    },
+    get running () {
+      return base.running
+    },
+    finished: base.finished,
+    subscribe: (subscriber) => {
+      assertFunction('publish.subscribe', 'subscriber', subscriber)
+      const key = ++sequence
+      if (!completed) {
+        subscribers.set(key, subscriber)
+      }
+      return key
+    },
+    unsubscribe: (key) => {
+      subscribers.delete(key)
     }
   }
-  runner() // start off running
-  return {
-    stop: () => { if (semaphore.available()) semaphore.acquire() },
-    start: () => { if (!semaphore.available()) semaphore.release() },
-    get running () { return semaphore.available() },
-    subscribe: (pushable) => { subscribers.set(++sequence, pushable); return sequence },
-    unsubscribe: key => { subscribers.delete(key) }
-  }
 }
 
 /**
- * The reduce() method executes a reducer function on each element of
+ * Executes a reducer function `fn(accumulator, item, index)` on each element of
  * the input iterable, resulting in a single output value.
  *
- * @type {<T = any, R = any>(fn: (accumulator: R extends never[] ? any[] : Awaited<R>, item: Awaited<T>) => (R extends never[] ? any[] : Awaited<R>) | PromiseLike<R extends never[] ? any[] : Awaited<R>>, accumulator: R, iterable: AsyncIterable<T> | Iterable<T>) => Promise<R extends never[] ? any[] : Awaited<R>>}
- * @param {(accumulator: any, item: any) => any} fn - fn(accumulator, item) that returns (or resolves to)
+ * @type {<T = any, R = any>(fn: (accumulator: R extends never[] ? any[] : Awaited<R>, item: Awaited<T>, index: number) => (R extends never[] ? any[] : Awaited<R>) | PromiseLike<R extends never[] ? any[] : Awaited<R>>, accumulator: R, iterable: AsyncIterable<T> | Iterable<T>) => Promise<R extends never[] ? any[] : Awaited<R>>}
+ * @param {(accumulator: any, item: any, index: number) => any} fn - fn(accumulator, item, index) that returns (or resolves to)
  * the new accumulator value.
- * @param {any} accumulator - the initial accumulator value
+ * @param {any} accumulator - the initial accumulator value (or Promise resolving to it)
  * @param {AsyncIterable<any> | Iterable<any>} iterable - the sequence to execute fn over.
- * @returns {Promise<any>} - the final accumulator value
+ * @returns {Promise<any>} - Promise resolving to the final accumulator value
+ * @throws {TypeError} rejects with TypeError if fn is not a function or iterable is not iterable
  * @example
  * const add = (a, b) => a + b
- * const sum = reduce(add, 0, [0, 1, 2, 3, 4]) // sum === 10
+ * const sum = await reduce(add, 0, [0, 1, 2, 3, 4]) // sum === 10
  */
 export const reduce = async (fn, accumulator, iterable) => {
+  assertFunction('reduce', 'fn', fn)
+  assertIterable('reduce', iterable)
+  let acc = /** @type {any} */ (await accumulator)
+  let index = 0
   for await (const value of iterable) {
-    accumulator = /** @type {any} */ (await Promise.resolve(fn(/** @type {any} */ (accumulator), value)))
+    acc = /** @type {any} */ (await fn(acc, value, index++))
   }
-  return /** @type {any} */ (accumulator)
+  return acc
 }
 
 /**
- * Iterates over an iterable asynchronously. It is sort of like
- * starting a thread, and the returned controller allows you to
- * start and stop iteration.
+ * Iterates over an iterable asynchronously in the background, returning a controller
+ * to pause (`stop`), resume (`start`), permanently terminate (`cancel`), inspect (`running`),
+ * and await completion or errors (`finished`).
  *
  * @type {(iterable: AsyncIterable<any> | Iterable<any>) => RunController}
  * @param {AsyncIterable<any> | Iterable<any>} iterable - input iterable
- * @returns {RunController} - Has a start() method to start iteration, although
- * it is already started when controllable returns. Has a stop method to
- * stop iteration. Has a running attribute to check if iteration is running.
+ * @returns {RunController} controller with start, stop, cancel, running, and finished
+ * @throws {TypeError} throws synchronously if iterable is not iterable
  * @example
  * const control = run(longRunningIterable)
  * if (control.running) control.stop()
  * control.start()
+ * await control.finished
  */
 export const run = (iterable) => {
-  const semaphore = new Semaphore(1)
-  const runner = async () => {
-    for await (const unused of iterable) { // eslint-disable-line
-      if (!semaphore.acquireSync()) await semaphore.acquire()
-      // all work is done by iterable, so we do nothing with unused value here
-      semaphore.release()
-    }
-  }
-  runner() // start off running
-  return {
-    stop: () => { if (semaphore.available()) semaphore.acquire() },
-    start: () => { if (!semaphore.available()) semaphore.release() },
-    get running () { return semaphore.available() }
-  }
+  assertIterable('run', iterable)
+  return createRunnerController(iterable, null, null)
 }
 
 /**
- * Iterates over iterable asynchronously. It is sort of like starting
- * a thread. Unlike `run(iterable)`, there is no control over iteration.
+ * Drives an iterable asynchronously until completion and returns a Promise
+ * that resolves when all items have been consumed.
  *
  * @type {(iterable: AsyncIterable<any> | Iterable<any>) => Promise<void>}
  * @param {AsyncIterable<any> | Iterable<any>} iterable - iterable to iterate over
  * @returns {Promise<void>}
+ * @throws {TypeError} rejects with TypeError if iterable is not iterable
  * @example
  * await runAwait([0, 1, 2, 3, 4])
  */
 export const runAwait = async (iterable) => {
-  // Rollup.js is removing the for await loop as if it is dead code, so fooling it with
-  // more complex code that does the same thing.
-  // for await (const value of iterable) { // eslint-disable-line
-  // }
-  const iterator = iteratorFrom(iterable)
-  let { done } = await iterator.next()
-  while (!done) {
-    ({ done } = await iterator.next())
+  assertIterable('runAwait', iterable)
+  for await (const unused of iterable) { // eslint-disable-line no-unused-vars
+    // all work is done by iterable
   }
 }
 
 /**
- * Creates an  Array from the items in iterable.
+ * Creates an Array from the items in iterable.
  *
  * @type {<T = any>(iterable: AsyncIterable<T> | Iterable<T>) => Promise<Awaited<T>[]>}
  * @param {AsyncIterable<any> | Iterable<any>} iterable - the iterable to create the array from
- * @returns {Promise<Array<any>>} - the array
+ * @returns {Promise<Array<any>>} - Promise resolving to the array
+ * @throws {TypeError} rejects with TypeError if iterable is not iterable
  * @example
  * const a = await toArray([0, 1, 2, 3, 4]) // a is [0, 1, 2, 3, 4]
  */
-export const toArray = (iterable) => reduce((a, v) => { a.push(v); return a }, [], iterable)
+export const toArray = async (iterable) => {
+  assertIterable('toArray', iterable)
+  /** @type {any[]} */
+  const array = []
+  for await (const value of iterable) {
+    array.push(value)
+  }
+  return array
+}
