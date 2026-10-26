@@ -42,8 +42,9 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "check:types": "tsc",
+    "clean": "rm -f src/*.d.ts src/*.d.ts.map",
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "check:types": "pnpm run clean && tsc",
     "test": "node --test 'test/**/*test.js'",
     "check": "pnpm run check:types && pnpm run build && pnpm test",
     "validate:package": "npx -y publint && npx -y @arethetypeswrong/cli --pack . --profile esm-only",

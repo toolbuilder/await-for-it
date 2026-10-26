@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src/**/await-for-it.js"],
+  "include": ["src/**/*.js"],
   "compilerOptions": {
     "noEmit": false,
     "declaration": true,
@@ -8,4 +8,3 @@
     "emitDeclarationOnly": true
   }
 }
-
