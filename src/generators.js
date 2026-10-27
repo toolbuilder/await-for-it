@@ -37,7 +37,12 @@ const rangeGenerator = function * (start, stop, step) {
  * Creates a synchronous sequence of numbers matching the Python range function:
  * `range(stop)` or `range(start, stop[, step])`.
  *
- * @type {(...args: (number | undefined)[]) => Generator<number, void, unknown>}
+ * @type {{
+ *   (): Generator<number, void, unknown>;
+ *   (stop: number | undefined): Generator<number, void, unknown>;
+ *   (start: number | undefined, stop: number | undefined, step?: number): Generator<number, void, unknown>;
+ *   (start?: number, stop?: number, step?: number): Generator<number, void, unknown>;
+ * }}
  * @param {...(number | undefined)} args - arguments matching Python range:
  * - `range()` produces an empty sequence
  * - `range(stop)` starts at 0, steps by 1, ends before `stop`

@@ -2,6 +2,11 @@ import { shuffle } from './shuffle.js'
 import { iteratorFrom } from './iteratorfrom.js'
 
 /**
+ * @template [I=any]
+ * @typedef {I extends Iterable<infer U> ? Awaited<U> : I extends AsyncIterable<infer U> ? Awaited<U> : any} MergedElement
+ */
+
+/**
  * Merge the output of one or more async (or sync) iterables into a single async iterable. Each
  * async iterable is advanced as fast as possible, so that slow iterators do not hold
  * up faster ones. Equal speed iterables are advanced at roughly the same pace.
@@ -16,7 +21,7 @@ import { iteratorFrom } from './iteratorfrom.js'
  * loop, or calling `return()` on the generator), all active iterables are cleanly closed.
  * In-flight background rejections are handled safely to prevent unhandled promise rejections.
  *
- * @type {<T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => AsyncGenerator<T extends [] ? any : T[number] extends Iterable<infer U> | AsyncIterable<infer U> ? Awaited<U> : any, void, unknown>}
+ * @type {<T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => AsyncGenerator<T extends [] ? any : MergedElement<T[number]>, void, unknown>}
  * @param  {...(Iterable<any> | AsyncIterable<any>)} iterables - any number of sync or async iterables to be merged
  * @returns {AsyncGenerator<any, void, unknown>} - merged iterables as async iterable
  * @throws {any} - if any iterable throws an exception or rejects, it will be rethrown

@@ -135,6 +135,7 @@ test('diff', async () => {
 test('filter', async () => {
   const isEvenNumber = x => x % 2 === 0
   const isEvenNumberAsync = async x => x % 2 === 0
+  const obj = { ok: true }
 
   /** @type {any[]} */
   const tests = [
@@ -156,6 +157,18 @@ test('filter', async () => {
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
       [isEvenNumberAsync],
       [0, 2, 4, 6, 8]
+    ],
+    [
+      'evaluates non-boolean truthy and falsy return values (sync)',
+      [0, 1, '', 'hello', null, undefined, false, true, obj, NaN],
+      [x => x],
+      [1, 'hello', true, obj]
+    ],
+    [
+      'evaluates non-boolean truthy and falsy return values (async)',
+      [0, 1, '', 'hello', null, undefined, false, true, obj, NaN],
+      [async x => x],
+      [1, 'hello', true, obj]
     ]
   ]
   await chainable(tests).forEach(makeTestRunner('filter'))
@@ -296,6 +309,7 @@ test('pluck', async () => {
 test('reject', async () => {
   const isEvenNumber = x => x % 2 === 0
   const isEvenNumberAsync = async x => x % 2 === 0
+  const obj = { ok: true }
 
   /** @type {any[]} */
   const tests = [
@@ -311,6 +325,18 @@ test('reject', async () => {
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
       [isEvenNumberAsync],
       [1, 3, 5, 7, 9]
+    ],
+    [
+      'evaluates non-boolean truthy and falsy return values (sync)',
+      [0, 1, '', 'hello', null, undefined, false, true, obj, NaN],
+      [x => x],
+      [0, '', null, undefined, false, NaN]
+    ],
+    [
+      'evaluates non-boolean truthy and falsy return values (async)',
+      [0, 1, '', 'hello', null, undefined, false, true, obj, NaN],
+      [async x => x],
+      [0, '', null, undefined, false, NaN]
     ]
   ]
   await chainable(tests).forEach(makeTestRunner('reject'))

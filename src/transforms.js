@@ -10,7 +10,7 @@ export { flattenUnordered } from './flattenunordered.js'
 /**
  * @param {Iterable<PropertyKey>} propertyNames
  * @param {Iterable<any>} iterableValues
- * @returns {Record<string, any>}
+ * @returns {Record<PropertyKey, any>}
  */
 const zipObject = (propertyNames, iterableValues) => {
   /** @type {Record<PropertyKey, any>} */
@@ -34,10 +34,10 @@ const zipObject = (propertyNames, iterableValues) => {
  * If the arrays in iterable are too short, the remaining properties are assigned undefined.
  * See example.
  *
- * @type {(propertyNames: Iterable<PropertyKey>, iterable: AsyncIterable<Iterable<any>> | Iterable<Iterable<any>>) => AsyncGenerator<Record<string, any>, void, unknown>}
+ * @type {(propertyNames: Iterable<PropertyKey>, iterable: AsyncIterable<Iterable<any>> | Iterable<Iterable<any>>) => AsyncGenerator<Record<PropertyKey, any>, void, unknown>}
  * @param {Iterable<PropertyKey>} propertyNames - a sequence of property names
  * @param {AsyncIterable<Iterable<any>> | Iterable<Iterable<any>>} iterable - a sequence of arrays (or any iterable objects)
- * @returns {AsyncGenerator<Record<string, any>, void, unknown>} for the sequence of created Objects
+ * @returns {AsyncGenerator<Record<PropertyKey, any>, void, unknown>} for the sequence of created Objects
  * @example
  * const objects = await toArray(arrayToObject(['a', 'b'], [[0, 1], [2, 3, 'a'], [4]]))
  * // objects is [{'a': 0, 'b': 1 }, {'a': 2, 'b': 3 }, {'a': 4, 'b': undefined }]
@@ -109,11 +109,14 @@ export const diff = async function * (fn, iterable) {
 }
 
 /**
- * Keeps item from input sequence when fn(item) returns truthy. Remove items from input sequence when
- * fn(item) returns !truthy.
+ * Keeps item from input sequence when `await fn(item)` is truthy. Removes items from input sequence when
+ * `await fn(item)` is falsy.
  *
- * @type {<T = any>(fn: (item: Awaited<T>) => any, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
- * @param {(item: any) => any} fn - fn(item) returns truthy when item should be kept
+ * @type {{
+ *   <T = any, S extends Awaited<T> = Awaited<T>>(fn: (item: Awaited<T>) => item is S, iterable: AsyncIterable<T> | Iterable<T>): AsyncGenerator<S, void, unknown>;
+ *   <T = any>(fn: (item: Awaited<T>) => any, iterable: AsyncIterable<T> | Iterable<T>): AsyncGenerator<Awaited<T>, void, unknown>;
+ * }}
+ * @param {(item: any) => any} fn - fn(item) returns (or resolves to) truthy when item should be kept
  * @param {AsyncIterable<any> | Iterable<any>} iterable - the sequence to filter
  * @returns {AsyncGenerator<any, void, unknown>} for the filtered sequence
  * @example
@@ -123,7 +126,7 @@ export const diff = async function * (fn, iterable) {
  */
 export const filter = async function * (fn, iterable) {
   for await (const value of iterable) {
-    if (await fn(value) === true) {
+    if (await fn(value)) {
       yield value
     }
   }
@@ -252,10 +255,10 @@ export const pluck = (propertyName, iterable) => {
 }
 
 /**
- * Reject items when fn(item) returns truthy.
+ * Reject items when `await fn(item)` is truthy, keeping all other items.
  *
  * @type {<T = any>(fn: (item: Awaited<T>) => any, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
- * @param {(item: any) => any} fn - fn(item) returns truthy when item should be removed from output sequence
+ * @param {(item: any) => any} fn - fn(item) returns (or resolves to) truthy when item should be removed from output sequence
  * @param {AsyncIterable<any> | Iterable<any>} iterable - input sequence
  * @returns {AsyncGenerator<any, void, unknown>} for the non-rejected items
  * @example
@@ -264,7 +267,7 @@ export const pluck = (propertyName, iterable) => {
  * console.log(await toArray(a)) // prints [1, 3, 5, 7, 9]
  */
 export const reject = (fn, iterable) => {
-  return filter(async x => await fn(x) !== true, iterable)
+  return filter(async x => !(await fn(x)), iterable)
 }
 
 /**

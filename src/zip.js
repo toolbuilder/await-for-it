@@ -1,6 +1,21 @@
 import { iteratorFrom } from './iteratorfrom.js'
 
 /**
+ * @template [I=any]
+ * @typedef {I extends Iterable<infer U> ? U : I extends AsyncIterable<infer U> ? U : any} ZipElement
+ */
+
+/**
+ * @template {(Iterable<any> | AsyncIterable<any>)[]} [T=(Iterable<any> | AsyncIterable<any>)[]]
+ * @typedef {T extends [] ? any[] : { -readonly [K in keyof T]: ZipElement<T[K]> }} ZipTuple
+ */
+
+/**
+ * @template {(Iterable<any> | AsyncIterable<any>)[]} [T=(Iterable<any> | AsyncIterable<any>)[]]
+ * @typedef {T extends [] ? any[] : T extends [any] ? { -readonly [K in keyof T]: ZipElement<T[K]> } : { -readonly [K in keyof T]: ZipElement<T[K]> | undefined }} ZipAllTuple
+ */
+
+/**
  * Safely calls return() on an iterator if available.
  *
  * @param {Iterator<any> | AsyncIterator<any>} iterator
@@ -19,7 +34,7 @@ const closeIterator = async (iterator) => {
  *
  * @param {boolean} stopOnFirst - true for zip (stops when any iterable ends), false for zipAll (continues until all end)
  * @param {Array<Iterable<any> | AsyncIterable<any>>} iterables - any number of sync or async iterables to be zipped
- * @returns {AsyncGenerator<any[], void, unknown>} - each element of the AsyncGenerator is an Array containing the zip results.
+ * @returns {AsyncGenerator<any, void, unknown>} - each element of the AsyncGenerator is an Array containing the zip results.
  */
 const zipIt = async function * (stopOnFirst, iterables) {
   if (iterables.length === 0) {
@@ -89,9 +104,9 @@ const zipIt = async function * (stopOnFirst, iterables) {
  * Use zipAll if you want all iterables to be consumed. Use merge if you want to consume iterables as fast as possible, and
  * don't need the elements paired.
  *
- * @type {(...iterables: (Iterable<any> | AsyncIterable<any>)[]) => AsyncGenerator<any[], void, unknown>}
+ * @type {<T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => AsyncGenerator<ZipTuple<T>, void, unknown>}
  * @param  {...(Iterable<any> | AsyncIterable<any>)} iterables - any number of sync or async iterables to be zipped
- * @returns {AsyncGenerator<any[], void, unknown>} - zipped iterables as async iterable
+ * @returns {AsyncGenerator<any, void, unknown>} - zipped iterables as async iterable
  * @throws {any} - if any iterable throws an exception or rejects, it will be rethrown
  * @example
  * const a = [0, 1, 2]
@@ -112,9 +127,9 @@ export const zip = (...iterables) => zipIt(true, iterables)
  * Use zip if you want iteration to stop when any iterable is consumed. Use merge if you want to consume iterables as
  * fast as possible, and don't need the elements paired.
  *
- * @type {(...iterables: (Iterable<any> | AsyncIterable<any>)[]) => AsyncGenerator<any[], void, unknown>}
+ * @type {<T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => AsyncGenerator<ZipAllTuple<T>, void, unknown>}
  * @param  {...(Iterable<any> | AsyncIterable<any>)} iterables - any number of sync or async iterables to be zipped
- * @returns {AsyncGenerator<any[], void, unknown>} - zipped iterables as async iterable
+ * @returns {AsyncGenerator<any, void, unknown>} - zipped iterables as async iterable
  * @throws {any} - if any iterable throws an exception or rejects, it will be rethrown
  * @example
  * const a = [0, 1, 2]

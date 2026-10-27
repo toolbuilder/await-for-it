@@ -239,9 +239,9 @@ console.log(a) // prints [1, 1, 1, 1]
 
 ## filter
 
-Keeps items from the input sequence when `await fn(item) === true`, and omits all other items.
+Keeps items from the input sequence when `await fn(item)` is truthy, and omits all other items.
 
-- `fn` **(AsyncFunction | [Function][92])** `fn(item)` returning (or resolving to) `true` when the item should be kept
+- `fn` **(AsyncFunction | [Function][92])** `fn(item)` returning (or resolving to) a truthy value when the item should be kept
 
 Returns **ChainableClass** for the filtered sequence.
 
@@ -395,9 +395,9 @@ Returns **ChainableClass** that provides the output values as they resolve.
 
 ## reject
 
-Removes items when `await fn(item) === true`, keeping all other items.
+Removes items when `await fn(item)` is truthy, keeping all other items.
 
-- `fn` **(AsyncFunction | [Function][92])** `fn(item)` returning (or resolving to) `true` when the item should be removed from the output sequence
+- `fn` **(AsyncFunction | [Function][92])** `fn(item)` returning (or resolving to) a truthy value when the item should be removed from the output sequence
 
 ```javascript
 const isEvenNumber = x => x % 2 === 0

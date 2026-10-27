@@ -93,10 +93,9 @@ is one shorter than input sequence. Otherwise, no items are output.
 
 ## filter
 
-Keeps item from input sequence when fn(item) returns truthy. Remove items from input sequence when
-fn(item) returns !truthy.
+Keeps items from the input sequence when `await fn(item)` is truthy, and omits all other items.
 
--   `fn` **[Function][53]** synchronous fn(item) returns truthy when item should be removed
+-   `fn` **(AsyncFunction | [Function][53])** `fn(item)` returning (or resolving to) truthy when item should be kept
 -   `iterable` **(AsyncIterable | Iterable)** the sequence to filter
 
 ```javascript
@@ -233,9 +232,9 @@ Returns **AsyncGenerator** for the plucked items
 
 ## reject
 
-Reject items when fn(item) returns truthy.
+Reject items when `await fn(item)` is truthy, keeping all other items.
 
--   `fn` **[Function][53]** synchronous fn(item) returns truthy when item should be removed from output sequence
+-   `fn` **(AsyncFunction | [Function][53])** `fn(item)` returning (or resolving to) truthy when item should be removed from output sequence
 -   `iterable` **(AsyncIterable | Iterable)** input sequence
 
 ```javascript

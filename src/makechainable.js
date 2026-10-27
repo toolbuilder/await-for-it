@@ -5,7 +5,7 @@
 
 /**
  * @template [I=any]
- * @typedef {I extends AsyncIterable<infer U> ? Awaited<U> : I extends Iterable<infer U> ? Awaited<U> : any} IterableElement
+ * @typedef {I extends Iterable<infer U> ? Awaited<U> : I extends AsyncIterable<infer U> ? Awaited<U> : any} IterableElement
  */
 
 /**
@@ -13,11 +13,12 @@
  * @template {Record<string, (...args: any[]) => any>} [R=Record<string, (...args: any[]) => any>]
  * @template [T=any]
  * @template {keyof Tr} [K=keyof Tr]
- * @typedef {K extends 'arrayToObject' ? (propertyNames: Iterable<PropertyKey>) => CustomChainableIterable<Tr, R, Record<string, any>>
+ * @typedef {K extends 'arrayToObject' ? (propertyNames: Iterable<PropertyKey>) => CustomChainableIterable<Tr, R, Record<PropertyKey, any>>
  *   : K extends 'callAwait' | 'callNoAwait' ? (fn: (item: T) => any) => CustomChainableIterable<Tr, R, T>
  *   : K extends 'chunk' ? (n: number, timeout: number) => CustomChainableIterable<Tr, R, T[]>
  *   : K extends 'diff' ? <U = any>(fn: (previous: T, current: T) => U) => CustomChainableIterable<Tr, R, Awaited<U>>
- *   : K extends 'filter' | 'reject' ? (fn: (item: T) => any) => CustomChainableIterable<Tr, R, T>
+ *   : K extends 'filter' ? { <S extends T>(fn: (item: T) => item is S): CustomChainableIterable<Tr, R, S>; (fn: (item: T) => any): CustomChainableIterable<Tr, R, T> }
+ *   : K extends 'reject' ? (fn: (item: T) => any) => CustomChainableIterable<Tr, R, T>
  *   : K extends 'flatten' | 'flattenRecursive' ? () => CustomChainableIterable<Tr, R, any>
  *   : K extends 'flattenUnordered' ? (maxPoolSize: number) => CustomChainableIterable<Tr, R, any>
  *   : K extends 'map' ? <U = any>(fn: (item: T) => U) => CustomChainableIterable<Tr, R, Awaited<U>>
@@ -39,7 +40,7 @@
  *   : K extends 'reduce' ? <U = any>(fn: (accumulator: U extends never[] ? any[] : Awaited<U>, item: T, index: number) => (U extends never[] ? any[] : Awaited<U>) | PromiseLike<U extends never[] ? any[] : Awaited<U>>, accumulator: U) => Promise<U extends never[] ? any[] : Awaited<U>>
  *   : K extends 'run' ? () => import('./reducers.js').RunController
  *   : K extends 'runAwait' ? () => Promise<void>
- *   : K extends 'toArray' ? () => Promise<T[]>
+ *   : K extends 'toArray' ? () => Promise<Awaited<T>[]>
  *   : (...args: OmitLastParam<R[K]>) => ReturnType<R[K]>} ReducerMethod
  */
 
@@ -49,9 +50,10 @@
  * @template {Record<string, (...args: any[]) => any>} [R=Record<string, (...args: any[]) => any>]
  * @template {keyof G} [K=keyof G]
  * @typedef {K extends 'from' ? <T = any>(iterable: AsyncIterable<T> | Iterable<T>) => CustomChainableIterable<Tr, R, Awaited<T>>
- *   : K extends 'merge' ? <T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => CustomChainableIterable<Tr, R, T extends [] ? any : T[number] extends Iterable<infer U> | AsyncIterable<infer U> ? Awaited<U> : any>
- *   : K extends 'range' ? (...args: (number | undefined)[]) => CustomChainableIterable<Tr, R, number>
- *   : K extends 'zip' | 'zipAll' ? (...iterables: (Iterable<any> | AsyncIterable<any>)[]) => CustomChainableIterable<Tr, R, any[]>
+ *   : K extends 'merge' ? <T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => CustomChainableIterable<Tr, R, T extends [] ? any : IterableElement<T[number]>>
+ *   : K extends 'range' ? { (): CustomChainableIterable<Tr, R, number>; (stop: number | undefined): CustomChainableIterable<Tr, R, number>; (start: number | undefined, stop: number | undefined, step?: number): CustomChainableIterable<Tr, R, number>; (start?: number, stop?: number, step?: number): CustomChainableIterable<Tr, R, number> }
+ *   : K extends 'zip' ? <T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => CustomChainableIterable<Tr, R, import('./zip.js').ZipTuple<T>>
+ *   : K extends 'zipAll' ? <T extends (Iterable<any> | AsyncIterable<any>)[]>(...iterables: T) => CustomChainableIterable<Tr, R, import('./zip.js').ZipAllTuple<T>>
  *   : (...args: Parameters<G[K]>) => CustomChainableIterable<Tr, R, IterableElement<ReturnType<G[K]>>>} GeneratorMethod
  */
 
@@ -83,7 +85,9 @@
  * @template {Record<string, (...args: any[]) => any>} [G=Record<string, (...args: any[]) => any>]
  * @template {Record<string, (...args: any[]) => any>} [Tr=Record<string, (...args: any[]) => any>]
  * @template {Record<string, (...args: any[]) => any>} [R=Record<string, (...args: any[]) => any>]
- * @typedef {(<T = any>(iterable?: AsyncIterable<T> | Iterable<T>) => CustomChainableIterable<Tr, R, Awaited<T>>) & CustomChainableClass<G, Tr, R>} CustomChainableFactory
+ * @typedef {(<T = any>(iterable: AsyncIterable<T> | Iterable<T>) => CustomChainableIterable<Tr, R, Awaited<T>>) & {
+ *   [K in keyof G]: GeneratorMethod<G, Tr, R, K>;
+ * }} CustomChainableFactory
  */
 
 import { makeFactory } from '@toolbuilder/make-factory'
