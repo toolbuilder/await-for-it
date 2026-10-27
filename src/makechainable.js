@@ -5,7 +5,7 @@
 
 /**
  * @template [I=any]
- * @typedef {I extends Iterable<infer U> ? Awaited<U> : I extends AsyncIterable<infer U> ? Awaited<U> : any} IterableElement
+ * @typedef {I extends AsyncIterable<infer U> ? Awaited<U> : I extends Iterable<infer U> ? Awaited<U> : any} IterableElement
  */
 
 /**
@@ -76,7 +76,7 @@
  * @template {Record<string, (...args: any[]) => any>} [G=Record<string, (...args: any[]) => any>]
  * @template {Record<string, (...args: any[]) => any>} [Tr=Record<string, (...args: any[]) => any>]
  * @template {Record<string, (...args: any[]) => any>} [R=Record<string, (...args: any[]) => any>]
- * @typedef {(new <T = any>(iterable?: AsyncIterable<T> | Iterable<T>) => CustomChainableIterable<Tr, R, Awaited<T>>) & {
+ * @typedef {(new <T = any>(iterable: AsyncIterable<T> | Iterable<T>) => CustomChainableIterable<Tr, R, Awaited<T>>) & {
  *   [K in keyof G]: GeneratorMethod<G, Tr, R, K>;
  * }} CustomChainableClass
  */

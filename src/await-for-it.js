@@ -1,11 +1,50 @@
 /**
  * @template [T=any]
- * @typedef {import('./queue.js').QueueBuffer<T>} QueueBuffer
+ * @template [ShiftReturn=any]
+ * @typedef {import('./queue.js').QueueBuffer<T, ShiftReturn>} QueueBuffer
  */
 
 /**
  * @template [T=any]
  * @typedef {import('./chainable.js').ChainableIterable<T>} ChainableIterable
+ */
+
+/**
+ * @template [T=any]
+ * @typedef {import('./chainable.js').ChainableMethods<T>} ChainableMethods
+ */
+
+/**
+ * @typedef {import('./chainable.js').ChainableStatic} ChainableStatic
+ */
+
+/**
+ * @typedef {import('./chainable.js').ChainableClassConstructor} ChainableClassConstructor
+ */
+
+/**
+ * @typedef {import('./chainable.js').ChainableFactory} ChainableFactory
+ */
+
+/**
+ * @template {Record<string, (...args: any[]) => any>} [Tr=Record<string, (...args: any[]) => any>]
+ * @template {Record<string, (...args: any[]) => any>} [R=Record<string, (...args: any[]) => any>]
+ * @template [T=any]
+ * @typedef {import('./makechainable.js').CustomChainableIterable<Tr, R, T>} CustomChainableIterable
+ */
+
+/**
+ * @template {Record<string, (...args: any[]) => any>} [G=Record<string, (...args: any[]) => any>]
+ * @template {Record<string, (...args: any[]) => any>} [Tr=Record<string, (...args: any[]) => any>]
+ * @template {Record<string, (...args: any[]) => any>} [R=Record<string, (...args: any[]) => any>]
+ * @typedef {import('./makechainable.js').CustomChainableClass<G, Tr, R>} CustomChainableClass
+ */
+
+/**
+ * @template {Record<string, (...args: any[]) => any>} [G=Record<string, (...args: any[]) => any>]
+ * @template {Record<string, (...args: any[]) => any>} [Tr=Record<string, (...args: any[]) => any>]
+ * @template {Record<string, (...args: any[]) => any>} [R=Record<string, (...args: any[]) => any>]
+ * @typedef {import('./makechainable.js').CustomChainableFactory<G, Tr, R>} CustomChainableFactory
  */
 
 /**

@@ -34,9 +34,9 @@ const zipObject = (propertyNames, iterableValues) => {
  * If the arrays in iterable are too short, the remaining properties are assigned undefined.
  * See example.
  *
- * @type {(propertyNames: Iterable<PropertyKey>, iterable: AsyncIterable<Iterable<any>> | Iterable<Iterable<any>>) => AsyncGenerator<Record<PropertyKey, any>, void, unknown>}
+ * @type {(propertyNames: Iterable<PropertyKey>, iterable: AsyncIterable<Iterable<any>> | Iterable<Iterable<any> | PromiseLike<Iterable<any>>>) => AsyncGenerator<Record<PropertyKey, any>, void, unknown>}
  * @param {Iterable<PropertyKey>} propertyNames - a sequence of property names
- * @param {AsyncIterable<Iterable<any>> | Iterable<Iterable<any>>} iterable - a sequence of arrays (or any iterable objects)
+ * @param {AsyncIterable<Iterable<any>> | Iterable<Iterable<any> | PromiseLike<Iterable<any>>>} iterable - a sequence of arrays (or any iterable objects)
  * @returns {AsyncGenerator<Record<PropertyKey, any>, void, unknown>} for the sequence of created Objects
  * @example
  * const objects = await toArray(arrayToObject(['a', 'b'], [[0, 1], [2, 3, 'a'], [4]]))
@@ -224,10 +224,10 @@ export const mapWith = function (generatorFunction, iterable) {
 /**
  * Given a sequence of Arrays, output the nth element of each array as a sequence.
  *
- * @type {<T = any>(index: number, iterable: AsyncIterable<readonly T[]> | Iterable<readonly T[]>) => AsyncGenerator<Awaited<T>, void, unknown>}
+ * @type {<T = any>(index: number, iterable: AsyncIterable<readonly T[]> | Iterable<readonly T[] | PromiseLike<readonly T[]>>) => AsyncGenerator<Awaited<T>, void, unknown>}
  * @param {number} index - the index of the Array to output. Negative index values
  * are ok. The index of the last element is -1.
- * @param {AsyncIterable<readonly any[]> | Iterable<readonly any[]>} iterable - the iterable to process
+ * @param {AsyncIterable<readonly any[]> | Iterable<readonly any[] | PromiseLike<readonly any[]>>} iterable - the iterable to process
  * @returns {AsyncGenerator<any, void, unknown>} for the nth elements
  * @example
  * const input = [[0, 1], [2, 3], [4, 5]]
@@ -241,14 +241,14 @@ export const nth = (index, iterable) => {
 /**
  * Given a sequence of Objects, output the specified property of each Object as a sequence.
  *
- * @type {<T extends Record<PropertyKey, any> = Record<PropertyKey, any>, K extends keyof T = keyof T>(propertyName: K, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T[K]>, void, unknown>}
+ * @type {<T = any, K extends keyof Awaited<T> = keyof Awaited<T>>(propertyName: K, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<Awaited<T>[K]>, void, unknown>}
  * @param {PropertyKey} propertyName - the property to extract from each Object
  * @param {AsyncIterable<any> | Iterable<any>} iterable - the input sequence of Objects
  * @returns {AsyncGenerator<any, void, unknown>} for the plucked items
  * @example
  * const input = [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}, {'a': 5, 'b': 6}]
  * const a = pluck('a', input)
- * console.log(await toArray(a))) // prints [1, 3, 5]
+ * console.log(await toArray(a)) // prints [1, 3, 5]
  */
 export const pluck = (propertyName, iterable) => {
   return map(x => x[propertyName], iterable)

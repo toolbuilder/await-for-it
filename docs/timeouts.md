@@ -8,13 +8,13 @@ Some basic Promise based timeout methods. In particular, I couldn't find a packa
 
 ## callWithTimeout
 
-Create a Promise that calls a timeoutFunction if the promiseFunction does not resolve before
+Create a Promise that calls a timeoutFunction if the promiseFunction does not settle before
 timeoutDuration milliseconds. The promiseFunction is always called, so the timeout cannot stop it.
 
 If the timeoutFunction resolves or rejects first, the promiseFunction resolution will be lost. If
 the results are important to you, you'll need to provide access another way.
 
-The timeoutFunction will only be called if the promiseFunction does not resolve before the timeout.
+The timeoutFunction will only be called if the promiseFunction does not settle (resolve or reject) before the timeout.
 
 -   `timeoutDuration` **[Number][7]** milliseconds to wait before calling timeoutFunction
 -   `promiseFunction` **[Function][8]** normal promise function with resolve, reject as parameters

@@ -1,18 +1,18 @@
-## iteratorFrom
+# iteratorFrom
 
-Returns an iterator given any iterable.
+Returns an iterator from either an asynchronous or synchronous iterable. If an object implements both `[Symbol.asyncIterator]` and `[Symbol.iterator]`, the asynchronous iterator (`[Symbol.asyncIterator]()`) is returned, matching JavaScript's `for await...of` semantics.
 
--   `iterable` **(AsyncIterable | Iterable)** the iterable to get an iterator from.
-
+- `iterable` **(AsyncIterable | Iterable)** the async or sync iterable to obtain an iterator from.
+- Throws **TypeError** if `iterable` is neither an `AsyncIterable` nor an `Iterable`.
+- Returns **(AsyncIterator | Iterator)** the iterator created by `iterable`.
 
 ```javascript
 import { iteratorFrom } from '@toolbuilder/await-for-it'
 
-// Here's an example that exists only because a bundler was
-// removing the empty loop version. That bug has been fixed btw.
-const iterator = iteratorFrom(iterable)
-let { done } = await iterator.next()
+const iterator = iteratorFrom([1, 2, 3])
+let { value, done } = await iterator.next()
 while (!done) {
-  ({ done } = await iterator.next())
+  console.log(value)
+  ;({ value, done } = await iterator.next())
 }
 ```

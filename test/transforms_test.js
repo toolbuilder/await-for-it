@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { generators } from 'iterablefu'
-import { chainable, wait } from '../src/await-for-it.js'
+import { chainable, transforms, reducers, wait } from '../src/await-for-it.js'
 
 const randomInt = (maxInt) => Math.floor(Math.random() * Math.floor(maxInt))
 
@@ -398,4 +398,26 @@ test('throttle: will wait for initial wait period before yielding first item', a
     .map(n => Date.now())
     .toArray()
   assert.ok(waitTimeGood(output[0] - startTime, 100), 'throttle waiting initial wait time')
+})
+
+test('transforms: functional pluck, nth, and arrayToObject support primitives and sync iterables of promises', async () => {
+  const lengths = await reducers.toArray(transforms.pluck('length', ['a', 'bcd']))
+  /** @type {number[]} */
+  const checkLengths = lengths
+  assert.deepEqual(checkLengths, [1, 3])
+
+  const promisedObjs = [Promise.resolve({ id: 10 }), Promise.resolve({ id: 20 })]
+  const ids = await reducers.toArray(transforms.pluck('id', promisedObjs))
+  /** @type {number[]} */
+  const checkIds = ids
+  assert.deepEqual(checkIds, [10, 20])
+
+  const promisedRows = [Promise.resolve(['x', 'y']), Promise.resolve(['z', 'w'])]
+  const seconds = await reducers.toArray(transforms.nth(1, promisedRows))
+  /** @type {string[]} */
+  const checkSeconds = seconds
+  assert.deepEqual(checkSeconds, ['y', 'w'])
+
+  const mappedObjs = await reducers.toArray(transforms.arrayToObject(['first', 'second'], promisedRows))
+  assert.deepEqual(mappedObjs, [{ first: 'x', second: 'y' }, { first: 'z', second: 'w' }])
 })

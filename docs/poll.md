@@ -92,11 +92,3 @@ const metrics = await chainable(poll)
 console.log('Collected 5 samples:', metrics)
 ```
 
-// take(5) completes after 5 items and terminates the generator
-const metrics = await chainable(poll)
-  .take(5)
-  .toArray()
-
-console.log('Collected 5 samples:', metrics)
-```
-

@@ -79,6 +79,7 @@ Here is a quick set of [examples](docs/examples.md)
   * **Pure ESM Package**: Dropped CommonJS build in favor of pure ESM. CommonJS consumers on Node < 20.17 require dynamic `import()`; Node 22+ (and 20.17+) can `require()` directly.
   * **Flatten transforms (`flatten`, `flattenRecursive`, `flattenUnordered`)**: In addition to strings, built-in value and dictionary types that implement iteration (`TypedArray`, Node `Buffer`, `Map`, `URLSearchParams`, `Headers`, and `FormData`) are no longer flattened by default. They are preserved intact as atomic values.
   * **`Symbol.isConcatSpreadable` support**: Explicit opt-in or opt-out of flattening is now supported on any object via `[Symbol.isConcatSpreadable]`.
+  * **`iteratorFrom` dual-iterable priority**: When an object implements both `[Symbol.asyncIterator]` and `[Symbol.iterator]`, `iteratorFrom` now prefers `[Symbol.asyncIterator]` (matching `for await...of` and the rest of the package) instead of `[Symbol.iterator]`.
 * `1.0.0` -
   * See the updated [docs](docs/queue.md).
   * `Queue` no longer throws `QueueFull` when the buffer reaches capacity. That's properly the buffer's job.

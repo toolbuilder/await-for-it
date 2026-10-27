@@ -21,9 +21,6 @@ Transform methods can have any number of parameters, but the last parameter is *
 -   [throttle][40]
 -   [pool][43]
 -   [chunk][45]
--   [callWithTimeout][47]
--   [wait][49]
--   [waitToCall][51]
 
 ## arrayToObject
 
@@ -320,37 +317,6 @@ iterator will stop chunking and the input iterable.
 
 Returns **AsyncGenerator** provides each chunk in order
 
-## callWithTimeout
-
-Create a Promise that calls a timeoutFunction if the promiseFunction does not resolve before
-timeoutDuration milliseconds. The promiseFunction is always called, so the timeout cannot stop it.
-
-If the timeoutFunction resolves or rejects first, the promiseFunction resolution will be lost. If
-the results are important to you, you'll need to provide access another way.
-
-The timeoutFunction will only be called if the promiseFunction does not resolve before the timeout.
-
--   `timeoutDuration` **[Number][54]** milliseconds to wait before calling timeoutFunction
--   `promiseFunction` **[Function][53]** normal promise function with resolve, reject as parameters
--   `timeoutFunction` **[Function][53]** normal promise function with resolve, reject as parameters,
-    called only if promise times out.
-
-## wait
-
-Create a promise that resolves after `ms` milliseconds.
-
--   `ms` **[Number][54]** the minimum number of milliseconds to wait before resolving.
-
-## waitToCall
-
-Wait before calling a function and returning the resolved value.
-
--   `ms` **[Number][54]** milliseconds to wait before calling function 'fn'
--   `fn` **(AsyncFunction | [Function][53])** function to call
-
-Returns **[Promise][56]** that resolves to the return value of fn, or the value it resolves
-to if fn is async.
-
 [1]: #arraytoobject
 
 [2]: #parameters
@@ -442,18 +408,6 @@ to if fn is async.
 [45]: #chunk
 
 [46]: #parameters-15
-
-[47]: #callwithtimeout
-
-[48]: #parameters-16
-
-[49]: #wait
-
-[50]: #parameters-17
-
-[51]: #waittocall
-
-[52]: #parameters-18
 
 [53]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Statements/function
 

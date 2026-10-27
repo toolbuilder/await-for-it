@@ -63,4 +63,70 @@ test('waitToCall', async () => {
   const callTime = await waitToCall(waitTime, fn)
   const waited = callTime - startTime
   assert.ok(approximately(waited, waitTime), 'waitToCall waited to call fn')
+
+  const asyncResult = await waitToCall(20, async () => 'async-ok')
+  /** @type {string} */
+  const checkAsyncResult = asyncResult
+  assert.equal(checkAsyncResult, 'async-ok')
+
+  const syncBoom = new Error('sync waitToCall failure')
+  await assert.rejects(
+    () => waitToCall(20, () => { throw syncBoom }),
+    syncBoom,
+    'synchronous throw inside waitToCall rejects returned promise instead of crashing timer'
+  )
+})
+
+test('callWithTimeout: cleans up timer on sync throw, catches sync timeout throw, and infers fallback types', async () => {
+  let timeoutCalled = false
+  const syncError = new Error('sync promiseFunction error')
+
+  await assert.rejects(
+    () => callWithTimeout(
+      30,
+      () => { throw syncError },
+      (resolve) => {
+        timeoutCalled = true
+        resolve('should not run')
+      }
+    ),
+    syncError,
+    'sync throw in promiseFunction rejects immediately'
+  )
+
+  await wait(60)
+  assert.equal(timeoutCalled, false, 'timeoutFunction is not called after promiseFunction throws synchronously')
+
+  const timeoutSyncError = new Error('sync timeoutFunction error')
+  await assert.rejects(
+    () => callWithTimeout(
+      20,
+      () => {},
+      () => { throw timeoutSyncError }
+    ),
+    timeoutSyncError,
+    'sync throw in timeoutFunction rejects returned promise cleanly'
+  )
+
+  // Distinct fallback type inference: Promise<number | null>
+  const fallbackValue = await callWithTimeout(
+    20,
+    (resolve) => { setTimeout(() => resolve(123), 80) },
+    (resolve) => resolve(null)
+  )
+  /** @type {number | null} */
+  const checkFallback = fallbackValue
+  assert.equal(checkFallback, null)
+
+  const compileTimeChecks = () => {
+    /** @type {typeof callWithTimeout<number, number>} */ (callWithTimeout)(
+      10,
+      (resolve) => resolve(1),
+      (resolve) => {
+        // @ts-expect-error - cannot resolve() with 0 args when U is number under strictNullChecks
+        resolve()
+      }
+    )
+  }
+  assert.equal(typeof compileTimeChecks, 'function')
 })

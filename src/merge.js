@@ -3,7 +3,7 @@ import { iteratorFrom } from './iteratorfrom.js'
 
 /**
  * @template [I=any]
- * @typedef {I extends Iterable<infer U> ? Awaited<U> : I extends AsyncIterable<infer U> ? Awaited<U> : any} MergedElement
+ * @typedef {I extends AsyncIterable<infer U> ? Awaited<U> : I extends Iterable<infer U> ? Awaited<U> : any} MergedElement
  */
 
 /**

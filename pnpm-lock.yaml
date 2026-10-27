@@ -17,13 +17,13 @@ importers:
       '@toolbuilder/ring-buffer':
         specifier: ^2.0.0
         version: 2.0.0
-      '@toolbuilder/semaphore':
-        specifier: ^1.0.0
-        version: 1.0.0
       iterablefu:
         specifier: ^1.0.0
         version: 1.0.0
     devDependencies:
+      '@toolbuilder/semaphore':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5

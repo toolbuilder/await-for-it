@@ -2,7 +2,7 @@ import { iteratorFrom } from './iteratorfrom.js'
 
 /**
  * @template [I=any]
- * @typedef {I extends Iterable<infer U> ? U : I extends AsyncIterable<infer U> ? U : any} ZipElement
+ * @typedef {I extends AsyncIterable<infer U> ? U : I extends Iterable<infer U> ? U : any} ZipElement
  */
 
 /**
