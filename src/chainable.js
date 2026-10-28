@@ -21,7 +21,7 @@
  * @property {<K extends keyof T>(propertyName: K) => ChainableIterable<Awaited<T[K]>>} pluck Yields specified property from each object in sequence.
  * @property {(maxPoolSize: number) => ChainableIterable<T extends (...args: any[]) => infer R ? Awaited<R> : Awaited<T>>} pool Executes up to maxPoolSize functions/promises concurrently and yields results as they resolve.
  * @property {(fn: (item: T) => any) => ChainableIterable<T>} reject Removes elements when await fn(item) is truthy.
- * @property {(n: number) => ChainableIterable<T>} take Returns the first n elements of sequence.
+ * @property {(n: number) => ChainableIterable<T>} take Returns the first n elements of sequence, closing the upstream iterator upon completion.
  * @property {(period: number, initialWait: number) => ChainableIterable<T>} throttle Throttles sequence to a maximum iteration speed.
  * @property {(fn: (item: T, index: number) => any) => Promise<void>} forEach Executes fn(item, index) for each item in sequence.
  * @property {() => import('./reducers.js').PublishController<T>} publish Publishes values from sequence to subscribing functions.

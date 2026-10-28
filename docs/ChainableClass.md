@@ -411,6 +411,8 @@ Returns **ChainableClass** for the non-rejected items.
 
 Provide the first `n` values of the iterable. Useful to truncate infinite sequences.
 
+When `n` values have been yielded, early termination occurs, which triggers the upstream iterator's `return()` method per the iteration protocol. This ensures upstream generators execute their `finally` blocks and cleanly release any allocated resources (such as stopping polling timers or closing streams). If the input sequence has fewer than `n` values, iteration completes when the input sequence ends.
+
 - `n` **[Number][93]** number of items to take
 
 ```javascript

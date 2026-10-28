@@ -246,6 +246,8 @@ Returns **AsyncGenerator** for the non-rejected items
 
 Provide the first n values of iterator. Useful to truncate infinite sequences.
 
+When `n` values have been yielded, early termination occurs via `break`, which triggers the upstream iterator's `return()` method per the iteration protocol. This ensures upstream generators execute their `finally` blocks and cleanly release any allocated resources (such as stopping polling timers or closing streams). If the input sequence has fewer than `n` values, the output sequence ends when the input sequence ends.
+
 -   `n` **[Number][54]** number of items to take
 -   `iterable` **(AsyncIterable | Iterable)** provides the first n values
 

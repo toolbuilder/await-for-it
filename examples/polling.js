@@ -14,8 +14,14 @@ await chainable(poll)
   .take(5) // stop polling after 5 numbers
   .runAwait() // start the polling process
 
-// Poll is now stopped waiting for another next() call which will never come.
-// Ordinarily you would call done() when some event happens, like this:
+// Note on state: Because take(5) breaks early after 5 items, the iterator return()
+// protocol is invoked on the poll generator. Its finally block runs automatically,
+// setting poll.isDone to true and clearing any sleep timers.
+// Therefore, the polling iterable is already closed and terminated (poll.isDone === true),
+// not waiting for another next() call.
+// Calling poll.done() here is redundant (though safe). Ordinarily, poll.done() is used
+// to stop an ongoing polling stream in response to an external event when not using a
+// finite operator like take().
 poll.done()
 console.log('Polling completed.')
 

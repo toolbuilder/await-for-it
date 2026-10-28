@@ -273,6 +273,14 @@ export const reject = (fn, iterable) => {
 /**
  * Provide the first n values of iterator. Useful to truncate infinite sequences.
  *
+ * When `n` values have been yielded, early termination occurs via `break`, which
+ * invokes the upstream iterator's `return()` method according to the iteration protocol.
+ * This ensures upstream generators or resources execute their `finally` blocks and
+ * cleanly release any allocated resources (such as stopping polling timers or closing streams).
+ *
+ * If the input sequence has fewer than `n` values, the output sequence ends when the
+ * input sequence ends.
+ *
  * @type {<T = any>(n: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
  * @param {number} n - number of items to take
  * @param {AsyncIterable<any> | Iterable<any>} iterable - provides the first n values
