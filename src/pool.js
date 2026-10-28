@@ -1,5 +1,5 @@
 import { concatenate } from 'iterablefu/src/generators.js'
-import { isFunction } from './is.js'
+import { isAsyncIterable, isFunction, isSyncIterable } from './is.js'
 import { iteratorFrom } from './iteratorfrom.js'
 
 /**
@@ -13,34 +13,14 @@ const valueToIterator = function * (value) {
 }
 
 /**
- * Execute functions provided by input iterable. Returns results as they resolve, with
- * no more than maxPoolSize promises pending at any time. Results may be out of order with
- * respect to the input order.
+ * Helper async generator for pool.
  *
- * The input iterable can yield anything but constructor functions. However, async and sync
- * functions are handled specially. Each function will be called, and the result placed into
- * the pool to be yielded when resolved. Promises will remain in the pool until they resolve,
- * other values will resolve immediately as you would expect. Consider using promiseWithTimeout,
- * or your own favorite timeout promise.
- *
- * As always with async iterables, if the input iterable yields a Promise, pool must wait
- * until the Promise resolves before advancing the input iterable. This
- * defeats the purpose of pool. So if you need to yield a promise from input iterator,
- * wrap it with a function like so: `() => promise`. Pool will call the function to get
- * the Promise, then advance the input iterable to get the next value.
- *
- * The iterating code provides backpressure, and can stop function calls by stopping iteration.
- *
- * @type {<T = any>(maxPoolSize: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<PoolResult<T>, void, unknown>}
- * @param {number} maxPoolSize - maximum number of pending promises at any given time
- * @param {AsyncIterable<any> | Iterable<any>} iterable - input iterable, should yield functions for pool
- * to work as intended.
- * @returns {AsyncGenerator<any, void, unknown>} - a generator that provides the output values as they occur
- * @throws - if iterable throws, or if any functions yielded by iterable throws, or if any
- * Promise in the pool rejects, the exception will be caught and rethrown by pool, so that the
- * iterating code can handle it. Once an exception is thrown, the iterator is done.
+ * @template [T=any]
+ * @param {number} maxPoolSize
+ * @param {AsyncIterable<T> | Iterable<T>} iterable
+ * @returns {AsyncGenerator<PoolResult<T>, void, unknown>}
  */
-export const pool = async function * (maxPoolSize, iterable) {
+const poolGenerator = async function * (maxPoolSize, iterable) {
   let idSequence = 31 // generates unique keys for promisePool, no reason it has to start with 31
   /** @type {Map<number, Promise<{ done?: boolean, value?: any, id: number }>>} */
   const promisePool = new Map() // key is id, value is a promise for the function result
@@ -91,4 +71,45 @@ export const pool = async function * (maxPoolSize, iterable) {
       // if !id, then iterable.next() resolved, either a new Promise in promisePool or it is done
     }
   }
+}
+
+/**
+ * Execute functions provided by input iterable. Returns results as they resolve, with
+ * no more than maxPoolSize promises pending at any time. Results may be out of order with
+ * respect to the input order.
+ *
+ * The input iterable can yield anything but constructor functions. However, async and sync
+ * functions are handled specially. Each function will be called, and the result placed into
+ * the pool to be yielded when resolved. Promises will remain in the pool until they resolve,
+ * other values will resolve immediately as you would expect. Consider using promiseWithTimeout,
+ * or your own favorite timeout promise.
+ *
+ * As always with async iterables, if the input iterable yields a Promise, pool must wait
+ * until the Promise resolves before advancing the input iterable. This
+ * defeats the purpose of pool. So if you need to yield a promise from input iterator,
+ * wrap it with a function like so: `() => promise`. Pool will call the function to get
+ * the Promise, then advance the input iterable to get the next value.
+ *
+ * The iterating code provides backpressure, and can stop function calls by stopping iteration.
+ *
+ * @type {<T = any>(maxPoolSize: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<PoolResult<T>, void, unknown>}
+ * @param {number} maxPoolSize - maximum number of pending promises at any given time
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - input iterable, should yield functions for pool
+ * to work as intended.
+ * @returns {AsyncGenerator<any, void, unknown>} - a generator that provides the output values as they occur
+ * @throws {RangeError} if maxPoolSize is not an integer >= 1
+ * @throws {TypeError} if iterable is not iterable
+ * @throws - if iterable throws, or if any functions yielded by iterable throws, or if any
+ * Promise in the pool rejects, the exception will be caught and rethrown by pool, so that the
+ * iterating code can handle it. Once an exception is thrown, the iterator is done.
+ */
+export const pool = (maxPoolSize, iterable) => {
+  if (!Number.isInteger(maxPoolSize) || maxPoolSize < 1) {
+    throw new RangeError(`pool parameter 'maxPoolSize' must be an integer >= 1: ${maxPoolSize}`)
+  }
+  if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) {
+    throw new TypeError(`pool parameter 'iterable' must be iterable: ${iterable}`)
+  }
+
+  return poolGenerator(maxPoolSize, iterable)
 }

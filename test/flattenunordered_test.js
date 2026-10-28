@@ -198,21 +198,20 @@ test('flattenUnordered: handles empty child iterables mixed with non-empty', asy
   assert.deepEqual(actual.sort(), [1, 2, 3, 4, 5], 'empty child iterables are skipped without issue')
 })
 
-test('flattenUnordered: throws RangeError for invalid maxPoolSize', async () => {
+test('flattenUnordered: throws RangeError for invalid maxPoolSize and TypeError for invalid inputIterable', () => {
   const invalidSizes = [0, -1, 1.5, NaN, undefined, null, '3']
 
   for (const maxPoolSize of invalidSizes) {
-    let caughtException = false
-    await chainable([[1, 2]])
-      // @ts-ignore
-      .flattenUnordered(maxPoolSize)
-      .catch(error => {
-        caughtException = true
-        assert.ok(error instanceof RangeError, `throws RangeError for maxPoolSize: ${maxPoolSize}`)
-      })
-      .runAwait()
-    assert.ok(caughtException, `caught RangeError for maxPoolSize: ${maxPoolSize}`)
+    // @ts-ignore
+    assert.throws(() => transforms.flattenUnordered(maxPoolSize, [[1, 2]]), RangeError)
+    // @ts-ignore
+    assert.throws(() => chainable([[1, 2]]).flattenUnordered(maxPoolSize), RangeError)
   }
+
+  // @ts-ignore
+  assert.throws(() => transforms.flattenUnordered(2, null), TypeError)
+  // @ts-ignore
+  assert.throws(() => transforms.flattenUnordered(2, 123), TypeError)
 })
 
 test('flattenUnordered: iterator called faster than one-at-a-time', async () => {

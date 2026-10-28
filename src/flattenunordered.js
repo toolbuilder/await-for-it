@@ -1,32 +1,15 @@
-import { shouldIterate } from './is.js'
+import { isAsyncIterable, isSyncIterable, shouldIterate } from './is.js'
 import { iteratorFrom } from './iteratorfrom.js'
 import { shuffle } from './shuffle.js'
 
 /**
- * Flattens a sequence of items one level deep. Unlike flatten, flattenUnordered attempts
- * to flatten several iterables at the same time, so the output is not in a predictable
- * order. Async and sync iterables within the provided iterable are supported. Does not
- * flatten strings, TypedArrays/Buffers, Maps, or other built-in record/value types even
- * though they are iterable. Supports explicit opt-in or opt-out via `Symbol.isConcatSpreadable`.
+ * Helper async generator for flattenUnordered.
  *
- * The number of iterables being flattened at the same time is limited by maxPoolSize. When
- * this number is reached, flattenUnordered will begin to apply backpressure if it is being
- * iterated more slowly than the input iterables can supply data. In other words, no more
- * than maxPoolSize Promises will be pending at any given time.
- *
- * @type {(maxPoolSize: number, inputIterable: AsyncIterable<any> | Iterable<any>) => AsyncGenerator<any, void, unknown>}
- * @param {number} maxPoolSize - maximum number of iterables that can be flattened at the same time.
- * @param {AsyncIterable<any> | Iterable<any>} inputIterable - the iterable sequence to flatten
- * @returns {AsyncGenerator<any, void, unknown>} for the flattened sequence
- * @example
- * const array = await chainable([[1, 2, 3], [4, 5], 6, [7, 8]]).flattenUnordered(5).toArray()
- * console.log(array.sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8].
+ * @param {number} maxPoolSize
+ * @param {AsyncIterable<any> | Iterable<any>} inputIterable
+ * @returns {AsyncGenerator<any, void, unknown>}
  */
-export const flattenUnordered = async function * (maxPoolSize, inputIterable) {
-  if (!Number.isInteger(maxPoolSize) || maxPoolSize < 1) {
-    throw new RangeError(`flattenUnordered parameter 'maxPoolSize' must be an integer >= 1: ${maxPoolSize}`)
-  }
-
+const flattenUnorderedGenerator = async function * (maxPoolSize, inputIterable) {
   // get Promise for iterator.next(), then augment with id to find associated iterator in pool
   const nextPromise = (id, iterator) => {
     // use Promise.resolve in case iterator is NOT async
@@ -118,4 +101,37 @@ export const flattenUnordered = async function * (maxPoolSize, inputIterable) {
   } finally {
     await closeAll()
   }
+}
+
+/**
+ * Flattens a sequence of items one level deep. Unlike flatten, flattenUnordered attempts
+ * to flatten several iterables at the same time, so the output is not in a predictable
+ * order. Async and sync iterables within the provided iterable are supported. Does not
+ * flatten strings, TypedArrays/Buffers, Maps, or other built-in record/value types even
+ * though they are iterable. Supports explicit opt-in or opt-out via `Symbol.isConcatSpreadable`.
+ *
+ * The number of iterables being flattened at the same time is limited by maxPoolSize. When
+ * this number is reached, flattenUnordered will begin to apply backpressure if it is being
+ * iterated more slowly than the input iterables can supply data. In other words, no more
+ * than maxPoolSize Promises will be pending at any given time.
+ *
+ * @type {(maxPoolSize: number, inputIterable: AsyncIterable<any> | Iterable<any>) => AsyncGenerator<any, void, unknown>}
+ * @param {number} maxPoolSize - maximum number of iterables that can be flattened at the same time.
+ * @param {AsyncIterable<any> | Iterable<any>} inputIterable - the iterable sequence to flatten
+ * @returns {AsyncGenerator<any, void, unknown>} for the flattened sequence
+ * @throws {RangeError} if maxPoolSize is not an integer >= 1
+ * @throws {TypeError} if inputIterable is not iterable
+ * @example
+ * const array = await chainable([[1, 2, 3], [4, 5], 6, [7, 8]]).flattenUnordered(5).toArray()
+ * console.log(array.sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8].
+ */
+export const flattenUnordered = (maxPoolSize, inputIterable) => {
+  if (!Number.isInteger(maxPoolSize) || maxPoolSize < 1) {
+    throw new RangeError(`flattenUnordered parameter 'maxPoolSize' must be an integer >= 1: ${maxPoolSize}`)
+  }
+  if (!(isAsyncIterable(inputIterable) || isSyncIterable(inputIterable))) {
+    throw new TypeError(`flattenUnordered parameter 'inputIterable' must be iterable: ${inputIterable}`)
+  }
+
+  return flattenUnorderedGenerator(maxPoolSize, inputIterable)
 }

@@ -32,16 +32,11 @@ test('chunk', async () => {
   output = await chainable([0, 1, 2, 3, 4, 5, 6]).chunk(3, 100).toArray()
   assert.deepEqual(output, [[0, 1, 2], [3, 4, 5], [6]], 'works with sync iterables too')
 
-  let caughtException = false
-  await chainable([0, 1, 2])
-    .chunk(3, /** @type {any} */ ([]))
-    .catch(error => {
-      caughtException = true
-      assert.ok(error instanceof RangeError, 'throws range error with incorrect parameter')
-    })
-    .runAwait()
-
-  assert.ok(caughtException, 'range error caught exception')
+  assert.throws(
+    () => chainable([0, 1, 2]).chunk(3, /** @type {any} */ ([])),
+    RangeError,
+    'throws range error with incorrect parameter'
+  )
 })
 
 class TestError extends Error {}

@@ -1,6 +1,7 @@
-import { shouldIterate } from './is.js'
+import { isAsyncIterable, isSyncIterable, shouldIterate } from './is.js'
 import { iteratorFrom } from './iteratorfrom.js'
 import { zipAll } from 'iterablefu/src/generators.js'
+import { isFiniteNumber } from '@toolbuilder/isnumber'
 
 export { pool } from './pool.js'
 export { chunk } from './chunk.js'
@@ -271,25 +272,14 @@ export const reject = (fn, iterable) => {
 }
 
 /**
- * Provide the first n values of iterator. Useful to truncate infinite sequences.
+ * Helper async generator for take.
  *
- * When `n` values have been yielded, early termination occurs via `break`, which
- * invokes the upstream iterator's `return()` method according to the iteration protocol.
- * This ensures upstream generators or resources execute their `finally` blocks and
- * cleanly release any allocated resources (such as stopping polling timers or closing streams).
- *
- * If the input sequence has fewer than `n` values, the output sequence ends when the
- * input sequence ends.
- *
- * @type {<T = any>(n: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
- * @param {number} n - number of items to take
- * @param {AsyncIterable<any> | Iterable<any>} iterable - provides the first n values
- * @returns {AsyncGenerator<any, void, unknown>} - provides the first n values
- * @example
- * const a = take(2, [0, 1, 2, 3, 4])
- * console.log(await toArray(a)) // prints [0, 1]
+ * @template [T=any]
+ * @param {number} n
+ * @param {AsyncIterable<T> | Iterable<T>} iterable
+ * @returns {AsyncGenerator<Awaited<T>, void, unknown>}
  */
-export const take = async function * (n, iterable) {
+const takeGenerator = async function * (n, iterable) {
   let count = 0
   for await (const value of iterable) {
     yield value
@@ -298,18 +288,49 @@ export const take = async function * (n, iterable) {
 }
 
 /**
- * Throttle an async iterator to a maximum iteration speed.
+ * Provide the first n values of iterator. Useful to truncate infinite sequences.
  *
- * @type {<T = any>(period: number, initialWait: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
- * @param {number} period - milliseconds to wait between yielding each value
- * @param {number} initialWait - milliseconds before yielding first value
- * @param {AsyncIterable<any> | Iterable<any>} iterable - the async iterable to throttle
- * @returns {AsyncGenerator<any, void, unknown>} - the throttled sequence of values
+ * When `n` values have been yielded, early termination occurs via `break`, which
+ * invokes the upstream iterator's `return()` method according to the iteration protocol.
+ * This ensures upstream generators or resources execute their `finally` blocks and
+ * cleanly release any allocated resources (such as stopping polling timers or closing streams).
+ *
+ * If the input sequence has fewer than `n` values, the output sequence ends when the
+ * input sequence ends. If `n` is 0, yields an empty sequence.
+ *
+ * @type {<T = any>(n: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
+ * @param {number} n - number of items to take
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - provides the first n values
+ * @returns {AsyncGenerator<any, void, unknown>} - provides the first n values
+ * @throws {RangeError} if n is not an integer >= 0
+ * @throws {TypeError} if iterable is not iterable
  * @example
- * const a = throttle(100, 0, [0, 1, 2, 3, 4])
- * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4] with 100ms wait after each element
+ * const a = take(2, [0, 1, 2, 3, 4])
+ * console.log(await toArray(a)) // prints [0, 1]
  */
-export const throttle = async function * (period, initialWait, iterable) {
+export const take = (n, iterable) => {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new RangeError(`take parameter 'n' must be an integer >= 0: ${n}`)
+  }
+  if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) {
+    throw new TypeError(`take parameter 'iterable' must be iterable: ${iterable}`)
+  }
+  if (n === 0) {
+    return (async function * () {})()
+  }
+  return takeGenerator(n, iterable)
+}
+
+/**
+ * Helper async generator for throttle.
+ *
+ * @template [T=any]
+ * @param {number} period
+ * @param {number} initialWait
+ * @param {AsyncIterable<T> | Iterable<T>} iterable
+ * @returns {AsyncGenerator<Awaited<T>, void, unknown>}
+ */
+const throttleGenerator = async function * (period, initialWait, iterable) {
   if (initialWait !== 0) {
     await /** @type {Promise<void>} */ (new Promise(resolve => setTimeout(() => resolve(), initialWait)))
   }
@@ -321,4 +342,31 @@ export const throttle = async function * (period, initialWait, iterable) {
       await /** @type {Promise<void>} */ (new Promise(resolve => setTimeout(() => resolve(), period - yieldDuration)))
     }
   }
+}
+
+/**
+ * Throttle an async iterator to a maximum iteration speed.
+ *
+ * @type {<T = any>(period: number, initialWait: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>, void, unknown>}
+ * @param {number} period - milliseconds to wait between yielding each value
+ * @param {number} initialWait - milliseconds before yielding first value
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the async iterable to throttle
+ * @returns {AsyncGenerator<any, void, unknown>} - the throttled sequence of values
+ * @throws {RangeError} if period is not a number > 0 or initialWait is not a number >= 0
+ * @throws {TypeError} if iterable is not iterable
+ * @example
+ * const a = throttle(100, 0, [0, 1, 2, 3, 4])
+ * console.log(await toArray(a)) // prints [0, 1, 2, 3, 4] with 100ms wait after each element
+ */
+export const throttle = (period, initialWait, iterable) => {
+  if (!(isFiniteNumber(period) && period > 0)) {
+    throw new RangeError(`throttle parameter 'period' must be a number > 0: ${period}`)
+  }
+  if (!(isFiniteNumber(initialWait) && initialWait >= 0)) {
+    throw new RangeError(`throttle parameter 'initialWait' must be a number >= 0: ${initialWait}`)
+  }
+  if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) {
+    throw new TypeError(`throttle parameter 'iterable' must be iterable: ${iterable}`)
+  }
+  return throttleGenerator(period, initialWait, iterable)
 }

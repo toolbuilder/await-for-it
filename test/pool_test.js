@@ -190,3 +190,17 @@ test('pool: iterator called faster than one-at-a-time', async () => {
   // Can't test result order because Pool is intended to provide out of order results
   assert.deepEqual(results.sort(), sync.range(values).toArray().sort(), 'all results provided before done')
 })
+
+test('pool: parameter validation throws appropriate errors', () => {
+  for (const badSize of [0, -1, -5, 1.5, NaN, '5', null, undefined]) {
+    // @ts-ignore
+    assert.throws(() => transforms.pool(badSize, [() => 1]), RangeError)
+    // @ts-ignore
+    assert.throws(() => chainable([() => 1]).pool(badSize), RangeError)
+  }
+
+  for (const badIterable of [null, undefined, 123, {}]) {
+    // @ts-ignore
+    assert.throws(() => transforms.pool(5, badIterable), TypeError)
+  }
+})

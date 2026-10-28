@@ -91,6 +91,7 @@
  */
 
 import { makeFactory } from '@toolbuilder/make-factory'
+import { isAsyncIterable, isFunction, isSyncIterable } from './is.js'
 
 /**
  * Dynamically create a ChainableClass. This differs from makeChainableFactory only in that the class can't be
@@ -109,10 +110,16 @@ export const makeChainableClass = (generators, transforms, reducers) => {
   // then add methods using the classic prototype assignment technique
   const Chainable = class {
     constructor (iterable) {
+      if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) {
+        throw new TypeError(`Chainable parameter 'iterable' must be iterable: ${iterable}`)
+      }
       this.iterable = iterable
     }
 
     catch (fn) {
+      if (!isFunction(fn)) {
+        throw new TypeError(`catch parameter 'fn' must be a function: ${fn}`)
+      }
       const catcher = async function * (iterable) {
         try { yield * iterable } catch (error) { fn(error) }
       }
@@ -121,6 +128,9 @@ export const makeChainableClass = (generators, transforms, reducers) => {
     }
 
     finally (fn) {
+      if (!isFunction(fn)) {
+        throw new TypeError(`finally parameter 'fn' must be a function: ${fn}`)
+      }
       const doFinally = async function * (fn, iterable) {
         try { yield * iterable } finally { fn() }
       }

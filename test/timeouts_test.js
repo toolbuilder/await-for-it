@@ -130,3 +130,35 @@ test('callWithTimeout: cleans up timer on sync throw, catches sync timeout throw
   }
   assert.equal(typeof compileTimeChecks, 'function')
 })
+
+test('timeouts: validates parameters eagerly', async () => {
+  // wait parameter validation
+  for (const badMs of [-1, -50, NaN, '50', null, undefined]) {
+    // @ts-ignore
+    assert.throws(() => wait(badMs), RangeError)
+  }
+
+  // waitToCall parameter validation
+  for (const badMs of [-1, -50, NaN, '50', null, undefined]) {
+    // @ts-ignore
+    await assert.rejects(async () => waitToCall(badMs, () => 42), RangeError)
+  }
+  for (const badFn of [null, undefined, 123, 'not a fn', {}]) {
+    // @ts-ignore
+    await assert.rejects(async () => waitToCall(10, badFn), TypeError)
+  }
+
+  // callWithTimeout parameter validation
+  for (const badDuration of [-1, -50, NaN, '100', null, undefined]) {
+    // @ts-ignore
+    assert.throws(() => callWithTimeout(badDuration, () => {}, () => {}), RangeError)
+  }
+  for (const badPromiseFn of [null, undefined, 123, 'not a fn']) {
+    // @ts-ignore
+    assert.throws(() => callWithTimeout(10, badPromiseFn, () => {}), TypeError)
+  }
+  for (const badTimeoutFn of [null, undefined, 123, 'not a fn']) {
+    // @ts-ignore
+    assert.throws(() => callWithTimeout(10, () => {}, badTimeoutFn), TypeError)
+  }
+})

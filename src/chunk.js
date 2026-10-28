@@ -4,25 +4,15 @@ import { isFiniteNumber } from '@toolbuilder/isnumber'
 import { RingBuffer } from '@toolbuilder/ring-buffer'
 
 /**
- * Chunk every n items into an array, and output that array in the output sequence.
- * Chunks are yielded after `timeout` milliseconds even if not full, so that values
- * can be processed in a timely manner. Never yields empty chunks.
+ * Helper async generator for chunk.
  *
- * Backpressure is provided by the iterator when a chunk is yielded. Stopping the
- * iterator will stop chunking and the input iterable.
- *
- * @type {<T = any>(n: number, timeout: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>[], void, unknown>}
- * @param {number} n - size of arrays
- * @param {number} timeout - number of milliseconds before yielding chunk if not full
- * @param {AsyncIterable<any> | Iterable<any>} iterable - the iterable to chunk
- * @returns {AsyncGenerator<any[], void, unknown>} - provides each chunk in order
+ * @template [T=any]
+ * @param {number} n
+ * @param {number} timeout
+ * @param {AsyncIterable<T> | Iterable<T>} iterable
+ * @returns {AsyncGenerator<Awaited<T>[], void, unknown>}
  */
-export const chunk = async function * (n, timeout, iterable) {
-  // I've called this method incorrectly often enough to throw in some checks
-  if (!Number.isInteger(n) || n < 1) throw new RangeError(`chunk parameter 'n' must be an integer >= 1: ${n}`)
-  if (!(isFiniteNumber(timeout) && timeout >= 0)) throw new RangeError(`chunk parameter 'timeout' must be a non-negative number: ${timeout}`)
-  if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) throw new TypeError(`chunk parameter 'iterable' must be iterable: ${iterable}`)
-
+const chunkGenerator = async function * (n, timeout, iterable) {
   const buffer = new RingBuffer(n)
   const iterator = iteratorFrom(iterable)
 
@@ -117,4 +107,29 @@ export const chunk = async function * (n, timeout, iterable) {
       await iterator.return?.()
     } catch {}
   }
+}
+
+/**
+ * Chunk every n items into an array, and output that array in the output sequence.
+ * Chunks are yielded after `timeout` milliseconds even if not full, so that values
+ * can be processed in a timely manner. Never yields empty chunks.
+ *
+ * Backpressure is provided by the iterator when a chunk is yielded. Stopping the
+ * iterator will stop chunking and the input iterable.
+ *
+ * @type {<T = any>(n: number, timeout: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>[], void, unknown>}
+ * @param {number} n - size of arrays
+ * @param {number} timeout - number of milliseconds before yielding chunk if not full
+ * @param {AsyncIterable<any> | Iterable<any>} iterable - the iterable to chunk
+ * @returns {AsyncGenerator<any[], void, unknown>} - provides each chunk in order
+ * @throws {RangeError} if n is not an integer >= 1 or timeout is not a non-negative number
+ * @throws {TypeError} if iterable is not iterable
+ */
+export const chunk = (n, timeout, iterable) => {
+  // I've called this method incorrectly often enough to throw in some checks
+  if (!Number.isInteger(n) || n < 1) throw new RangeError(`chunk parameter 'n' must be an integer >= 1: ${n}`)
+  if (!(isFiniteNumber(timeout) && timeout >= 0)) throw new RangeError(`chunk parameter 'timeout' must be a non-negative number: ${timeout}`)
+  if (!(isAsyncIterable(iterable) || isSyncIterable(iterable))) throw new TypeError(`chunk parameter 'iterable' must be iterable: ${iterable}`)
+
+  return chunkGenerator(n, timeout, iterable)
 }

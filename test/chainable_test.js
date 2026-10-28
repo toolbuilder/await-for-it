@@ -94,6 +94,23 @@ test('ChainableClass: constructor, instanceof, subclassing, and static methods',
   assert.deepEqual(await extended.double().toArray(), [2, 4, 6])
 })
 
+test('chainable: parameter validation for constructor, catch, and finally', () => {
+  for (const badIterable of [null, undefined, 123, {}]) {
+    // @ts-ignore
+    assert.throws(() => chainable(badIterable), TypeError)
+    // @ts-ignore
+    assert.throws(() => new ChainableClass(badIterable), TypeError)
+  }
+
+  const it = chainable([1, 2, 3])
+  for (const badFn of [null, undefined, 123, 'not a fn', {}]) {
+    // @ts-ignore
+    assert.throws(() => it.catch(badFn), TypeError)
+    // @ts-ignore
+    assert.throws(() => it.finally(badFn), TypeError)
+  }
+})
+
 test('chainable: direct async iteration and timed merge', async () => {
   /** @type {number[]} */
   const unwrapped = []

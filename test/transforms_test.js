@@ -350,6 +350,26 @@ test('take', async () => {
   output = await chainable([0, 1, 2]).take(5).toArray()
   assert.deepEqual(output.length, 3, 'takes the entire iterable if iterable shorter than n')
   assert.deepEqual(output, [0, 1, 2], 'values are taken in order')
+
+  const zeroOutput = await chainable([0, 1, 2]).take(0).toArray()
+  assert.deepEqual(zeroOutput, [], 'take(0) produces empty sequence')
+
+  const standaloneZero = await reducers.toArray(transforms.take(0, [1, 2, 3]))
+  assert.deepEqual(standaloneZero, [], 'transforms.take(0) produces empty sequence')
+})
+
+test('take: parameter validation throws appropriate errors', () => {
+  for (const badN of [-1, -0.5, 2.5, '3', null, NaN, undefined]) {
+    // @ts-ignore
+    assert.throws(() => transforms.take(badN, [1, 2, 3]), RangeError, `n=${badN} should throw RangeError`)
+    // @ts-ignore
+    assert.throws(() => chainable([1, 2, 3]).take(badN), RangeError, `chainable take n=${badN} should throw RangeError`)
+  }
+
+  for (const badIterable of [null, undefined, 123, {}]) {
+    // @ts-ignore
+    assert.throws(() => transforms.take(2, badIterable), TypeError)
+  }
 })
 
 const waitTimeGood = (n, reference) => (n > reference - 15) && (n < reference + 15)
@@ -398,6 +418,27 @@ test('throttle: will wait for initial wait period before yielding first item', a
     .map(n => Date.now())
     .toArray()
   assert.ok(waitTimeGood(output[0] - startTime, 100), 'throttle waiting initial wait time')
+})
+
+test('throttle: parameter validation throws appropriate errors', () => {
+  for (const badPeriod of [0, -1, -50, NaN, '50', null, undefined]) {
+    // @ts-ignore
+    assert.throws(() => transforms.throttle(badPeriod, 0, [1, 2]), RangeError)
+    // @ts-ignore
+    assert.throws(() => chainable([1, 2]).throttle(badPeriod, 0), RangeError)
+  }
+
+  for (const badInitialWait of [-1, -50, NaN, '0', null, undefined]) {
+    // @ts-ignore
+    assert.throws(() => transforms.throttle(50, badInitialWait, [1, 2]), RangeError)
+    // @ts-ignore
+    assert.throws(() => chainable([1, 2]).throttle(50, badInitialWait), RangeError)
+  }
+
+  for (const badIterable of [null, undefined, 123, {}]) {
+    // @ts-ignore
+    assert.throws(() => transforms.throttle(50, 0, badIterable), TypeError)
+  }
 })
 
 test('transforms: functional pluck, nth, and arrayToObject support primitives and sync iterables of promises', async () => {
