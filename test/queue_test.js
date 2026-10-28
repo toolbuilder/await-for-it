@@ -199,6 +199,8 @@ test('queue: iterator called faster than one-at-a-time', async () => {
 
 test('queue: validates constructor parameters', () => {
   // @ts-ignore
+  assert.throws(() => new Queue(null), TypeError)
+  // @ts-ignore
   assert.throws(() => new Queue(100), TypeError)
   // @ts-ignore
   assert.throws(() => new Queue('not a buffer'), TypeError)
@@ -211,12 +213,12 @@ test('queue: validates constructor parameters', () => {
 
   // Valid constructor inputs
   assert.doesNotThrow(() => new Queue())
-  assert.doesNotThrow(() => new Queue(null))
   assert.doesNotThrow(() => new Queue([]))
   assert.doesNotThrow(() => new Queue(new RingBuffer(5)))
 
-  const nullQueue = new Queue(null)
-  assert.equal(nullQueue.length, 0, 'null defaults to empty array buffer')
+  const defaultQueue = new Queue()
+  assert.equal(defaultQueue.length, 0, 'defaults to empty array buffer')
+  assert.ok(Array.isArray(defaultQueue.buffer), 'default buffer is an Array')
 })
 
 test('queue: validates done parameters', () => {

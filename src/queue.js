@@ -46,13 +46,13 @@ export class Queue {
   /**
    * Create a Queue. Each Queue instance is an AsyncIterable.
    *
-   * @param {QueueBuffer<any> | null} [buffer=null] - a buffer for input that has not yet been processed
+   * @param {QueueBuffer<T>} [buffer=[]] - a buffer for input that has not yet been processed
    * by the iterable. By default, it is an empty Array.
-   * @throws {TypeError} if buffer is not a valid QueueBuffer or null/undefined
+   * @throws {TypeError} if buffer is not a valid QueueBuffer
    */
-  constructor (buffer = null) {
-    if (buffer != null && !isQueueBuffer(buffer)) {
-      throw new TypeError(`Queue parameter 'buffer' must be a buffer object or null: ${buffer}`)
+  constructor (buffer = []) {
+    if (!isQueueBuffer(buffer)) {
+      throw new TypeError(`Queue parameter 'buffer' must be a buffer object: ${buffer}`)
     }
 
     /** @type {boolean} */
@@ -64,7 +64,7 @@ export class Queue {
     /** @type {any} */
     this.exception = null
     /** @type {QueueBuffer<T>} */
-    this.buffer = buffer ?? []
+    this.buffer = buffer
   }
 
   /**
@@ -152,7 +152,8 @@ export class Queue {
    * @example
    * const queue = new Queue()
    * queue.push(5)
-   * // call done to complete iteration. Otherwise, it will just wait for more pushes
+   * // Signal that no more items will be pushed.
+   * // Buffered values are drained before iteration completes.
    * queue.done()
    * (async () => {
    *   // JavaScript runtime calls [Symbol.asyncIterator] at top of for await ...of loop
