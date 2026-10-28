@@ -1,23 +1,23 @@
 # Await-For-It
 
-`Await-For-It` implements common concurrency patterns using async iterables. The iterables are chainable for ease of use. Or you can use the async generators on their own with the functional, data-last API.
+`Await-For-It` implements common concurrency patterns using async iterables. The iterables are chainable for ease of use. Or you can use the functional, data-last API.
 
 ## Features
 
 * Event queues - push events or other data into an async iterable: [Queue](docs/queue.md)
-* Task pool - process up to `n` tasks at a time: [Pool](docs/ChainableClass.md#pool)
 * Pub/Sub - fork an async iterable to multiple consumers, register subscribers at any time: [Publish](docs/ChainableClass.md#publish)
-* Join - two iterables should advance together: [Zip](docs/chainable.md#zip)
-* Start/Stop iterables from **outside** the iterable, like a pseudo-thread: [Run](docs/ChainableClass.md#run)
-* Catch/Finally - just like Promises, except for streams of Promises: [Catch](docs/ChainableClass.md#catch)
-* Polling - execute a task periodically with backpressure from an async iterable: [Poll](docs/poll.md)
-* Throttle - limit the processing rate of an async iterable: [Throttle](docs/ChainableClass.md#throttle)
-* Merge - Merge multiple async/sync streams with each going as fast as possible: [Merge](docs/ChainableClass.md#merge)
+* Task pool - process up to `n` tasks at a time: [Pool](docs/ChainableClass.md#pool)
 * Chunk - group results into chunks, with timeouts for partial chunks, for efficient batch processing: [Chunk](docs/ChainableClass.md#chunk)
-* Node Streams - works out of the box because Node streams are async iterables now. Also see [streams.pipeline](https://nodejs.org/api/stream.html#stream_stream_pipeline_source_transforms_destination_callback) method.
+* Join - two iterables should advance together: [Zip](docs/chainable.md#zip)
+* Merge - Merge multiple async/sync iterables with each going as fast as possible: [Merge](docs/ChainableClass.md#merge)
+* Throttle - limit the processing rate of an async iterable: [Throttle](docs/ChainableClass.md#throttle)
+* Polling - execute a task periodically with backpressure from an async iterable that is processing the results: [Poll](docs/poll.md)
+* Start/Stop iterables from **outside** the iterable, like a pseudo-thread: [Run](docs/ChainableClass.md#run)
+* Node Streams - works out of the box because Node streams are async iterables now: [Node Streams](examples/node-streams.js). Also see [streams.pipeline](https://nodejs.org/api/stream.html#stream_stream_pipeline_source_transforms_destination_callback) method.
 * Chainable - chain operations such as map, reduce, filter, throttle, and zip: [ChainableClass](docs/ChainableClass.md#zip)
 * Functional - all operations have a functional 'data last' equivalent via separate imports
-* Customize - add/remove methods, and support your bundler's tree-shaking: [Customize](docs/customization.md)
+* Catch/Finally - just like Promises, except for streams of Promises: [Catch](docs/ChainableClass.md#catch)
+* Customizeable - add/remove methods, and support your bundler's tree-shaking: [Customize](docs/customization.md)
 
 If you just want synchronous iterables try [IterableFu](https://github.com/toolbuilder/iterablefu).
 
@@ -71,7 +71,7 @@ The documentation is in progress. Sometimes the functional API examples show cha
 
 ## Examples
 
-Here is a quick set of [examples](docs/examples.md)
+Here is a quick set of [examples](examples).
 
 ## Breaking Changes
 
