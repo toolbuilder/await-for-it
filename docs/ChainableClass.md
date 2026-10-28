@@ -299,6 +299,8 @@ this number is reached, `flattenUnordered` will begin to apply backpressure if i
 iterated more slowly than the input iterables can supply data. In other words, no more
 than `maxPoolSize` Promises will be pending at any given time.
 
+If an exception occurs (or if iteration terminates early via `break`, `take()`, or a downstream error), `flattenUnordered` automatically closes all active child iterators and the input iterator by calling `.return()`, executing their cleanup logic and preventing unhandled operations or leaked resources.
+
 - `maxPoolSize` **[Number][93]** maximum number of iterables to flatten at the same time (must be an integer `>= 1`; throws `RangeError` otherwise)
 
 ```javascript
@@ -307,6 +309,8 @@ console.log(a.sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8]
 ```
 
 Returns **ChainableClass** for the flattened sequence.
+
+See [flatten-unordered.js](../examples/flatten-unordered.js) for an executable example demonstrating `Symbol.isConcatSpreadable` (opt-in and opt-out), and [flatten-unordered-exceptions.js](../examples/flatten-unordered-exceptions.js) for exception handling and child iterable `.return()` cleanup.
 
 ## map
 

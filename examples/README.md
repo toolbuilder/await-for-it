@@ -18,6 +18,8 @@ node examples/queues.js
 node examples/queue-ring-buffer.js
 node examples/queue-exceptions.js
 node examples/queue-reject.js
+node examples/flatten-unordered.js
+node examples/flatten-unordered-exceptions.js
 node examples/pseudo-threads.js
 node examples/node-streams.js
 ```
@@ -41,6 +43,8 @@ npm run test:examples
 * [queue-ring-buffer.js](queue-ring-buffer.js) - Queue with `RingBuffer`, controller pause/resume backpressure, and graceful draining.
 * [queue-exceptions.js](queue-exceptions.js) - Downstream exceptions and promise rejections with `Queue`, showing that the provided buffer remains intact, uncorrupted, and reusable for recovery.
 * [queue-reject.js](queue-reject.js) - Explicitly aborting a queue with `queue.reject()`, push lockout behavior, and recovering unprocessed items from the buffer.
+* [flatten-unordered.js](flatten-unordered.js) - Concurrently flattening async and sync iterables with `maxPoolSize`, and controlling flattening behavior with `Symbol.isConcatSpreadable` (opt-in for TypedArrays/Maps, opt-out for arrays).
+* [flatten-unordered-exceptions.js](flatten-unordered-exceptions.js) - Exception handling with `flattenUnordered`, demonstrating that when an error occurs or iteration terminates early, active child iterables and the input iterable are cleanly closed via `.return()`.
 * [pseudo-threads.js](pseudo-threads.js) - Starting, stopping, and awaiting iterators externally with `run()`.
 * [node-streams.js](node-streams.js) - Using `chainable` with Node.js `Readable` streams and `stream.pipeline`.
 
