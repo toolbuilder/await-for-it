@@ -10,6 +10,9 @@ You can run each example individually using `node`:
 node examples/quick-start.js
 node examples/catch-and-finally.js
 node examples/polling.js
+node examples/poll-indefinite.js
+node examples/poll-backpressure.js
+node examples/poll-finite.js
 node examples/queues.js
 node examples/pseudo-threads.js
 node examples/node-streams.js
@@ -26,6 +29,9 @@ npm run test:examples
 * [quick-start.js](quick-start.js) - Overview of the chainable API: mapping, throttling, async callbacks, error handling, and pseudo-thread execution.
 * [catch-and-finally.js](catch-and-finally.js) - Error handling with `catch` and resource cleanup with `finally` on async iterables.
 * [polling.js](polling.js) - Periodic polling governed by iterator backpressure with `Poll`.
+* [poll-indefinite.js](poll-indefinite.js) - Polling indefinitely until `poll.done()` is called externally.
+* [poll-backpressure.js](poll-backpressure.js) - Backpressure control: pausing and resuming polling with an iterator controller.
+* [poll-finite.js](poll-finite.js) - Finite polling with `take()` to collect a fixed number of samples into an array.
 * [queues.js](queues.js) - Event queues with `Queue` bridging push-to-pull data sources and pub/sub.
 * [pseudo-threads.js](pseudo-threads.js) - Starting, stopping, and awaiting iterators externally with `run()`.
 * [node-streams.js](node-streams.js) - Using `chainable` with Node.js `Readable` streams and `stream.pipeline`.

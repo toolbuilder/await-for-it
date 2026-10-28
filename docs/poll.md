@@ -33,62 +33,8 @@ Stops polling gracefully.
 
 ## Examples
 
-### 1. Polling Indefinitely Until `done()` is Called
-Without a downstream limit or break condition, `Poll` will poll indefinitely until `poll.done()` is called.
+Executable examples demonstrating these patterns are available in the [`examples`](../examples) directory:
 
-```javascript
-import { chainable, Poll } from '@toolbuilder/await-for-it'
-
-let count = 0
-const poll = new Poll(async () => count++, 1000)
-
-// Stop polling when an external event occurs (or from within a consumer step)
-setTimeout(() => {
-  poll.done() // aborts active wait immediately
-}, 3500)
-
-await chainable(poll)
-  .callNoAwait(val => console.log('Poll value:', val))
-  .finally(() => console.log('Polling finished'))
-  .runAwait()
-```
-
-### 2. Backpressure: Downstream Processing Pauses Polling
-Because `Poll` is pull-based, polling automatically pauses when downstream iteration pauses or runs slower than `period`.
-
-```javascript
-import { chainable, Poll } from '@toolbuilder/await-for-it'
-
-let count = 0
-// Poller wants to run every 100ms
-const poll = new Poll(() => count++, 100)
-
-const controller = chainable(poll)
-  .callNoAwait(x => console.log('Value:', x))
-  .run()
-
-// Pausing the consumer stops calls to fn()
-controller.stop()
-
-// Resuming the consumer restarts polling
-setTimeout(() => {
-  controller.start()
-}, 2000)
-```
-
-### 3. Finite Iteration (`take` or `break`)
-When consumer iteration finishes (e.g. `take(5)` or `break`), iteration completes cleanly and any `finally` handlers run automatically without needing to call `poll.done()`.
-
-```javascript
-import { chainable, Poll } from '@toolbuilder/await-for-it'
-
-const poll = new Poll(async () => fetchMetrics(), 500)
-
-// take(5) completes after 5 items and terminates the generator
-const metrics = await chainable(poll)
-  .take(5)
-  .toArray()
-
-console.log('Collected 5 samples:', metrics)
-```
-
+- [Polling Indefinitely Until `done()` is Called](../examples/poll-indefinite.js)
+- [Backpressure: Downstream Processing Pauses Polling](../examples/poll-backpressure.js)
+- [Finite Iteration (`take` or `break`)](../examples/poll-finite.js)
