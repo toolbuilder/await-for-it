@@ -28,23 +28,10 @@ The iterating code provides backpressure, and can stop function calls by stoppin
     Promise in the pool rejects, the exception will be caught and rethrown by pool, so that the
     iterating code can handle it. Once an exception is thrown, the iterator is done.
 
-Here is an example using `chainable`, which provides the iterator parameter for you.
+## Examples
 
-```javascript
-import { chainable, callWithTimeout } from '@toolbuilder/await-for-it'
-import { someAsyncFunction, someIterableDataSource } from 'your-code'
+An executable example demonstrating `pool` and wrapping promises with functions is available in the [`examples`](../examples) directory:
 
-const control = chainable(someIterableDataSource)
-  // consider using callWithTimeout to handle non-reponsive calls
-  .map(data => async () => someAsyncFunction(data)) // map data to a zero parameter function
-  .pool(10) // run up to 10 functions at a time
-  .callNoAwait(console.log) // log the results as they come in
-  .catch(err => yourErrorHandler(err))
-  .finally(() => someCleanupCode())
-  .run()
-
-// ...Later in an event handler you can stop processing if you like. Finally will be called.
-control.stop()
-```
+- [Concurrent Task Pool](../examples/pool.js)
 
 [3]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number

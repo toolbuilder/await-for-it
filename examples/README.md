@@ -9,6 +9,7 @@ You can run each example individually using `node`:
 ```bash
 node examples/quick-start.js
 node examples/catch-and-finally.js
+node examples/pool.js
 node examples/polling.js
 node examples/poll-indefinite.js
 node examples/poll-backpressure.js
@@ -28,6 +29,7 @@ npm run test:examples
 
 * [quick-start.js](quick-start.js) - Overview of the chainable API: mapping, throttling, async callbacks, error handling, and pseudo-thread execution.
 * [catch-and-finally.js](catch-and-finally.js) - Error handling with `catch` and resource cleanup with `finally` on async iterables.
+* [pool.js](pool.js) - Concurrent task execution with `pool`, showing how to wrap promises in functions for async iterators.
 * [polling.js](polling.js) - Periodic polling governed by iterator backpressure with `Poll`.
 * [poll-indefinite.js](poll-indefinite.js) - Polling indefinitely until `poll.done()` is called externally.
 * [poll-backpressure.js](poll-backpressure.js) - Backpressure control: pausing and resuming polling with an iterator controller.
