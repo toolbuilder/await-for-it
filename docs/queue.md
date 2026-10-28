@@ -4,42 +4,7 @@ Use `Queue` to synchronously push values into an asyncIterable. This lets you pr
 
 > **Note:** A `Queue` is designed for a single consumer stream. Multiple concurrent consumers iterating the same `Queue` instance are not supported.
 
-Here's an example:
-
-```javascript
-import { chainable, Queue, waitToCall } from '@toolbuilder/await-for-it'
-import { RingBuffer } from '@toolbuilder/ring-buffer'
-
-// Setup queue to keep only the most recent 100 data values.
-// Older values that have not been processed yet are quietly dropped.
-// This behavior is provided by RingBuffer. Other buffers behave differently.
-const queue = new Queue(new RingBuffer(100))
-
-// Setup an async iterator to handle the input
-const controller = chainable(queue)
-  // make database or HTTP call, use 'pool' if result order not important
-  .map(async (value) => goGetData(value))
-  // process the result asynchronously
-  .map(async (result) => processData(result))
-  .catch(error => handleErrors(error))
-  .finally(async () => doSomeCleanup())
-  .run()
-
-// You can stop/resume the chainable iterator if you need to.
-// By default, you can still push to the queue while chainable is stopped.
-// The buffer will determine if they are kept or dropped.
-if (controller.running) controller.stop()
-controller.start()
-
-// Somewhere else, such as an 'application done' event, tell the
-// Queue that it is done so that the chainable finally method is called.
-// By default all values in the buffer are processed before iteration stops.
-waitToCall(100, () => queue.done())
-
-// Alternatively, on an unrecoverable error, reject the queue so that
-// the async iterator will abort and the .catch() handler will receive the error:
-// queue.reject(new YourError(someData))
-```
+An executable example demonstrating how to configure `Queue` with an external buffer (`RingBuffer`), process data using `chainable`, control backpressure with an iterator controller, and handle completion is available in [`examples/queue-ring-buffer.js`](../examples/queue-ring-buffer.js).
 
 The queue is waiting for you to push values into it, and has no idea when you are done pushing data. You **must call done()** to finish the iterator in order for 'finally' methods to be called.
 
@@ -82,6 +47,8 @@ const controller = chainable(queue).catch(e => console.log(e.message)).run()
 // Abort iteration with an error
 queue.reject(new Error('something failed'))
 ```
+
+See [queue-reject.js](../examples/queue-reject.js) for an executable example demonstrating `reject()`, push lockout (`QueueDone`), and recovering unconsumed items from the buffer.
 
 ## push
 
@@ -154,6 +121,8 @@ try {
 }
 ```
 
+See [queue-exceptions.js](../examples/queue-exceptions.js) for an executable example demonstrating exception handling and buffer preservation across downstream errors and rejected promises.
+
 ### Contrast with `queue.reject()`
 
 Pushing a Promise that rejects is different from calling `queue.reject(error)`:
@@ -170,6 +139,17 @@ If individual task failures should not terminate the consumer stream:
   queue.push(riskyOperation().catch(error => ({ error })))
   ```
 - **Push task functions and use a pool**: If ordering does not need to be strictly preserved, push factory functions (`queue.push(() => riskyOperation())`) and feed the queue to a concurrency pool like `pool(concurrency, queue)`. Errors can then be caught per task without breaking the queue pipeline.
+
+---
+
+## Examples
+
+Executable examples demonstrating `Queue` patterns are available in the [`examples`](../examples) directory:
+
+- [RingBuffer and Consumer Backpressure](../examples/queue-ring-buffer.js) - Queue with `RingBuffer`, pausing/resuming consumption with an iterator controller, and graceful draining.
+- [Exception Handling & Buffer Preservation](../examples/queue-exceptions.js) - Demonstrates that when downstream processing throws or a queued promise rejects, the underlying buffer remains uncorrupted and can be inspected or reused for recovery.
+- [Queue Rejection & Error Abort](../examples/queue-reject.js) - Explicitly terminating iteration with `queue.reject()`, push lockout (`QueueDone`), and recovering unprocessed items from the buffer.
+- [Event Queues & Pub/Sub](../examples/queues.js) - Bridging push-to-pull data sources and pub/sub.
 
 [15]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number
 
