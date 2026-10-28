@@ -170,3 +170,31 @@ test('chainable: static and instance type inference', async () => {
   }
   assert.equal(typeof compileTimeChecks, 'function')
 })
+
+test('chainable: Node.js Readable streams and stream.pipeline', async () => {
+  const { Readable, Writable } = await import('node:stream')
+  const { pipeline } = await import('node:stream/promises')
+
+  // Direct consumption: Readable streams are async iterables
+  const stream = Readable.from(['apple', 'banana', 'cherry'])
+  const results = await chainable(stream)
+    .map(x => x.toUpperCase())
+    .toArray()
+  assert.deepEqual(results, ['APPLE', 'BANANA', 'CHERRY'])
+
+  // Pipeline integration: chainable is an async iterable accepted by pipeline
+  const source = Readable.from(['hello ', 'world\n'])
+  /** @type {string[]} */
+  const chunks = []
+  const dest = new Writable({
+    write(chunk, encoding, callback) {
+      chunks.push(chunk.toString())
+      callback()
+    }
+  })
+  await pipeline(
+    chainable(source).map(x => x.toUpperCase()),
+    dest
+  )
+  assert.deepEqual(chunks, ['HELLO ', 'WORLD\n'])
+})

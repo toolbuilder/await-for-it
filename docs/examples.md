@@ -88,3 +88,32 @@ const controller = chainable([0, 1, 2, 3, 4])
 if (controller.running) controller.stop()
 controller.start()
 ```
+
+### Node Streams
+
+Because Node.js `Readable` streams implement `Symbol.asyncIterator`, they work out of the box with `chainable`. You can wrap a stream directly, transform chunks or records with backpressure, and consume them:
+
+```javascript
+import { createReadStream } from 'node:fs'
+import { chainable } from '@toolbuilder/await-for-it'
+
+// Node streams are async iterables, so chainable wraps them directly
+await chainable(createReadStream('access.log', { encoding: 'utf8' }))
+  .filter(chunk => chunk.includes('ERROR'))
+  .forEach(chunk => console.error('Found error chunk:', chunk))
+```
+
+Because `chainable()` produces an async iterable, it also integrates directly with Node's [`stream.pipeline`](https://nodejs.org/api/stream.html#stream_stream_pipeline_source_transforms_destination_callback):
+
+```javascript
+import { pipeline } from 'node:stream/promises'
+import { createReadStream, createWriteStream } from 'node:fs'
+import { chainable } from '@toolbuilder/await-for-it'
+
+// pipeline manages stream lifecycle, error handling, and cleanup
+await pipeline(
+  chainable(createReadStream('input.txt', { encoding: 'utf8' }))
+    .map(chunk => chunk.toUpperCase()),
+  createWriteStream('output.txt')
+)
+```
