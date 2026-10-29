@@ -76,18 +76,29 @@ Here is a quick set of [examples](examples).
 ## Breaking Changes
 
 * `2.0.0` -
-  * **Pure ESM Package**: Dropped CommonJS build in favor of pure ESM. CommonJS consumers on Node < 20.17 require dynamic `import()`; Node 22+ (and 20.17+) can `require()` directly.
-  * **Flatten transforms (`flatten`, `flattenRecursive`, `flattenUnordered`)**: In addition to strings, built-in value and dictionary types that implement iteration (`TypedArray`, Node `Buffer`, `Map`, `URLSearchParams`, `Headers`, and `FormData`) are no longer flattened by default. They are preserved intact as atomic values.
-  * **`Symbol.isConcatSpreadable` support**: Explicit opt-in or opt-out of flattening is now supported on any object via `[Symbol.isConcatSpreadable]`.
-  * **`iteratorFrom` dual-iterable priority**: When an object implements both `[Symbol.asyncIterator]` and `[Symbol.iterator]`, `iteratorFrom` now prefers `[Symbol.asyncIterator]` (matching `for await...of` and the rest of the package) instead of `[Symbol.iterator]`.
-* `1.0.0` -
-  * See the updated [docs](docs/queue.md).
-  * `Queue` no longer throws `QueueFull` when the buffer reaches capacity. That's properly the buffer's job.
-  * `Queue` constructor no longer accepts a `Number` to specify buffer capacity. The constructor only accepts a buffer.
-  * `Queue` the default buffer is an empty `Array` although that is probably not what you want.
-  * `Queue` no longer provides a `capacity` property
-  * `RingBuffer` is no longer exported by `Await-For-It`. It is now [here](https://github.com/toolbuilder/ring-buffer).
-  * `Semaphore` and `Mutex` are no longer exported by `Await-For-It`. If you really need them they are [here](https://github.com/toolbuilder/semaphore).
+  * **Pure ESM Package**: Dropped CommonJS build and dual-package setup in favor of pure ECMAScript Modules (ESM). Node.js 22+ (and 20.17+) can `require()` synchronous ESM directly; older environments (Node < 20.17) require dynamic `import()`.
+  * **Exception Handling, Fail-Fast Validation & Resource Cleanup**:
+    * **Eager parameter validation**: Transform, generator, reducer, timeout, and chainable functions now validate parameters eagerly at invocation time (throwing `TypeError` or `RangeError` synchronously) rather than deferring errors until the generator is first iterated. Passing invalid arguments to functions such as `chunk`, `flattenUnordered`, `pool`, `take`, `throttle`, `timeouts`, `chainable`, `catch`, `finally`, or reducers now fails fast at the call site.
+    * **Automatic iterator cleanup (`return()`) on early exit or failure**: Concurrent operations (`merge`, `zip`, `zipAll`, `flattenUnordered`, `chunk`) now strictly adhere to the iterator return protocol. When iteration terminates early (via `break`, `return`, `take()`, or when an exception occurs in any stream), `.return()` is automatically called on all active underlying iterators. For generator functions, this transfers control to their `finally` blocks to release resources (file descriptors, sockets, timers). In `flattenUnordered`, remaining child iterables further down the stream are never pulled or initiated.
+    * **Unhandled rejection prevention**: In concurrent operations racing multiple iterators or timeouts (`merge`, `zip`, `zipAll`, `flattenUnordered`, `chunk`), errors from sibling iterables and in-flight background promises are safely caught and propagated through iteration, preventing `unhandledRejection` events from crashing the process.
+    * **Queue rejection**: Calling `queue.reject(err)` now wakes awaiting iterators immediately to reject, preventing hangs on empty queues. Falsy exception values (such as `0`, `''`, `false`, `null`, `undefined`, `NaN`) are properly preserved and thrown. Pushing to a queue after `reject()` now throws `QueueDone`.
+    * **Synchronous exception safety in timeouts & callbacks**: `callWithTimeout` and `waitToCall` now guarantee timer cleanup when the wrapped function throws synchronously, preventing timer leaks and hung event loops. `publish` snapshots subscribers during dispatch so synchronous subscriber throws fail fast without corrupting internal state.
+    * **Controller lifecycle (`RunController` and `PublishController`)**: The `.running` property reliably becomes `false` when iteration finishes, aborts on error, or is cancelled. Added a `.finished` promise (resolves on completion, rejects on stream error) and a `.cancel()` method for explicit cancellation.
+  * **Flatten Transforms (`flatten`, `flattenRecursive`, `flattenUnordered`)**:
+    * **Non-flattened built-in types**: In addition to strings, built-in value and dictionary/collection types that implement iteration (`TypedArray`, Node.js `Buffer`, `Map`, `URLSearchParams`, `Headers`, and `FormData`) are no longer flattened by default. They are preserved intact as atomic values.
+    * **`Symbol.isConcatSpreadable` support**: Explicit opt-in or opt-out of flattening is now supported on any object via `[Symbol.isConcatSpreadable]: true` or `false`.
+    * **Eager validation and cleanup in `flattenUnordered`**: Validates `maxPoolSize` (must be an integer $\ge 1$) and iterable inputs upfront, and safely closes all active child iterators and the input stream if an error or early termination occurs.
+  * **TypeScript Types**:
+    * **First-class declarations**: Fully typed modern `.d.ts` declaration files are included directly in the package, verified with `tsc`, `publint`, and `@arethetypeswrong/cli`.
+    * **Factory typing for `chainable`**: `chainable` is typed strictly as a factory function and cannot be invoked with `new`.
+    * **Precise tuple and predicate inference**: `zip` and `zipAll` infer exact mapped tuple types (e.g., `AsyncGenerator<[number, string]>`) instead of loose arrays, and `filter` supports TypeScript type-guard predicates (`(value: T) => value is S`).
+    * **Exported types**: Core helper types including `ChainableClass`, `QueueBuffer<T, ShiftReturn>`, `RunController`, and `PublishController` are now re-exported from the package root.
+  * **Behavioral "Gotchas" & Parameter Changes**:
+    * **`range` follows Python semantics**: The argument signature changed from `range(start, length[, increment])` to `range(stop)` or `range(start, stop[, step])`. A step of `0` now throws a `RangeError`.
+    * **`take(0)`**: Correctly yields an empty sequence (0 items) instead of yielding 1 item.
+    * **`iteratorFrom` dual-iterable priority**: When an object implements both `[Symbol.asyncIterator]` and `[Symbol.iterator]`, `iteratorFrom` now prefers `[Symbol.asyncIterator]` (matching JavaScript's native `for await...of` semantics) instead of `[Symbol.iterator]`.
+    * **`filter` and `reject` truthiness**: Predicate checks evaluate truthiness (`Boolean(fn(value))`) rather than requiring strict boolean `true` (`fn(value) === true`), aligning with standard `Array.prototype.filter`.
+    * **`Poll` lifecycle & detached callbacks**: `Poll` instances are strictly single-use and cannot be re-iterated once completed. Callback functions are invoked detached without `this` bound to `Poll`, and calling `poll.done()` aborts pending sleep delays immediately.
 
 ## Alternatives
 
@@ -95,15 +106,7 @@ Here is a quick set of [examples](examples).
 
 There are lots of packages that support synchronous iterables, but that doesn't help with concurrency. For example, [Iterablefu](https://github.com/toolbuilder/iterablefu) is the synchronous version of `Await-For-It`.
 
-There are popular `Observable` libraries. I worked with [RxJs](https://rxjs.dev/guide/observable) and [Kefir](https://kefirjs.github.io/kefir/) before writing `Await-For-It`. After working with both, I strongly prefer async generators and iterators to `Observables`. Here's why:
-
-* As a JavaScript developer, you already need to learn async iterables. Learning `Observables` is extra work.
-* Async iterables are literally iterables that return Promises, so the mental model is simpler.
-* The async iterator protocol automatically applies back pressure. Compare to [this](https://codeburst.io/a-look-at-back-pressure-and-its-handling-in-rxjs-5bc8f04a2e8f) for RxJs.
-* Async iterables have direct support in the language: async generators, `yield *`, async functions, Promises, etc.
-* Async iterables work directly with synchronous iterables as input since JavaScript handles that for you.
-
-`Observables` use a push model, and async iterables use a pull model. `Await-For-It` provides [Queue](docs/queue.md) to bridge from push to pull. You might also look at [emittery](https://github.com/sindresorhus/emittery).
+There are popular `Observable` libraries. I worked with [RxJs](https://rxjs.dev/guide/observable) and [Kefir](https://kefirjs.github.io/kefir/) before writing `Await-For-It`. `Observables` use a push model, and async iterables use a pull model. `Await-For-It` provides [Queue](docs/queue.md) to bridge from push to pull.
 
 Node streams are now async iterables, so this isn't an either/or decision. The [pipeline](https://nodejs.org/api/stream.html#stream_piping_to_writable_streams_from_async_iterators) method might be all you need.
 

@@ -12,3 +12,9 @@ iterator will stop chunking and the input iterable.
 -   `iterable` **(AsyncIterable | Iterable)** the iterable to chunk
 
 Returns **AsyncGenerator** that provides each chunk in order
+
+```javascript
+const chunks = await chainable([0, 1, 2, 3, 4]).chunk(2, 100).toArray()
+console.log(chunks) // prints [[0, 1], [2, 3], [4]]
+```
+
