@@ -45,7 +45,7 @@ console.log(result) // prints [0, 2, 4, 6, 8]
 
 Merge the output of zero or more async (or sync) iterables into a single chainable async iterable (`chainable.merge()` with no arguments produces an empty sequence). Each iterable is advanced as fast as possible so that slower iterators do not hold up faster ones. Equal-speed iterables are interleaved in non-deterministic order.
 
-Backpressure is provided by the iterating code. Iteration can be stopped by stopping the iterating code. Active iterators are closed via `return()` on early termination or if any iterable throws/rejects; see [merge](./merge.md) for details on cleanup and exception handling.
+The iteration rate is governed by backpressure from the consumer awaiting the iterator: upstream iterables only advance as downstream items are consumed, and stopping iteration stops all merged streams. Active iterators are closed via `return()` on early termination or if any iterable throws/rejects; see [merge](./merge.md) for details on cleanup and exception handling.
 
 - `iterables` **...(AsyncIterable | Iterable)** zero or more sync or async iterables to merge
 
@@ -73,7 +73,7 @@ Call `chainable.range(...args)` to generate a sequence of numbers matching Pytho
 
 Returns a [ChainableClass](./ChainableClass.md) instance that provides the sequence of numbers specified. Throws `RangeError` if `step` is 0.
 
-Backpressure is provided by the iterating code. Iteration can be stopped by stopping the iterating code.
+The iteration rate is governed by backpressure from the consumer awaiting the iterator.
 
 ```javascript
 import { chainable } from '@toolbuilder/await-for-it'
@@ -103,7 +103,7 @@ console.log(output) // prints [5, 4, 3, 2, 1]
 
 ## zip
 
-Creates a sequence of arrays the same length as the _shortest_ iterable provided (`chainable.zip()` with no arguments produces an empty sequence). The first array contains the first element from each of the iterables provided, the second array contains the second element from each of the iterables provided, and so on. For each array, `zip` must wait for all iterables to advance, so it can be no faster than the slowest iterable. Backpressure is provided by the iterating code.
+Creates a sequence of arrays the same length as the _shortest_ iterable provided (`chainable.zip()` with no arguments produces an empty sequence). The first array contains the first element from each of the iterables provided, the second array contains the second element from each of the iterables provided, and so on. For each array, `zip` must wait for all iterables to advance, so it can be no faster than the slowest iterable. The iteration rate is governed by backpressure from the consumer awaiting the iterator.
 
 When the shortest iterable finishes, on early termination, or if an iterable throws/rejects, all remaining active iterators are closed via `return()`. Rejects with `TypeError` when iterated if any argument is not iterable.
 
@@ -124,7 +124,7 @@ console.log(c) // prints [[0, 'a'], [1, 'b'], [2, 'c']]
 
 ## zipAll
 
-Creates a sequence of arrays the same length as the _longest_ iterable provided (`chainable.zipAll()` with no arguments produces an empty sequence). The first array contains the first element from each of the iterables provided, the second array contains the second element from each of the iterables provided, and so on. Missing elements from shorter iterables are set to `undefined`. For each array, `zipAll` must wait for all active iterables to advance, so it can be no faster than the slowest active iterable. Backpressure is provided by the iterating code.
+Creates a sequence of arrays the same length as the _longest_ iterable provided (`chainable.zipAll()` with no arguments produces an empty sequence). The first array contains the first element from each of the iterables provided, the second array contains the second element from each of the iterables provided, and so on. Missing elements from shorter iterables are set to `undefined`. For each array, `zipAll` must wait for all active iterables to advance, so it can be no faster than the slowest active iterable. The iteration rate is governed by backpressure from the consumer awaiting the iterator.
 
 On completion, early termination, or if an iterable throws/rejects, active iterators are closed via `return()`. Rejects with `TypeError` when iterated if any argument is not iterable.
 

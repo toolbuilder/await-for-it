@@ -11,8 +11,9 @@ import { iteratorFrom } from './iteratorfrom.js'
  * async iterable is advanced as fast as possible, so that slow iterators do not hold
  * up faster ones. Equal speed iterables are advanced at roughly the same pace.
  *
- * Backpressure is provided by the iterating code. Iteration can be stopped by stopping
- * the iterating code. Note that each merged stream can buffer up to 1 resolved item
+ * The iteration rate is governed by backpressure from the consumer awaiting the iterator:
+ * upstream iterables only advance as downstream items are consumed, and stopping iteration
+ * stops all merged streams. Note that each merged stream can buffer up to 1 resolved item
  * while downstream work is taking place.
  *
  * If any iterable throws an exception or rejects a promise, the error is propagated to the

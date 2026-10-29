@@ -32,6 +32,7 @@
       "types": "./src/await-for-it.d.ts",
       "default": "./src/await-for-it.js"
     },
+    "./package.json": "./package.json",
     "./src/*.js": {
       "types": "./src/*.d.ts",
       "default": "./src/*.js"
@@ -42,7 +43,8 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "clean": "rm -f src/*.d.ts src/*.d.ts.map",
+    "clean": "rm -f src/*.d.ts src/*.d.ts.map test/*.d.ts test/*.d.ts.map",
+    "prepack": "pnpm run build",
     "build": "pnpm run clean && tsc -p tsconfig.build.json",
     "check:types": "pnpm run clean && tsc",
     "test": "node --test 'test/**/*test.js'",

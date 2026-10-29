@@ -53,7 +53,7 @@ item in the sequence. Awaits the result of each function call before yielding th
 
 ```javascript
 const a = callAwait(console.log, [1, 2, 3, 4, 5])
-[...a] // iterates over `a` and prints each value on a separate line
+await toArray(a) // iterates over `a` and prints each value on a separate line
 ```
 
 Returns **AsyncGenerator** that is equivalent to the input iterable
@@ -67,7 +67,8 @@ item in the sequence. Will not await the result before yielding the value.
 -   `iterable` **(AsyncIterable | Iterable)** the input sequence
 
 ```javascript
-const a = callNoAwait(console.log, [1, 2, 3, 4, 5]) // logs each value
+const a = callNoAwait(console.log, [1, 2, 3, 4, 5])
+await toArray(a) // iterates over `a` and logs each value
 ```
 
 Returns **AsyncGenerator** that is equivalent to the input iterable
@@ -113,7 +114,7 @@ iterable. Explicit opt-in or opt-out is supported via `Symbol.isConcatSpreadable
 -   `iterable` **(AsyncIterable | Iterable)** the iterable sequence to flatten
 
 ```javascript
-const a = flatten([[0, 1], [2, 3], toAsync([4, 5]), [6]])
+const a = flatten([[0, 1], [2, 3], [4, 5], [6]])
 console.log(await toArray(a)) // prints [0, 1, 2, 3, 4, 5, 6]
 ```
 
@@ -129,7 +130,7 @@ within the provided iterable. Explicit opt-in or opt-out is supported via `Symbo
 -   `iterable` **(AsyncIterable | Iterable)** the sequence to flatten
 
 ```javascript
-const input = [0, [1, 2, 3], [[4, 5], [[toAsync([6, 7])], [8, 9], 10]], 11, 12]
+const input = [0, [1, 2, 3], [[4, 5], [[[6, 7]], [8, 9], 10]], 11, 12]
 const a = flattenRecursive(input)
 console.log(await toArray(a)) // prints [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 ```
@@ -156,7 +157,7 @@ If an exception occurs (or if iteration terminates early via `break`, `take()`, 
 
 ```javascript
 const a = flattenUnordered(5, [[1, 2, 3], [4, 5], 6, [7, 8]])
-console.log(await toArray(a).sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8]
+console.log((await toArray(a)).sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8]
 ```
 
 Returns **AsyncGenerator** for the flattened sequence
@@ -219,14 +220,13 @@ Returns **AsyncGenerator** for the nth elements
 
 Given a sequence of Objects, output the specified property of each Object as a sequence.
 
--   `propertyName`
+-   `propertyName` **[string][55]** the property to extract from each Object
 -   `iterable` **(AsyncIterable | Iterable)** the input sequence of Objects
--   `propertyname` **[string][55]** the property to extract from each Object
 
 ```javascript
 const input = [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}, {'a': 5, 'b': 6}]
 const a = pluck('a', input)
-console.log(await toArray(a))) // prints [1, 3, 5]
+console.log(await toArray(a)) // prints [1, 3, 5]
 ```
 
 Returns **AsyncGenerator** for the plucked items
@@ -286,7 +286,7 @@ respect to the input order.
 The input iterable can yield anything but constructor functions. However, async and sync
 functions are handled specially. Each function will be called, and the result placed into
 the pool to be yielded when resolved. Promises will remain in the pool until they resolve,
-other values will resolve immediately as you would expect. Consider using promiseWithTimeout,
+other values will resolve immediately as you would expect. Consider using [callWithTimeout](./timeouts.md#callwithtimeout),
 or your own favorite timeout promise.
 
 As always with async iterables, if the input iterable yields a Promise, pool must wait
@@ -295,7 +295,9 @@ defeats the purpose of pool. So if you need to yield a promise from input iterat
 wrap it with a function like so: `() => promise`. Pool will call the function to get
 the Promise, then advance the input iterable to get the next value.
 
-The iterating code provides backpressure, and can stop function calls by stopping iteration.
+The iteration rate is governed by backpressure from the consumer awaiting the iterator:
+new tasks are only pulled from the input iterable as earlier tasks resolve and are consumed.
+Stopping iteration prevents further function calls and cleanly closes the input stream.
 
 -   `maxPoolSize` **[Number][54]** maximum number of pending promises at any given time
 -   `iterable` **(AsyncIterable | Iterable)** input iterable, should yield functions for pool
@@ -304,7 +306,7 @@ The iterating code provides backpressure, and can stop function calls by stoppin
 
 -   Throws **any** if iterable throws, or if any functions yielded by iterable throws, or if any
     Promise in the pool rejects, the exception will be caught and rethrown by pool, so that the
-    iterating code can handle it. Once an exception is thrown, the iterator is done.
+    consumer awaiting the iterator can handle it. Once an exception is thrown, the iterator is done.
 
 Returns **AsyncGenerator** a generator that provides the output values as they occur
 
@@ -314,8 +316,9 @@ Chunk every n items into an array, and output that array in the output sequence.
 Chunks are yielded after `timeout` milliseconds even if not full, so that values
 can be processed in a timely manner. Never yields empty chunks.
 
-Backpressure is provided by the iterator when a chunk is yielded. Stopping the
-iterator will stop chunking and the input iterable.
+The iteration rate is governed by backpressure: input items are only pulled and
+chunked as the consumer awaits each chunk. Stopping iteration stops chunking and
+cleanly closes the input iterable.
 
 -   `n` **[Number][54]** size of arrays
 -   `timeout` **[Number][54]** number of milliseconds before yielding chunk if not full

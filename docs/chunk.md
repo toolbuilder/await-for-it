@@ -4,12 +4,13 @@ Chunk every n items into an array, and output that array in the output sequence.
 Chunks are yielded after `timeout` milliseconds even if not full, so that values
 can be processed in a timely manner. Never yields empty chunks.
 
-Backpressure is provided by the iterator when a chunk is yielded. Stopping the
-iterator will stop chunking and the input iterable.
+The iteration rate is governed by backpressure: input items are only pulled and
+chunked as the consumer awaits each chunk. Stopping iteration stops chunking and
+cleanly closes the input iterable.
 
--   `n` **[Number][9]** size of arrays
--   `timeout` **[Number][9]** number of milliseconds before yielding chunk if not full
--   `iterable` **(AsyncIterable | Iterable)** the iterable to chunk
+-   `n` **number** size of arrays (must be an integer `>= 1`; throws `RangeError` otherwise)
+-   `timeout` **number** milliseconds before yielding a partial chunk if not full (must be a finite number `>= 0`; throws `RangeError` otherwise)
+-   `iterable` **(AsyncIterable | Iterable)** the iterable to chunk (throws `TypeError` otherwise)
 
 Returns **AsyncGenerator** that provides each chunk in order
 

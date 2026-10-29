@@ -36,7 +36,7 @@ const isQueueBuffer = (buffer) => {
 /**
  * Push values into an asyncIterable one at a time. This lets you process data
  * from other sources such as event handlers and callbacks. Values are queued
- * if the iterating code isn't ready for them yet.
+ * if the consumer awaiting the iterator isn't ready for them yet.
  *
  * You must call done() to finish the iterator.
  *
@@ -97,7 +97,7 @@ export class Queue {
    * iterator (pulling values from queue) isn't ready yet.
    *
    * If you push a Promise, it must resolve before it can be yielded
-   * to the iterating code, and the queue could back up behind it. If
+   * to the consumer awaiting the iterator, and the queue could back up behind it. If
    * you need to preserve order in the sequence, there is no way around
    * this. Consider using `callWithTimeout` so that the queue does not
    * block permanently.
@@ -106,8 +106,8 @@ export class Queue {
    * the Promise (e.g `queue.push(() => promise)`), and feed the queue output
    * to a pool (e.g `pool(10, queue)`).
    *
-   * Once the queue fills, backpressure is provided by the iterating code. Stopping
-   * the iterating code will stop the queue from emptying.
+   * The rate at which the queue empties is governed by backpressure from the consumer
+   * awaiting the iterator. Stopping the consumer stops the queue from emptying.
    *
    * @param {T} value - to be pushed into iterable
    * @returns {number} - the number of values in the queue at the end of the call

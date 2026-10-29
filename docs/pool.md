@@ -16,7 +16,9 @@ defeats the purpose of pool. So if you need to yield a promise from input iterat
 wrap it with a function like so: `() => promise`. Pool will call the function to get
 the Promise, then advance the input iterable to get the next value.
 
-The iterating code provides backpressure, and can stop function calls by stopping iteration.
+The iteration rate is governed by backpressure from the consumer awaiting the iterator:
+new tasks are only pulled from the input iterable as earlier tasks resolve and are consumed.
+Stopping iteration prevents further function calls and cleanly closes the input stream.
 
 ### Parameters
 
@@ -26,7 +28,7 @@ The iterating code provides backpressure, and can stop function calls by stoppin
 *  Returns **AsyncGenerator** a generator that provides the output values as they occur
 *  Throws **Error** if iterable throws, or if any functions yielded by iterable throws, or if any
     Promise in the pool rejects, the exception will be caught and rethrown by pool, so that the
-    iterating code can handle it. Once an exception is thrown, the iterator is done.
+    consumer awaiting the iterator can handle it. Once an exception is thrown, the iterator is done.
 
 ## Examples
 

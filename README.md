@@ -117,7 +117,11 @@ Different async tools excel at different workloads:
 
 ### Key Architectural Concepts
 
-* **Pull vs. Push**: Observables push data as soon as it arrives, which can overwhelm slow consumers unless complex throttling operators are configured. Async iterables use a **pull** model where the consumer drives iteration speed, delivering built-in backpressure. `Await-For-It` provides [`Queue`](docs/queue.md) to bridge push-based event sources (like Node `EventEmitter`s or socket events) into pull-based pipelines.
+* **Backpressure**: **Backpressure** is the mechanism that prevents fast data producers from overwhelming slow consumers. In `Await-For-It`, data flows through a **pull-based model**: the consumer awaiting the iterator (via `for await...of`, `await iterator.next()`, or terminal reducers like `forEach` and `toArray`) dictates the pace of execution. Upstream sources and transforms do not produce or pull the next item until the downstream consumer is ready to receive it.
+  * **Generators and Transforms**: Every generator and transform in this library honors backpressure. Even concurrent operations like `pool`, `chunk`, `merge`, and `flattenUnordered` strictly cap their in-flight tasks and pause upstream intake until downstream processing catches up.
+  * **Pausing & Stopping**: Pausing (e.g. via controller `.stop()`) or exiting iteration early (e.g. via `break`, `take(n)`, or controller `.cancel()`) immediately halts upstream production and releases resources via `.return()`.
+  * **Reducers**: Most reducers (`forEach`, `reduce`, `toArray`, `run`, `runAwait`) apply backpressure by awaiting each step before requesting the next item. The sole exception is `publish`, which broadcasts to subscribers without awaiting them.
+* **Pull vs. Push**: Observables and event emitters push data as soon as it arrives, which can buffer uncontrollably and exhaust memory if the consumer is slower than the producer. Async iterables invert this relationship: the consumer pulls data on demand, providing natural backpressure. `Await-For-It` provides [`Queue`](docs/queue.md) to safely buffer and bridge push-based event sources (like Node `EventEmitter`s or socket events) into pull-based pipelines.
 * **Node.js Streams Interoperability**: Because Node.js streams implement `Symbol.asyncIterator`, `Await-For-It` works directly with [`stream.pipeline`](https://nodejs.org/api/stream.html#stream_stream_pipeline_source_transforms_destination_callback) and readable streams without adapters.
 
 ## Breaking Changes

@@ -99,7 +99,7 @@ const zipIt = async function * (stopOnFirst, iterables) {
  * Creates a sequence of arrays the same length as the *shortest* iterable provided. The first array contains the first
  * element from each of the iterables provided. The second array contains the second element from each of the
  * iterables provided, and so on. For each array, zip must wait for all iterables to advance. For this reason, zip can be
- * no faster than the slowest iterable. Backpressure is provided by the iterating code.
+ * no faster than the slowest iterable. The iteration rate is governed by backpressure from the consumer awaiting the iterator.
  *
  * Use zipAll if you want all iterables to be consumed. Use merge if you want to consume iterables as fast as possible, and
  * don't need the elements paired.
@@ -122,7 +122,7 @@ export const zip = (...iterables) => zipIt(true, iterables)
  * element from each of the iterables provided. The second array contains the second element from each of the
  * iterables provided, and so on. Missing elements from the shorter iterables are set to undefined. For each array,
  * zipAll must wait for all active iterables to advance. For this reason, zipAll can be no faster than the slowest iterable.
- * Backpressure is provided by the iterating code.
+ * The iteration rate is governed by backpressure from the consumer awaiting the iterator.
  *
  * Use zip if you want iteration to stop when any iterable is consumed. Use merge if you want to consume iterables as
  * fast as possible, and don't need the elements paired.

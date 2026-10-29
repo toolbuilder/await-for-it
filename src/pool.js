@@ -81,7 +81,7 @@ const poolGenerator = async function * (maxPoolSize, iterable) {
  * The input iterable can yield anything but constructor functions. However, async and sync
  * functions are handled specially. Each function will be called, and the result placed into
  * the pool to be yielded when resolved. Promises will remain in the pool until they resolve,
- * other values will resolve immediately as you would expect. Consider using promiseWithTimeout,
+ * other values will resolve immediately as you would expect. Consider using callWithTimeout,
  * or your own favorite timeout promise.
  *
  * As always with async iterables, if the input iterable yields a Promise, pool must wait
@@ -90,7 +90,9 @@ const poolGenerator = async function * (maxPoolSize, iterable) {
  * wrap it with a function like so: `() => promise`. Pool will call the function to get
  * the Promise, then advance the input iterable to get the next value.
  *
- * The iterating code provides backpressure, and can stop function calls by stopping iteration.
+ * The iteration rate is governed by backpressure from the consumer awaiting the iterator:
+ * new tasks are only pulled from the input iterable as earlier tasks resolve and are consumed.
+ * Stopping iteration prevents further function calls and cleanly closes the input stream.
  *
  * @type {<T = any>(maxPoolSize: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<PoolResult<T>, void, unknown>}
  * @param {number} maxPoolSize - maximum number of pending promises at any given time
@@ -101,7 +103,7 @@ const poolGenerator = async function * (maxPoolSize, iterable) {
  * @throws {TypeError} if iterable is not iterable
  * @throws - if iterable throws, or if any functions yielded by iterable throws, or if any
  * Promise in the pool rejects, the exception will be caught and rethrown by pool, so that the
- * iterating code can handle it. Once an exception is thrown, the iterator is done.
+ * consumer awaiting the iterator can handle it. Once an exception is thrown, the iterator is done.
  */
 export const pool = (maxPoolSize, iterable) => {
   if (!Number.isInteger(maxPoolSize) || maxPoolSize < 1) {

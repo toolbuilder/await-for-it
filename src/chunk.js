@@ -114,8 +114,9 @@ const chunkGenerator = async function * (n, timeout, iterable) {
  * Chunks are yielded after `timeout` milliseconds even if not full, so that values
  * can be processed in a timely manner. Never yields empty chunks.
  *
- * Backpressure is provided by the iterator when a chunk is yielded. Stopping the
- * iterator will stop chunking and the input iterable.
+ * The iteration rate is governed by backpressure: input items are only pulled and
+ * chunked as the consumer awaits each chunk. Stopping iteration stops chunking and
+ * cleanly closes the input iterable.
  *
  * @type {<T = any>(n: number, timeout: number, iterable: AsyncIterable<T> | Iterable<T>) => AsyncGenerator<Awaited<T>[], void, unknown>}
  * @param {number} n - size of arrays

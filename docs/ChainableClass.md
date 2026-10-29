@@ -67,8 +67,8 @@ Merge the output of one or more async (or sync) iterables into a single async it
 async iterable is advanced as fast as possible, so that slow iterators do not hold
 up faster ones. Equal speed iterables are advanced at roughly the same pace.
 
-Backpressure is provided by the iterating code. Iteration can be stopped by stopping
-the iterating code. See [merge](./merge.md) for details on cleanup and exception handling.
+The iteration rate is governed by backpressure from the consumer awaiting the iterator:
+upstream iterables only advance as downstream items are consumed, and stopping iteration stops all merged streams. See [merge](./merge.md) for details on cleanup and exception handling.
 
 - `iterables` **...(AsyncIterable | Iterable)**
 
@@ -117,7 +117,7 @@ console.log(output) // prints [5, 4, 3, 2, 1]
 Creates a sequence of arrays the same length as the _shortest_ iterable provided. The first array contains the first
 element from each of the iterables provided. The second array contains the second element from each of the
 iterables provided, and so on. For each array, `zip` must wait for all iterables to advance. For this reason, `zip` can be
-no faster than the slowest iterable. Backpressure is provided by the iterating code.
+no faster than the slowest iterable. The iteration rate is governed by backpressure from the consumer awaiting the iterator.
 
 Use [zipAll](#zipall) if you want all iterables to be consumed. Use [merge](#merge) if you want to consume iterables as fast as possible, and
 don't need the elements paired.
@@ -139,7 +139,7 @@ Creates a sequence of arrays the same length as the _longest_ iterable provided.
 element from each of the iterables provided. The second array contains the second element from each of the
 iterables provided, and so on. Missing elements from the shorter iterables are set to `undefined`. For each array,
 `zipAll` must wait for all active iterables to advance. For this reason, `zipAll` can be no faster than the slowest iterable.
-Backpressure is provided by the iterating code.
+The iteration rate is governed by backpressure from the consumer awaiting the iterator.
 
 Use [zip](#zip) if you want iteration to stop when any iterable is consumed. Use [merge](#merge) if you want to consume iterables as
 fast as possible, and don't need the elements paired.
@@ -209,8 +209,9 @@ Chunk every `n` items into an array, and output that array in the output sequenc
 Chunks are yielded after `timeout` milliseconds even if not full, so that values
 can be processed in a timely manner. Never yields empty chunks.
 
-Backpressure is provided by the iterator when a chunk is yielded. Stopping the
-iterator will stop chunking and close the input iterable.
+The iteration rate is governed by backpressure: input items are only pulled and
+chunked as the consumer awaits each chunk. Stopping iteration stops chunking and
+cleanly closes the input iterable.
 
 - `n` **[Number][93]** size of arrays (must be an integer `>= 1`; throws `RangeError` otherwise)
 - `timeout` **[Number][93]** milliseconds before yielding a partial chunk if not full (must be a finite number `>= 0`; throws `RangeError` otherwise)

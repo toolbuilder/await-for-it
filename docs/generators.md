@@ -2,7 +2,7 @@
 
 The functions here create a sequence of values from other input values. This is part of the functional API. The chainable API is [here](./chainable.md).
 
-The concept of 'generator' is a bit overloaded in JavaScript. There is the generator function, and the Generator object it produces. This package tries to distinguish between `transform` and `generator`. Although both are technically generator functions, `transforms` are intended to transform an input iterable. Whereas `generators` are intended to produce an iterable from other parameters. Sorry for any confusion.
+The concept of 'generator' is a bit overloaded in JavaScript. There is the generator function, and the Generator object it produces. This package tries to distinguish between `transform` and `generator`. Although both are technically generator functions, `transforms` are intended to transform an input iterable. Whereas `generators` are intended to produce an iterable from other parameters.
 
 ### Table of Contents
 
@@ -14,7 +14,7 @@ The concept of 'generator' is a bit overloaded in JavaScript. There is the gener
 
 ## from
 
-This function exists as a generator solely so that the dynamically generated ChainableIterable class has a static constructor.
+Returns the input iterable. This function exists as a generator solely so that the dynamically generated ChainableIterable class has a static constructor.
 
 -   `iterable` **(AsyncIterable | Iterable)** input iterable
 
@@ -26,8 +26,8 @@ Merge the output of one or more async (or sync) iterables into a single async it
 async iterable is advanced as fast as possible, so that slow iterators do not hold
 up faster ones. Equal speed iterables are advanced at roughly the same pace.
 
-Backpressure is provided by the iterating code. Iteration can be stopped by stopping
-the iterating code.
+The iteration rate is governed by backpressure from the consumer awaiting the iterator:
+upstream iterables only advance as downstream items are consumed, and stopping iteration stops all merged streams.
 
 ### Parameters
 
@@ -75,7 +75,7 @@ Returns **Generator** that provides the defined sequence of numbers
 Creates a sequence of arrays the same length as the _shortest_ iterable provided. The first array contains the first
 element from each of the iterables provided. The second array contains the second element from each of the
 iterables provided, and so on. For each array, zip must wait for all iterables to advance. For this reason, zip can be
-no faster than the slowest iterable. Backpressure is provided by the iterating code.
+no faster than the slowest iterable. The iteration rate is governed by backpressure from the consumer awaiting the iterator.
 
 Use zipAll if you want all iterables to be consumed. Use merge if you want to consume iterables as fast as possible, and
 don't need the elements paired.
@@ -99,7 +99,7 @@ Creates a sequence of arrays the same length as the _longest_ iterable provided.
 element from each of the iterables provided. The second array contains the second element from each of the
 iterables provided, and so on. Missing elements from the shorter iterables are set to undefined. For each array,
 zipAll must wait for all active iterables to advance. For this reason, zipAll can be no faster than the slowest iterable.
-Backpressure is provided by the iterating code.
+The iteration rate is governed by backpressure from the consumer awaiting the iterator.
 
 Use zip if you want iteration to stop when any iterable is consumed. Use merge if you want to consume iterables as
 fast as possible, and don't need the elements paired.

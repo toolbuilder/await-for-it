@@ -1,6 +1,6 @@
 # Queue
 
-Use `Queue` to synchronously push values into an asyncIterable. This lets you process data sources like event handlers and callbacks sequentially in an asyncIterable. You can even push in other iterables and later use `flatten` to get a stream of individual values. Pushed values are buffered until the downstream iterating code can process them.
+Use `Queue` to synchronously push values into an asyncIterable. This lets you process data sources like event handlers and callbacks sequentially in an asyncIterable. You can even push in other iterables and later use `flatten` to get a stream of individual values. Pushed values are buffered until the consumer awaiting the iterator processes them.
 
 > **Note:** A `Queue` is designed for a single consumer stream. Multiple concurrent consumers iterating the same `Queue` instance are not supported.
 
@@ -54,11 +54,11 @@ See [queue-reject.js](../examples/queue-reject.js) for an executable example dem
 
 Push a value to the async iterable. Values are buffered until the iterator can process them.
 
-If you push a Promise, it must resolve before it can be yielded to the iterating code, and the buffer could back up behind it. If you need to preserve order in the sequence, there is no way around this. Consider using [callWithTimeout](./timeouts.md) so that the iterator does not get stuck. See [Promise Rejection Behavior](#promise-rejection-behavior) for details on what happens if a pushed Promise rejects.
+If you push a Promise, it must resolve before it can be yielded to the consumer awaiting the iterator, and the buffer could back up behind it. If you need to preserve order in the sequence, there is no way around this. Consider using [callWithTimeout](./timeouts.md) so that the iterator does not get stuck. See [Promise Rejection Behavior](#promise-rejection-behavior) for details on what happens if a pushed Promise rejects.
 
 If order does not need to be preserved, push a function that returns the Promise (e.g `queue.push(() => promise)`), and feed the queue output to a pool (e.g `pool(10, queue)`).
 
-Backpressure on the buffer is provided by the iterating code. Stopping the iterating code will stop the buffer from emptying.
+The rate at which the buffer empties is governed by backpressure from the consumer awaiting the iterator. If the consumer pauses or stops, values remain buffered until consumption resumes.
 
 - `value` **any** to be pushed into iterable
 - Throws **QueueDone** if `queue.done()` or `queue.reject()` was called previously
