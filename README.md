@@ -1,77 +1,124 @@
 # Await-For-It
 
-`Await-For-It` implements common concurrency patterns using async iterables. The iterables are chainable for ease of use. Or you can use the functional, data-last API.
+> Controlled async concurrency with native JavaScript iterables.
+
+Native `for await...of` is strictly one-at-a-time, while `Promise.all` fires everything at once. **`Await-For-It` bridges the gap**, providing bounded concurrency, rate limiting, and stream transformations with automatic backpressure—using standard async iterables. Available with both a chainable fluent API and a functional data-last API.
+
+```javascript
+import { chainable } from '@toolbuilder/await-for-it'
+
+// Fetch items with controlled concurrency and automatic backpressure,
+// then batch results for bulk processing:
+for await (const batch of chainable(urls)
+  .map(url => () => fetch(url).then(res => res.json()))
+  .pool(5)         // run up to 5 requests concurrently
+  .chunk(50, 1000) // batch into groups of 50 (or emit partial chunk after 1s)
+) {
+  await db.insertMany(batch) // pauses fetching while writing to DB
+}
+```
 
 ## Features
 
-* Event queues - push events or other data into an async iterable: [Queue](docs/queue.md)
-* Pub/Sub - fork an async iterable to multiple consumers, register subscribers at any time: [Publish](docs/ChainableClass.md#publish)
-* Task pool - process up to `n` tasks at a time: [Pool](docs/ChainableClass.md#pool)
-* Chunk - group results into chunks, with timeouts for partial chunks, for efficient batch processing: [Chunk](docs/ChainableClass.md#chunk)
-* Join - two iterables should advance together: [Zip](docs/chainable.md#zip)
-* Merge - Merge multiple async/sync iterables with each going as fast as possible: [Merge](docs/ChainableClass.md#merge)
-* Throttle - limit the processing rate of an async iterable: [Throttle](docs/ChainableClass.md#throttle)
-* Polling - execute a task periodically with backpressure from an async iterable that is processing the results: [Poll](docs/poll.md)
-* Start/Stop iterables from **outside** the iterable, like a pseudo-thread: [Run](docs/ChainableClass.md#run)
-* Node Streams - works out of the box because Node streams are async iterables now: [Node Streams](examples/node-streams.js). Also see [streams.pipeline](https://nodejs.org/api/stream.html#stream_stream_pipeline_source_transforms_destination_callback) method.
-* Chainable - chain operations such as map, reduce, filter, throttle, and zip: [ChainableClass](docs/ChainableClass.md#zip)
-* Functional - all operations have a functional 'data last' equivalent via separate imports
-* Catch/Finally - just like Promises, except for streams of Promises: [Catch](docs/ChainableClass.md#catch)
-* Customizable - add/remove methods, or subclass ChainableClass: [Customize](docs/customization.md)
+### Concurrency & Flow Control
 
-If you just want synchronous iterables try [IterableFu](https://github.com/toolbuilder/iterablefu).
+* **Task Pool** – Process up to `n` concurrent async tasks with backpressure: [Pool](docs/pool.md)
+* **Throttle** – Cap processing rates (e.g., API rate limits): [Throttle](docs/ChainableClass.md#throttle)
+* **Chunk & Batch** – Group items into batches with idle timeouts for partial chunks: [Chunk](docs/chunk.md)
+* **Event Queue** – Bridge push events to pull-based async iterables: [Queue](docs/queue.md)
+* **Pub/Sub** – Broadcast one async iterable to multiple independent consumers: [Publish](docs/ChainableClass.md#publish)
+* **Merge & Zip** – Interleave multiple streams concurrently ([Merge](docs/merge.md)) or step through pairs ([Zip](docs/ChainableClass.md#zip))
+* **Polling** – Run periodic tasks regulated by consumer processing speed: [Poll](docs/poll.md)
+* **Lifecycle Control** – Start, pause, or cancel running iterables externally like a pseudo-thread: [Run](docs/ChainableClass.md#run)
+
+### Developer Experience
+
+* **Dual API Styles** – Choose between a fluent [Chainable API](docs/ChainableClass.md) (`chainable(source).map(...).pool(5)`) or tree-shakeable [Functional APIs](docs/transforms.md) (`generators`, `transforms`, `reducers`).
+* **Native Stream Compatibility** – Interoperates seamlessly with Node.js streams and `stream.pipeline`: [Node Streams](examples/node-streams.js)
+* **Async Error Handling** – Stream-level [Catch](docs/ChainableClass.md#catch) and [Finally](docs/ChainableClass.md#finally) handlers with guaranteed iterator cleanup.
+* **Customizable** – Add, remove, or subclass methods to fit your domain: [Customization](docs/customization.md)
 
 ## Installation
 
 ```bash
-npm install --save @toolbuilder/await-for-it
+npm install @toolbuilder/await-for-it
 ```
 
 ## Getting Started
 
-If you want the chainable API, use this import.
+`Await-For-It` provides two equivalent API styles with identical underlying capabilities:
+
+### 1. Chainable API (Fluent)
+
+Wraps any async or sync iterable into a chainable pipeline:
 
 ```javascript
-import { chainable }  from '@toolbuilder/await-for-it'
+import { chainable } from '@toolbuilder/await-for-it'
+
+const results = await chainable([1, 2, 3, 4, 5])
+  .map(x => () => fetchItem(x))
+  .pool(2) // run up to 2 tasks concurrently
+  .toArray()
 ```
 
-If you want the functional API, use this import.
+### 2. Functional API (Data-Last)
+
+Provides tree-shakeable, composable functions where the iterable is passed as the final argument:
 
 ```javascript
-import { generators, transforms, reducers }  from '@toolbuilder/await-for-it'
+import { transforms, reducers } from '@toolbuilder/await-for-it'
+
+const fetchTasks = transforms.map(x => () => fetchItem(x))
+const poolTwo = transforms.pool(2)
+
+const results = await reducers.toArray(
+  poolTwo(fetchTasks([1, 2, 3, 4, 5]))
+)
 ```
 
-Users of both API styles will probably want other methods and classes from the main package such as:
+### Standalone Concurrency Primitives
+
+Coordination primitives can be imported directly from the package root:
 
 ```javascript
-import { Poll, Queue, callWithTimeout } from '@toolbuilder/await-for-it'
+import { Queue, Poll, callWithTimeout, wait } from '@toolbuilder/await-for-it'
 ```
 
-## API
+## API Documentation
 
-### Chainable API
-
-* module entry point is [here](docs/await-for-it.md)
-* The bulk of the chainable documentation is [here](docs/ChainableClass.md).
-
-### Functional API
-
-The chainable API is dynamically created from the functional API when `Await-For-It` is loaded. Underneath, the methods are the same.
-
-* module entry point is the same of course: [here](docs/await-for-it.md)
-* [generators](docs/generators.md) - create sequences of data
-* [transforms](docs/transforms.md) - transform sequences of data
-* [reducers](docs/reducers.md) - reduce or control sequences of data
-
-The documentation is in progress. Sometimes the functional API examples show chainable API use. Sometimes it is the other way around. I will continue improving - especially in areas where you provide feedback.
-
-### Customization
-
-`Await-For-It` works with your generators and iterables. It is also possible to add or remove methods from `Await-For-It` to suit your needs. See [customization](docs/customization.md).
+* [**Package Overview**](docs/await-for-it.md) – Root exports, type definitions, and architecture.
+* [**Chainable API**](docs/ChainableClass.md) – Comprehensive reference for all chainable methods (`map`, `filter`, `pool`, `chunk`, `throttle`, `zip`, `merge`, `catch`, `finally`, `run`, etc.), created via [`chainable()`](docs/chainable.md).
+* [**Functional API**](docs/transforms.md) – Standalone functions organized into:
+  * [Generators](docs/generators.md) – Create sequences (`range`, `from`).
+  * [Transforms](docs/transforms.md) – Transform sequences (`map`, `filter`, `pool`, `chunk`, `throttle`, `merge`, `zip`, `flattenUnordered`, etc.).
+  * [Reducers](docs/reducers.md) – Terminal consumers (`toArray`, `forEach`, `reduce`, `publish`, `run`, `runAwait`).
+* [**Concurrency Primitives**](docs/queue.md):
+  * [`Queue`](docs/queue.md) – Thread-safe push-to-pull event queue with optional custom ring buffers.
+  * [`Poll`](docs/poll.md) – Periodic task execution regulated by consumer backpressure.
+  * [Timeouts & Delays](docs/timeouts.md) – Resilient async execution (`callWithTimeout`, `wait`, `waitToCall`).
+* [**Customization & Subclassing**](docs/customization.md) – Add or remove methods, or subclass `ChainableClass` for your domain.
 
 ## Examples
 
-Here is a quick set of [examples](examples).
+Runnable code examples demonstrating task pools, streaming, error recovery, pseudo-threads, and ring buffers are in the [examples directory](examples/README.md).
+
+## When to Use `Await-For-It` (and Alternatives)
+
+Different async tools excel at different workloads:
+
+| Approach | Best For | Trade-offs |
+| :--- | :--- | :--- |
+| **`Promise.all` / `p-limit`** | Simple batching of small, fixed arrays | No streaming or backpressure; large sets can exhaust memory. |
+| **Native `for await...of`** | Strictly sequential async processing | Cannot run concurrent tasks, pool promises, or interleave streams without complex boilerplate. |
+| **RxJS / Observables** | Complex, push-based reactive UI event streams | Heavyweight footprint; steep learning curve; operates on push streams rather than standard JavaScript async iterables. |
+| **Node.js Streams (`stream.pipeline`)** | Raw binary/byte I/O streams | Heavier stream API compared to lightweight JavaScript iterators (though `Await-For-It` interoperates with them out of the box). |
+| **Synchronous Iterables ([IterableFu](https://github.com/toolbuilder/iterablefu))** | Purely CPU-bound, in-memory synchronous operations | Synchronous counterpart to this library; does not support Promises or concurrency. |
+| **`Await-For-It`** | Bounded concurrency, pooling, batching, and rate limiting with backpressure | Designed for async iterables; once in an async pipeline, values cannot be pulled synchronously. |
+
+### Key Architectural Concepts
+
+* **Pull vs. Push**: Observables push data as soon as it arrives, which can overwhelm slow consumers unless complex throttling operators are configured. Async iterables use a **pull** model where the consumer drives iteration speed, delivering built-in backpressure. `Await-For-It` provides [`Queue`](docs/queue.md) to bridge push-based event sources (like Node `EventEmitter`s or socket events) into pull-based pipelines.
+* **Node.js Streams Interoperability**: Because Node.js streams implement `Symbol.asyncIterator`, `Await-For-It` works directly with [`stream.pipeline`](https://nodejs.org/api/stream.html#stream_stream_pipeline_source_transforms_destination_callback) and readable streams without adapters.
 
 ## Breaking Changes
 
@@ -99,20 +146,6 @@ Here is a quick set of [examples](examples).
     * **`iteratorFrom` dual-iterable priority**: When an object implements both `[Symbol.asyncIterator]` and `[Symbol.iterator]`, `iteratorFrom` now prefers `[Symbol.asyncIterator]` (matching JavaScript's native `for await...of` semantics) instead of `[Symbol.iterator]`.
     * **`filter` and `reject` truthiness**: Predicate checks evaluate truthiness (`Boolean(fn(value))`) rather than requiring strict boolean `true` (`fn(value) === true`), aligning with standard `Array.prototype.filter`.
     * **`Poll` lifecycle & detached callbacks**: `Poll` instances are strictly single-use and cannot be re-iterated once completed. Callback functions are invoked detached without `this` bound to `Poll`, and calling `poll.done()` aborts pending sleep delays immediately.
-
-## Alternatives
-
-`Await-For-It` is focused on solving common asynchronous patterns with asynchronous iterables. There are many other packages that solve common asynchronous patterns without async iterables. There are also a number of packages that provide async iterable support, but don't seem to fully support async concurrency patterns.
-
-There are lots of packages that support synchronous iterables, but that doesn't help with concurrency. For example, [Iterablefu](https://github.com/toolbuilder/iterablefu) is the synchronous version of `Await-For-It`.
-
-There are popular `Observable` libraries. I worked with [RxJs](https://rxjs.dev/guide/observable) and [Kefir](https://kefirjs.github.io/kefir/) before writing `Await-For-It`. `Observables` use a push model, and async iterables use a pull model. `Await-For-It` provides [Queue](docs/queue.md) to bridge from push to pull.
-
-Node streams are now async iterables, so this isn't an either/or decision. The [pipeline](https://nodejs.org/api/stream.html#stream_piping_to_writable_streams_from_async_iterators) method might be all you need.
-
-`Promise` chains work just fine if you don't need to control the number of active tasks, or need to run the tasks sequentially.
-
-`for await` loops are perfect when you don't need to relax that 'one-at-a-time' behavior. But when you refactor a bunch of nested loops they'll look a lot like the functional or chainable API of `Await-For-It`.
 
 ## Contributing
 

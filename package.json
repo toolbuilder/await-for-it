@@ -1,7 +1,7 @@
 {
   "name": "@toolbuilder/await-for-it",
   "version": "1.4.0",
-  "description": "Concurrency using chainable async iterables, such as task pool, event queue, pub/sub, merge, chunk, throttle, etc.",
+  "description": "Manage async concurrency, task pools, rate limiting, and batching with chainable async iterables and built-in backpressure.",
   "keywords": [
     "async",
     "asynciterable",
