@@ -17,7 +17,7 @@
 * Chainable - chain operations such as map, reduce, filter, throttle, and zip: [ChainableClass](docs/ChainableClass.md#zip)
 * Functional - all operations have a functional 'data last' equivalent via separate imports
 * Catch/Finally - just like Promises, except for streams of Promises: [Catch](docs/ChainableClass.md#catch)
-* Customizeable - add/remove methods, and support your bundler's tree-shaking: [Customize](docs/customization.md)
+* Customizable - add/remove methods, or subclass ChainableClass: [Customize](docs/customization.md)
 
 If you just want synchronous iterables try [IterableFu](https://github.com/toolbuilder/iterablefu).
 

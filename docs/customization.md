@@ -1,87 +1,128 @@
 # Customization
 
-There are several different levels of customization for `await-for-it`:
+There are three main levels of customization for `await-for-it`:
 
-* Use the constructor function and [mapWith](./transforms.md#mapwith)
-* Use the default base class and [makeChainableFactory](./makechainable.md) to add/remove chainable methods
-* Subclass [ChainableClass](./chainableclass.md) and use [makeFactory](https://github.com/toolbuilder/make-factory)
+* **Ad-hoc Customization**: Use your own generator iterables with [chainable](./chainable.md) and transform streams with [mapWith](./transforms.md#mapwith).
+* **Subclassing [ChainableClass](./ChainableClass.md)**: Extend `ChainableClass` to add methods with full TypeScript type safety, and optionally wrap your class with [makeFactory](https://github.com/toolbuilder/make-factory).
+* **Custom Composition with [makeChainableFactory](./makechainable.md)**: Dynamically compose custom generator, transform, and reducer methods into a tailored chainable factory or class.
 
 ## Table of Contents
 
 * [Basic Customization](#basic-customization)
-* [Add or Remove Methods](#add-or-remove-methods)
+* [Subclassing ChainableClass](#subclassing-chainableclass)
+* [Composing with makeChainableFactory](#composing-with-makechainablefactory)
+  * [Why Not Tree-Shaking?](#why-not-tree-shaking)
   * [Imports](#imports)
   * [Generators](#generators)
   * [Transform Functions](#transform-functions)
   * [Reducer Functions](#reducer-functions)
   * [Putting It Together](#putting-it-together)
-* [Extending ChainableClass](#extending-chainable)
+  * [TypeScript Considerations](#typescript-considerations)
+* [Building from a Minimal Base Class](#building-from-a-minimal-base-class)
 
 ## Basic Customization
 
-The simplest way to extend `Await-For-It` is to use your generators with existing `await-for-it` methods.
+The simplest way to customize your pipeline is to pass your own iterables into existing `await-for-it` methods.
 
-If you have a generator or iterable that creates a sequence of data, simply use the [chainable constructor](./chainable.md).
+### Generator Iterables
+
+If you have a generator function that yields a sequence of data, call it to obtain an iterable and pass that iterable to the [chainable](./chainable.md) factory function:
 
 ```javascript
 import { chainable } from '@toolbuilder/await-for-it'
+
 // This generator can be async (e.g. 'async function *') or sync
-// as the situation demands.
 const simpleRange = function * (length) {
   for (let i = 0; i < length; i++) {
     yield i
   }
 }
 
-const a = await chainable(simpleRange).toArray()
+// Pass the iterable returned by simpleRange(5)
+const a = await chainable(simpleRange(5)).toArray()
+console.log(a) // prints [0, 1, 2, 3, 4]
 ```
 
-If you have a transform generator that accepts an input iterable and returns a transformed iterable, then use [mapWith](./transforms.md#mapwith). You can pass anything that is iterable: async or synchronous.
+> **Note:** The `chainable` factory expects an iterable instance (sync or async), not the uninvoked generator function itself.
+
+### Custom Transforms with `mapWith`
+
+If you have a transform generator that accepts an input iterable and returns a transformed iterable, use [mapWith](./transforms.md#mapwith). You can pass anything that is iterable (async or synchronous):
 
 ```javascript
 import { chainable } from '@toolbuilder/await-for-it'
 
-const fn = async function * (iterable) {
-  for await (let x of iterable) {
+const squareTransform = async function * (iterable) {
+  for await (const x of iterable) {
     yield x * x
   }
 }
 
-const a = chainable([0, 1, 2, 3]).mapWith(fn).toArray()
+const a = await chainable([0, 1, 2, 3]).mapWith(squareTransform).toArray()
 console.log(a) // prints [0, 1, 4, 9]
 ```
 
-## Add Or Remove Methods
+## Subclassing ChainableClass
 
-Perhaps you are tree shaking and need to minimize the amount of code pulled in to your bundle. In that case, use the [makeChainableFactory](./makechainable.md) method to generate your own version of [chainable](./chainable.md). You can use your own methods and methods from `Await-For-It` with `makeChainableFactory`.
+If you want to add reusable instance methods while preserving all existing `await-for-it` methods, subclass [ChainableClass](./ChainableClass.md) directly.
 
-This section walks through an example that adds a few simple methods to those already provided by `Await-For-It`.
-You can also reduce the number of methods the same way.
+This is the **recommended approach for TypeScript users**, because standard ES class inheritance preserves full static type checking, generic type inference, and autocomplete without the dynamic reflection issues of `makeChainableFactory`.
+
+```javascript
+import { ChainableClass, makeFactory } from '@toolbuilder/await-for-it'
+
+class ExtendedChainable extends ChainableClass {
+  double () {
+    return this.map(x => x * 2)
+  }
+}
+
+// Optionally wrap with makeFactory so consumers can call it without 'new'
+const chainable = makeFactory(ExtendedChainable)
+
+const result = await chainable([1, 2, 3]).double().toArray()
+console.log(result) // prints [2, 4, 6]
+```
+
+## Composing with makeChainableFactory
+
+The [makeChainableFactory](./makechainable.md#makechainablefactory) function dynamically constructs a chainable factory with static generator methods and chainable prototype methods.
+
+Use `makeChainableFactory` when you want to build a customized, fluent API—for example, exposing a curated subset of methods for an application or mixing domain-specific transforms directly into the fluent chain.
+
+### Why Not Tree-Shaking?
+
+You might wonder whether `makeChainableFactory` can be used to "tree-shake" unused methods from your client bundle. In practice, modern JavaScript bundlers (such as Rollup, esbuild, or Webpack) cannot tree-shake dynamically composed classes:
+
+1. **Dynamic prototype mutation:** Bundlers rely on static ES module `import`/`export` syntax to identify unused code. `makeChainableFactory` assigns methods to prototypes at runtime inside `for...in` loops (`Chainable.prototype[methodName] = ...`). Bundlers cannot statically analyze which properties are accessed on instances.
+2. **Namespace imports:** Spreading module namespace objects (e.g. `{ ...generators }` or `{ ...transforms }`) statically references every exported function in those modules, preventing bundlers from eliminating any of them.
+
+If your primary goal is minimizing bundle size, prefer importing and calling individual functional utilities directly:
+
+```javascript
+import { map } from '@toolbuilder/await-for-it/src/transforms.js'
+import { toArray } from '@toolbuilder/await-for-it/src/reducers.js'
+
+const result = await toArray(map(x => x * 2, [1, 2, 3]))
+```
+
+Use `makeChainableFactory` for API ergonomics and custom composition, not as a tree-shaking mechanism.
 
 ### Imports
 
-Import `makeChainableFactory`. If you want to use other `Await-For-It` methods, import the functional versions of those too: [generators](generators.md), [transforms](transforms.md), and [reducers](reducers.md).
+Import `makeChainableFactory` along with the functional modules: [generators](generators.md), [transforms](transforms.md), and [reducers](reducers.md):
 
 ```javascript
 import { makeChainableFactory, generators, transforms, reducers } from '@toolbuilder/await-for-it'
 ```
 
-You can also import specific functions directly. However, you're taking a bit of a risk that future releases will move these functions.
-
-```javascript
-import { makeChainableFactory } from '@toolbuilder/await-for-it/src/makechainable.js'
-import { zip, zipAll } from '@toolbuilder/await-for-it/src/generators.js'
-import { pluck, nth } from '@toolbuilder/await-for-it/src/transforms.js'
-import { forEach } from '@toolbuilder/await-for-it/src/reducers.js'
-```
-
 ### Generators
 
-Each `await-for-it` generator will appear as a static factory method on your custom class. Your generators can return anything that supports the [async iterable protocol](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/asyncIterator). The generator **can** support the [iterable protocol](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol) only because all existing transforms and reducers support either async or sync iterables. So it really isn't a best practice to use a sync iterable.
+Each generator function in the `generators` object becomes a **static factory method** on your custom chainable class/factory.
 
-JavaScript automatically converts sync iterables to async iterables in most cases. If your code is explicitly asking for an iterator, you will need something like [iteratorFrom](./iteratorfrom.js), which provides an iterator from either an async or a sync iterable.
-
-Typically, you'll provide [generator functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*). However, any method that returns an iterable object will work just fine. For example, an ordinary method that returns an Array would work because Array is iterable. Your generators may take any number of parameters, and yield any sort of sequence.
+* Your generator functions may accept any arguments and return an async or sync iterable.
+* All existing transforms and reducers in `await-for-it` support either async or sync iterables.
+* If your generator needs to convert an arbitrary iterable to an iterator, use [iteratorFrom](./iteratorfrom.md), which supports both sync and async iterables.
 
 ```javascript
 const simpleRange = async function * (length) {
@@ -89,60 +130,44 @@ const simpleRange = async function * (length) {
     yield i
   }
 }
-
-// Here's what the callAwait method from 'src/transforms.js' looks like
-const callAwait = async function * (fn, iterable) {
-  for await (const value of iterable) {
-    await fn(value)
-    yield value
-  }
-}
 ```
 
 ### Transform Functions
 
-The transform methods will become chainable methods on the chainable iterable class. These functions can return anything that supports the [async iterable protocol](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/asyncIterator).
+Transform functions become chainable instance methods on the class.
 
-Transform methods can have any number of parameters, but the last parameter is **always** the iteratable to transform. Transform methods should **always** accept either synchronous iterables or async iterables to transform. JavaScript automatically converts sync iterables to async iterables in most cases. If your code is explicitly asking for an iterator, you will need something like [iteratorFrom](./iteratorfrom.js), which provides an iterator from either an async or a sync iterable.
-
-Transforms do not have to be [generator functions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*). Here are two examples:
+* Transform functions can accept any number of parameters, but the **last parameter is always the iterable to transform**.
+* When invoked as a chainable method on an instance, the trailing iterable parameter is omitted because the chain provides it automatically.
+* Transforms should always accept either synchronous or asynchronous iterables.
+* Transforms do not have to be generator functions; any function returning an iterable (or async iterable) works.
 
 ```javascript
-// This transform method returns an anonymous iterable object just to show
-// something different than a generator function.
-// As with all transforms, the iterable to be transformed must be the last parameter.
+// A transform returning an async iterable object
 const multiply = (n, iterable) => {
   return {
     async * [Symbol.asyncIterator] () {
-      // JavaScript will automatically deal with either
-      // an async or sync iterable in a for...await loop
-      for await (let x of iterable) {
+      for await (const x of iterable) {
         yield n * x
       }
     }
   }
 }
 
-// You can implement your method using the functional API methods. Do not use 'this', because
-// the generated chainable class methods have a different signature (i.e. no iterable parameter).
-// In this case, because map returns an iterable object, byTwo shouldn't be a generator
-// function itself (no asterisk).
+// A transform implemented using an existing functional API method
 const byTwo = function (iterable) {
-  return transforms.map(x => 2 * x, iterable) // returning async generator
+  return transforms.map(x => 2 * x, iterable)
 }
 ```
 
 ### Reducer Functions
 
-Reducer methods become non-chainable methods on the chainable class. Reducer methods can have any number of parameters,
-but the last one must be the iterable to be reduced. The return value can be anything.
+Reducer functions become non-chainable, terminal instance methods on the class.
+
+* Like transforms, the **last parameter must be the iterable to reduce**.
+* Reducers typically consume the iterable and return a Promise or scalar value.
 
 ```javascript
-// The last parameter must be the iterable to be reduced
 const toSet = async function (iterable) {
-  // Can't just use Set constructor!
-  // Need to handle async iterables too...
-  // return new Set(iterable)
   const set = new Set()
   for await (const value of iterable) {
     set.add(value)
@@ -153,77 +178,80 @@ const toSet = async function (iterable) {
 
 ### Putting It Together
 
-The [makeChainableFactory](./makechainable.md#makeChainableFactory) method requires generators, transforms, and reducers. However, any
-of those can be empty Objects.
-
-- The generators will have the same method signature as the methods you provide
-- The trailing iterable parameter will be removed from the method signatures of the transforms and reducers
-  because the iterable is provided by the chainable class.
+The `makeChainableFactory` function takes three arguments: `generators`, `transforms`, and `reducers`. Any of these can be empty objects (`{}`).
 
 ```javascript
 import { makeChainableFactory, generators, transforms, reducers } from '@toolbuilder/await-for-it'
-// add your methods to the existing ones.
-// In this case, the methods are from the examples above.
+
+// Add custom methods alongside built-in ones
 const customSequences = { ...generators, simpleRange }
 const customTransforms = { ...transforms, multiply, byTwo }
 const customReducers = { ...reducers, toSet }
 
 const customChainable = makeChainableFactory(customSequences, customTransforms, customReducers)
 
-// Use your new class
-const set = await customChainable.simpleRange(3).multiply(2).toSet()
-const anotherSet = await customChainable([0, 1, 2]).multiply(2).toSet()
+// Use static generator methods
+const set1 = await customChainable.simpleRange(3).multiply(2).toSet()
+console.log(set1) // Set(3) { 0, 2, 4 }
+
+// Call the factory directly with an existing iterable
+const set2 = await customChainable([0, 1, 2]).multiply(2).toSet()
+console.log(set2) // Set(3) { 0, 2, 4 }
 ```
 
-Since `await-for-it` exports both [chainable](chainable.md) and [ChainableIterable](ChainableIterable.md), the method `makeChainableClass` is used instead. It just adds an extra step. See 'src/chainable.js' for details.
-
-## Extending Chainable
-
-The `makeChainableClass` function starts with a super simple class before mixing in the generators, transducers, and reducers. Here's an excerpt.
-
-```javascript
-  class Chainable {
-    constructor (iterable) {
-      this.iterable = iterable
-    }
-
-    catch (fn) {
-      const catcher = async function * (iterable) {
-        try { yield * iterable } catch (error) { fn(error) }
-      }
-      this.iterable = catcher(this.iterable)
-      return this
-    }
-
-    finally (fn) {
-      const doFinally = async function * (fn, iterable) {
-        try { yield * iterable } finally { fn() }
-      }
-      this.iterable = doFinally(fn, this.iterable)
-      return this
-    }
-
-    async * [Symbol.asyncIterator] () {
-      yield * this.iterable
-    }
-  }
-```
-If you call [makeChainableClass](./makechainable.md#makechainableclass) with empty Objects as parameters, you'll get this basic class.
-You can subclass the returned class however you wish. Then if you want a static factory class do this:
+If you prefer constructing instances with `new CustomClass(iterable)` rather than a factory function, use [makeChainableClass](./makechainable.md#makechainableclass) instead:
 
 ```javascript
 import { makeChainableClass } from '@toolbuilder/await-for-it'
-import { makeFactory } from '@toolbuilder/make-factory'
 
-// Of course, you aren't limited to empty parameter Objects
-const ChainableIterable = makeChainableClass({}, {}, {})
-
-class Extended extends ChainableIterable {
-  /* your extensions here */
-}
-
-const chainable = makeFactory(Extended)
-const iterable = chainable([0, 1, 3]).toArray()
+const CustomChainableClass = makeChainableClass(customSequences, customTransforms, customReducers)
+const instance = new CustomChainableClass([0, 1, 2])
 ```
 
-[1]: https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object
+### TypeScript Considerations
+
+`await-for-it` includes TypeScript declaration types for `makeChainableFactory` and `makeChainableClass`, but there are key limitations to be aware of when using them in TypeScript:
+
+1. **Generic Type Erasure on Custom Transforms:**
+   Built-in methods (`map`, `filter`, `chunk`, `pool`, `pluck`, etc.) have explicit conditional type mappings in `makechainable.js`. However, arbitrary custom transform functions fall through to a generic fallback type:
+   `(...args: OmitLastParam<Tr[K]>) => CustomChainableIterable<Tr, R, IterableElement<ReturnType<Tr[K]>>>`
+   Because TypeScript evaluates `ReturnType<Tr[K]>` without inferring generic type arguments from the calling instance, generic transform functions (e.g. `<T>(iterable: AsyncIterable<T>) => AsyncGenerator<T>`) lose their generic type parameter `T`, causing the stream element type to degrade to `unknown` or `any`.
+
+2. **Loss of Item Type in Custom Reducers:**
+   Similarly, custom generic reducers (e.g. `<T>(iterable: AsyncIterable<T>) => Promise<Set<T>>`) lose connection to the stream's item type `T`, resolving to e.g. `Promise<Set<unknown>>`.
+
+3. **Loss of Overloads and Type Guards:**
+   Custom methods with multiple function overloads or type predicate return types (e.g. `item is S`) cannot preserve those signatures across the dynamic mapped type.
+
+> [!TIP]
+> **TypeScript Recommendation:** If you are writing TypeScript and need custom chainable methods with strong typing, autocompletion, and generic type flow, **[subclass ChainableClass](#subclassing-chainableclass)** instead of using `makeChainableFactory`.
+
+## Building from a Minimal Base Class
+
+If you call [makeChainableClass](./makechainable.md#makechainableclass) with empty objects, it returns a minimal chainable class containing only:
+
+* `this.iterable`
+* `catch(fn)` error handling
+* `finally(fn)` cleanup handler
+* `[Symbol.asyncIterator]()`
+
+```javascript
+import { makeChainableClass, makeFactory } from '@toolbuilder/await-for-it'
+
+// Minimal base class with only catch, finally, and async iteration
+const MinimalChainable = makeChainableClass({}, {}, {})
+
+class CustomPipeline extends MinimalChainable {
+  async toArray () {
+    const items = []
+    for await (const item of this) {
+      items.push(item)
+    }
+    return items
+  }
+}
+
+const customFactory = makeFactory(CustomPipeline)
+const result = await customFactory([1, 2, 3]).toArray()
+console.log(result) // prints [1, 2, 3]
+```
