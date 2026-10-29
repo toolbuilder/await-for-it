@@ -1,6 +1,6 @@
 {
   "name": "@toolbuilder/await-for-it",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "Manage async concurrency, task pools, rate limiting, and batching with chainable async iterables and built-in backpressure.",
   "keywords": [
     "async",
