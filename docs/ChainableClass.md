@@ -310,7 +310,7 @@ console.log(a.sort()) // prints [1, 2, 3, 4, 5, 6, 7, 8]
 
 Returns **ChainableClass** for the flattened sequence.
 
-See [flatten-unordered.js](../examples/flatten-unordered.js) for an executable example demonstrating `Symbol.isConcatSpreadable` (opt-in and opt-out), and [flatten-unordered-exceptions.js](../examples/flatten-unordered-exceptions.js) for exception handling and child iterable `.return()` cleanup.
+See [flatten-unordered.js](../examples/flatten-unordered.js) for an executable example demonstrating `Symbol.isConcatSpreadable` (opt-in and opt-out), [flatten-unordered-exceptions.js](../examples/flatten-unordered-exceptions.js) for exception handling and child iterable `.return()` cleanup, and [flatten-unordered-task-tracking.js](../examples/flatten-unordered-task-tracking.js) for tracking and recovering unstarted and in-flight tasks with `mapWith`.
 
 ## map
 

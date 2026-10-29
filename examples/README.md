@@ -20,6 +20,7 @@ node examples/queue-exceptions.js
 node examples/queue-reject.js
 node examples/flatten-unordered.js
 node examples/flatten-unordered-exceptions.js
+node examples/flatten-unordered-task-tracking.js
 node examples/pseudo-threads.js
 node examples/node-streams.js
 ```
@@ -45,6 +46,7 @@ npm run test:examples
 * [queue-reject.js](queue-reject.js) - Explicitly aborting a queue with `queue.reject()`, push lockout behavior, and recovering unprocessed items from the buffer.
 * [flatten-unordered.js](flatten-unordered.js) - Concurrently flattening async and sync iterables with `maxPoolSize`, and controlling flattening behavior with `Symbol.isConcatSpreadable` (opt-in for TypedArrays/Maps, opt-out for arrays).
 * [flatten-unordered-exceptions.js](flatten-unordered-exceptions.js) - Exception handling with `flattenUnordered`, demonstrating that when an error occurs or iteration terminates early, active child iterables and the input iterable are cleanly closed via `.return()`.
+* [flatten-unordered-task-tracking.js](flatten-unordered-task-tracking.js) - Task tracking and error recovery with `flattenUnordered` and `mapWith`, accounting for unstarted child iterables and in-flight pool tasks when an exception occurs to enable resuming or dead-letter queuing.
 * [pseudo-threads.js](pseudo-threads.js) - Starting, stopping, and awaiting iterators externally with `run()`.
 * [node-streams.js](node-streams.js) - Using `chainable` with Node.js `Readable` streams and `stream.pipeline`.
 
