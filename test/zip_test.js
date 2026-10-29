@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { generators as ifuGenerators } from 'iterablefu'
+import { chainable as sync, generators as ifuGenerators } from 'iterablefu'
 import { chainable, generators } from '../src/await-for-it.js'
+import { randomlySlowIterator, runTest as runTooFastTest } from './toofast.js'
 
 class TestError extends Error {}
 
@@ -416,4 +417,25 @@ test('zip: peer failing initialization closes already created iterators', async 
   }
   assert.ok(caughtInitError, 'threw error for invalid argument')
   assert.ok(returnCalled, 'iterator created before failure had return() called')
+})
+
+test('zip: iterator called faster than one-at-a-time', async () => {
+  const values = 20
+  const s1 = randomlySlowIterator(5, 5, sync.range(values).toArray())
+  const s2 = randomlySlowIterator(5, 5, sync.range(values, values * 2).toArray())
+  const iterator = generators.zip(s1, s2)
+  const actual = await runTooFastTest(iterator, values)
+  const expected = sync.range(values).map(i => [i, i + values]).toArray()
+  assert.deepEqual(actual, expected, 'all pairs yielded in order')
+})
+
+test('zipAll: iterator called faster than one-at-a-time', async () => {
+  const values = 20
+  const shorter = 15
+  const s1 = randomlySlowIterator(5, 5, sync.range(shorter).toArray())
+  const s2 = randomlySlowIterator(5, 5, sync.range(values).toArray())
+  const iterator = generators.zipAll(s1, s2)
+  const actual = await runTooFastTest(iterator, values)
+  const expected = sync.range(values).map(i => [i < shorter ? i : undefined, i]).toArray()
+  assert.deepEqual(actual, expected, 'all pairs yielded in order with padding')
 })

@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { generators } from 'iterablefu'
+import { chainable as sync, generators } from 'iterablefu'
 import { chainable, transforms, reducers, wait } from '../src/await-for-it.js'
+import { runTest } from './toofast.js'
 
 const randomInt = (maxInt) => Math.floor(Math.random() * Math.floor(maxInt))
 
@@ -439,6 +440,14 @@ test('throttle: parameter validation throws appropriate errors', () => {
     // @ts-ignore
     assert.throws(() => transforms.throttle(50, 0, badIterable), TypeError)
   }
+})
+
+test('throttle: iterator called faster than one-at-a-time', async () => {
+  const values = 10
+  const input = sync.range(values).toArray()
+  const throttled = transforms.throttle(10, 0, input)
+  const actual = await runTest(throttled, values)
+  assert.deepEqual(actual, input, 'all throttled values yielded in order')
 })
 
 test('transforms: functional pluck, nth, and arrayToObject support primitives and sync iterables of promises', async () => {
