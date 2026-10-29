@@ -32,6 +32,34 @@
       "types": "./src/await-for-it.d.ts",
       "default": "./src/await-for-it.js"
     },
+    "./chainable": {
+      "types": "./src/chainable.d.ts",
+      "default": "./src/chainable.js"
+    },
+    "./generators": {
+      "types": "./src/generators.d.ts",
+      "default": "./src/generators.js"
+    },
+    "./poll": {
+      "types": "./src/poll.d.ts",
+      "default": "./src/poll.js"
+    },
+    "./queue": {
+      "types": "./src/queue.d.ts",
+      "default": "./src/queue.js"
+    },
+    "./reducers": {
+      "types": "./src/reducers.d.ts",
+      "default": "./src/reducers.js"
+    },
+    "./timeouts": {
+      "types": "./src/timeouts.d.ts",
+      "default": "./src/timeouts.js"
+    },
+    "./transforms": {
+      "types": "./src/transforms.d.ts",
+      "default": "./src/transforms.js"
+    },
     "./package.json": "./package.json",
     "./src/*.js": {
       "types": "./src/*.d.ts",
@@ -39,7 +67,10 @@
     }
   },
   "files": [
-    "src"
+    "src",
+    "docs",
+    "examples",
+    "llms.txt"
   ],
   "sideEffects": false,
   "scripts": {

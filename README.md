@@ -68,20 +68,28 @@ Provides tree-shakeable, composable functions where the iterable is passed as th
 ```javascript
 import { transforms, reducers } from '@toolbuilder/await-for-it'
 
-const fetchTasks = transforms.map(x => () => fetchItem(x))
-const poolTwo = transforms.pool(2)
+// Functional transforms accept the iterable as their last argument:
+const tasks = transforms.map(x => () => fetchItem(x), [1, 2, 3, 4, 5])
+const pooled = transforms.pool(2, tasks)
 
-const results = await reducers.toArray(
-  poolTwo(fetchTasks([1, 2, 3, 4, 5]))
-)
+const results = await reducers.toArray(pooled)
 ```
+
+*(To use with pipe/compose or currying, wrap them with arrow functions or your favorite curry utility: `source => transforms.pool(2, source)`).*
 
 ### Standalone Concurrency Primitives
 
-Coordination primitives can be imported directly from the package root:
+Coordination primitives can be imported directly from the package root or via dedicated subpath exports:
 
 ```javascript
-import { Queue, Poll, callWithTimeout, wait } from '@toolbuilder/await-for-it'
+// Root imports:
+import { Queue, Poll, callWithTimeout, wait, chainable, transforms, reducers } from '@toolbuilder/await-for-it'
+
+// Or dedicated subpath imports:
+import { Queue } from '@toolbuilder/await-for-it/queue'
+import { Poll } from '@toolbuilder/await-for-it/poll'
+import { pool, chunk, map } from '@toolbuilder/await-for-it/transforms'
+import { toArray, forEach } from '@toolbuilder/await-for-it/reducers'
 ```
 
 ## API Documentation
@@ -97,6 +105,64 @@ import { Queue, Poll, callWithTimeout, wait } from '@toolbuilder/await-for-it'
   * [`Poll`](docs/poll.md) – Periodic task execution regulated by consumer backpressure.
   * [Timeouts & Delays](docs/timeouts.md) – Resilient async execution (`callWithTimeout`, `wait`, `waitToCall`).
 * [**Customization & Subclassing**](docs/customization.md) – Add or remove methods, or subclass `ChainableClass` for your domain.
+* [**LLM Reference (`llms.txt`)**](llms.txt) – Machine-readable API summary and usage guide for AI assistants.
+
+### Quick Reference
+
+#### Chainable Pipeline (`chainable(source)...`)
+
+| Method | Signature | Description |
+| :--- | :--- | :--- |
+| `arrayToObject` | `(propertyNames)` | Maps arrays/iterables to objects by assigning keys |
+| `callAwait` | `(fn)` | Executes `await fn(item)` without altering item |
+| `callNoAwait` | `(fn)` | Executes synchronous `fn(item)` without awaiting |
+| `catch` | `(fn)` | Catches upstream iteration errors |
+| `chunk` | `(n, timeout)` | Batches every `n` items (or on `timeout` ms) into an array |
+| `diff` | `(fn)` | Yields `fn(prev, curr)` for adjacent pairs |
+| `filter` | `(predicate)` | Keeps items where `predicate(item)` is truthy |
+| `finally` | `(fn)` | Cleanup callback on completion, error, or early exit |
+| `flatten` | `()` | Flattens sequence 1 level deep (preserves strings, Buffers, Maps) |
+| `flattenRecursive` | `()` | Recursively flattens nested iterables |
+| `flattenUnordered` | `(maxPoolSize)` | Concurrently flattens child iterables up to `maxPoolSize` |
+| `map` | `(fn)` | Transforms each item with `fn(item)` |
+| `mapWith` | `(generatorFn)` | Transforms sequence with custom `(iterable) => iterable` generator |
+| `nth` | `(index)` | Yields the `n`-th element of each array |
+| `pluck` | `(propertyName)` | Yields `item[propertyName]` from each object |
+| `pool` | `(maxPoolSize)` | Concurrently runs up to `maxPoolSize` tasks (`() => Promise`) |
+| `reject` | `(predicate)` | Removes items where `predicate(item)` is truthy |
+| `take` | `(n)` | Yields first `n` items and closes upstream iterator |
+| `throttle` | `(period, initialWait)` | Limits processing speed to 1 item per `period` ms |
+
+#### Reducers (Terminal Consumers)
+
+| Method / Function | Signature | Description |
+| :--- | :--- | :--- |
+| `toArray` | `() => Promise<T[]>` | Collects all yielded items into an array |
+| `forEach` | `(fn) => Promise<void>` | Awaits `fn(item, index)` for each item |
+| `reduce` | `(fn, initial) => Promise<R>` | Reduces sequence into a single accumulated value |
+| `run` | `() => RunController` | Starts iteration in background; returns controller |
+| `runAwait` | `() => Promise<void>` | Iterates sequence to completion |
+| `publish` | `() => PublishController` | Broadcasts items to subscribing functions |
+
+#### Static Constructors & Generators
+
+| Method / Function | Signature | Description |
+| :--- | :--- | :--- |
+| `chainable` / `from` | `(iterable)` | Wraps sync or async iterable into a chainable pipeline |
+| `merge` | `(...iterables)` | Merges multiple iterables concurrently |
+| `range` | `([start,] stop[, step])` | Generates numeric sequence (Python range semantics) |
+| `zip` | `(...iterables)` | Tuples in lockstep, stopping at shortest iterable |
+| `zipAll` | `(...iterables)` | Tuples in lockstep, stopping at longest iterable |
+
+#### Concurrency Primitives
+
+| Class / Function | Description |
+| :--- | :--- |
+| `Queue(buffer?)` | Push-to-pull async iterable buffer (`push(item)`, `done()`, `reject(err)`) |
+| `Poll(fn, options?)` | Periodic task execution regulated by consumer backpressure |
+| `callWithTimeout(fn, ms, timeoutFn?)` | Runs async function with timeout protection |
+| `wait(ms)` | Resolves promise after `ms` delay |
+| `waitToCall(fn, ms)` | Delays `ms` before executing `fn` |
 
 ## Examples
 

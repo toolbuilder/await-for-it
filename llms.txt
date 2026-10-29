@@ -1,0 +1,173 @@
+# @toolbuilder/await-for-it
+
+> Manage async concurrency, task pools, rate limiting, and batching with chainable async iterables and built-in backpressure.
+
+`@toolbuilder/await-for-it` bridges native JavaScript async iterables with bounded concurrency. Native `for await...of` is strictly sequential, while `Promise.all` fires all tasks simultaneously. This package provides backpressured streaming pipelines using standard async iterables.
+
+## Critical Rules for Code Generation
+
+1. **Task Pool Requires `() => Promise`**:
+   `pool(maxPoolSize)` executes functions concurrently. If you pass already-instantiated `Promise`s, they will execute immediately upon creation rather than being throttled. Always yield factory functions:
+   ```javascript
+   // Correct:
+   chainable(urls).map(url => () => fetch(url)).pool(5)
+   // Incorrect:
+   chainable(urls).map(url => fetch(url)).pool(5) // runs all fetches immediately!
+   ```
+
+2. **`Queue` Must Be Closed Explicitly**:
+   `Queue` bridges push-based callbacks to pull-based async iterables. A `for await...of` loop over a `Queue` will hang indefinitely unless `queue.done()` or `queue.reject(error)` is called when finished.
+
+3. **Functional API is Uncurried (Data-Last)**:
+   All standalone functions in `transforms` and `reducers` accept the input iterable as their final argument:
+   ```javascript
+   const tasks = transforms.map(x => () => fetchItem(x), items)
+   const pooled = transforms.pool(5, tasks)
+   const results = await reducers.toArray(pooled)
+   ```
+
+4. **Iterables Honor Backpressure**:
+   Upstream generators and transforms do not pull the next value until downstream iteration awaits it. Stopping iteration early (e.g. `break`, `take(n)`, or controller `.cancel()`) safely terminates upstream iterators via `.return()`.
+
+---
+
+## Import Options
+
+### Root Imports
+```javascript
+import {
+  chainable,
+  ChainableClass,
+  Queue,
+  QueueDone,
+  QueueFull,
+  Poll,
+  callWithTimeout,
+  wait,
+  waitToCall,
+  transforms,
+  generators,
+  reducers
+} from '@toolbuilder/await-for-it'
+```
+
+### Dedicated Subpath Imports
+```javascript
+import { chainable, ChainableClass } from '@toolbuilder/await-for-it/chainable'
+import { Queue, QueueDone, QueueFull } from '@toolbuilder/await-for-it/queue'
+import { Poll } from '@toolbuilder/await-for-it/poll'
+import { pool, chunk, throttle, map, filter } from '@toolbuilder/await-for-it/transforms'
+import { toArray, forEach, reduce, run, publish } from '@toolbuilder/await-for-it/reducers'
+import { range, from } from '@toolbuilder/await-for-it/generators'
+import { callWithTimeout, wait, waitToCall } from '@toolbuilder/await-for-it/timeouts'
+```
+
+---
+
+## Core API Reference
+
+### Chainable Pipeline (`chainable(source)`)
+Wraps any sync or async iterable into a chainable fluent pipeline:
+
+* `.pool(maxPoolSize)`: Concurrently runs up to `maxPoolSize` async tasks (`() => Promise`), yielding results as they settle.
+* `.chunk(n, timeout)`: Batches items into arrays of length `n`. If `timeout` ms passes with a non-empty buffer, emits partial chunk.
+* `.throttle(period, initialWait)`: Limits iteration rate to at most 1 item per `period` ms.
+* `.map(fn)`: Transforms each item using `fn(item)`.
+* `.filter(predicate)`: Keeps items where `predicate(item)` is truthy. Supports TypeScript type guards.
+* `.reject(predicate)`: Discards items where `predicate(item)` is truthy.
+* `.take(n)`: Takes first `n` items and closes upstream iterators.
+* `.diff(fn)`: Calls `fn(prev, curr)` for adjacent pairs and yields the result.
+* `.pluck(key)`: Extracts `item[key]` from object elements.
+* `.nth(index)`: Extracts `item[index]` from array elements.
+* `.flatten()`: Flattens sequence one level deep (preserves strings, Buffers, Maps).
+* `.flattenRecursive()`: Recursively flattens nested iterables.
+* `.flattenUnordered(maxPoolSize)`: Concurrently flattens child iterables up to `maxPoolSize`.
+* `.mapWith(generatorFn)`: Maps sequence with an arbitrary generator `fn(iterable)`.
+* `.arrayToObject(keys)`: Maps array elements to object properties.
+* `.callAwait(fn)`: Calls `await fn(item)` without altering the yielded stream.
+* `.callNoAwait(fn)`: Calls synchronous `fn(item)` without awaiting.
+* `.catch(fn)`: Catches upstream iteration errors.
+* `.finally(fn)`: Runs synchronous cleanup when iteration completes, errors, or terminates early.
+
+### Reducers (Terminal Consumers)
+* `.toArray()` / `reducers.toArray(iterable)`: Awaits and collects all items into an array `Promise<T[]>`.
+* `.forEach(fn)` / `reducers.forEach(fn, iterable)`: Calls `await fn(item, index)` for each item.
+* `.reduce(fn, initial)` / `reducers.reduce(fn, initial, iterable)`: Reduces sequence into a single accumulated value.
+* `.run()` / `reducers.run(iterable)`: Runs iteration asynchronously in the background. Returns `RunController` (`.stop()`, `.start()`, `.cancel()`, `.running`, `.finished`).
+* `.runAwait()` / `reducers.runAwait(iterable)`: Runs iteration to completion, resolving when done.
+* `.publish()` / `reducers.publish(iterable)`: Broadcasts stream items to multiple subscriber callbacks. Returns `PublishController`.
+
+### Static Constructors & Generators
+* `chainable(iterable)` / `ChainableClass.from(iterable)`: Wraps an iterable.
+* `ChainableClass.range([start,] stop[, step])`: Generates a sequence of numbers (Python range semantics).
+* `ChainableClass.merge(...iterables)`: Interleaves values from multiple iterables concurrently as they become available.
+* `ChainableClass.zip(...iterables)`: Steps through iterables in lockstep, stopping at shortest iterable.
+* `ChainableClass.zipAll(...iterables)`: Steps through iterables in lockstep, stopping at longest iterable (pads with `undefined`).
+
+### Concurrency Primitives
+* `new Queue(buffer?)`: Push-to-pull async iterable buffer.
+  * `queue.push(item)`: Pushes an item. Throws `QueueDone` if closed.
+  * `queue.done(emptyQueue = true)`: Closes the queue.
+  * `queue.reject(error)`: Rejects pending and future iterators with `error`.
+  * `queue.length`: Number of queued items remaining.
+* `new Poll(fn, options?)`: Periodically calls `fn()`, governed by consumer backpressure.
+  * Options: `{ initialWait, rate, interval, maxInterval, backoffRate }`.
+* `callWithTimeout(fn, durationMs, timeoutFn?)`: Executes `fn()`, rejecting or calling `timeoutFn()` if `durationMs` elapses.
+* `wait(ms)`: Resolves a Promise after `ms` delay.
+* `waitToCall(fn, ms)`: Waits `ms` before executing `fn()`.
+
+---
+
+## Canonical Usage Examples
+
+### 1. Controlled Concurrency Task Pool with Batching
+```javascript
+import { chainable } from '@toolbuilder/await-for-it'
+
+for await (const batch of chainable(records)
+  .map(record => () => processRecordAsync(record))
+  .pool(5)          // Max 5 concurrent tasks
+  .chunk(25, 2000)  // Batch into groups of 25 (or flush after 2s)
+) {
+  await database.insertMany(batch) // Backpressure: pauses tasks while inserting
+}
+```
+
+### 2. Bridging Event Emitters / Sockets to Async Iterables
+```javascript
+import { Queue } from '@toolbuilder/await-for-it/queue'
+
+const queue = new Queue()
+socket.on('data', chunk => queue.push(chunk))
+socket.on('end', () => queue.done())
+socket.on('error', err => queue.reject(err))
+
+for await (const chunk of queue) {
+  await handleChunk(chunk)
+}
+```
+
+### 3. Merging Independent Streams Concurrently
+```javascript
+import { ChainableClass } from '@toolbuilder/await-for-it/chainable'
+
+const combinedStream = ChainableClass.merge(streamA, streamB, streamC)
+for await (const item of combinedStream) {
+  console.log('Received item as soon as any stream produces:', item)
+}
+```
+
+---
+
+## Documentation Index (Included in Package)
+* [`docs/ChainableClass.md`](docs/ChainableClass.md): Full method reference for chainable pipelines.
+* [`docs/pool.md`](docs/pool.md): In-depth guide to task pooling and concurrency rules.
+* [`docs/queue.md`](docs/queue.md): Queue mechanics, ring buffers, and backpressure.
+* [`docs/chunk.md`](docs/chunk.md): Batching items with idle timeouts.
+* [`docs/transforms.md`](docs/transforms.md): Standalone functional transforms.
+* [`docs/reducers.md`](docs/reducers.md): Standalone functional reducers.
+* [`docs/poll.md`](docs/poll.md): Polling options, intervals, and backoff.
+* [`docs/timeouts.md`](docs/timeouts.md): Async timeout wrappers and delays.
+* [`docs/customization.md`](docs/customization.md): Subclassing and custom chainable pipelines.
+* [`examples/README.md`](examples/README.md): Index of 17 runnable example scripts.
+
